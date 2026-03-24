@@ -1,0 +1,111 @@
+name: 🐛 Bug Report
+description: Создайте отчет об ошибке, чтобы помочь нам улучшить CogniMesh
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за то, что нашли время заполнить этот отчет об ошибке!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание ошибки
+      description: Четкое и краткое описание ошибки
+      placeholder: Опишите, что произошло...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Шаги воспроизведения
+      description: Шаги для воспроизведения ошибки
+      placeholder: |
+        1. Перейдите в '...'
+        2. Нажмите на '...'
+        3. Прокрутите до '...'
+        4. Увидите ошибку
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+      description: Четкое и краткое описание того, что вы ожидали
+      placeholder: Опишите, что должно было произойти...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактическое поведение
+      description: Четкое и краткое описание того, что фактически произошло
+      placeholder: Опишите, что произошло на самом деле...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи и ошибки
+      description: Прикрепите соответствующие логи или сообщения об ошибках
+      render: shell
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Компонент
+      description: Какой компонент CogniMesh затронут?
+      options:
+        - BIOS (github-client, update-manager, patch-verifier)
+        - Core Engine
+        - MCP Integration
+        - Task System
+        - Security Module
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия
+      description: Какую версию CogniMesh вы используете?
+      placeholder: например, v1.2.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Окружение
+      description: |
+        Примеры:
+        - **OS**: Windows 11 / macOS 14 / Ubuntu 22.04
+        - **Node.js**: 20.x
+        - **Browser**: Chrome 120
+      value: |
+        - OS:
+        - Node.js:
+        - Browser (if applicable):
+      render: markdown
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Чеклист
+      description: Перед отправкой отчета
+      options:
+        - label: Я проверил, что подобная ошибка еще не была зарегистрирована
+          required: true
+        - label: Я предоставил достаточно информации для воспроизведения ошибки
+          required: true
+        - label: Я прикрепил соответствующие логи и сообщения об ошибках
+          required: false

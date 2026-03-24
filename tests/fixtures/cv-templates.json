@@ -1,0 +1,323 @@
+{
+  "templates": {
+    "minimal": {
+      "name": "Minimal CV",
+      "description": "Clean and simple CV template",
+      "structure": {
+        "sections": [
+          {
+            "id": "header",
+            "type": "header",
+            "required": true,
+            "fields": ["name", "email", "phone", "location"]
+          },
+          {
+            "id": "summary",
+            "type": "text",
+            "required": false,
+            "fields": ["summary"]
+          },
+          {
+            "id": "experience",
+            "type": "list",
+            "required": true,
+            "fields": ["company", "role", "startDate", "endDate", "description"]
+          },
+          {
+            "id": "education",
+            "type": "list",
+            "required": true,
+            "fields": ["institution", "degree", "graduationYear"]
+          },
+          {
+            "id": "skills",
+            "type": "tags",
+            "required": false,
+            "fields": ["skills"]
+          }
+        ]
+      },
+      "styling": {
+        "font": "Arial",
+        "fontSize": 11,
+        "color": "#333333",
+        "layout": "single-column"
+      }
+    },
+    "professional": {
+      "name": "Professional CV",
+      "description": "Traditional professional CV format",
+      "structure": {
+        "sections": [
+          {
+            "id": "header",
+            "type": "header",
+            "required": true,
+            "fields": ["name", "title", "email", "phone", "location", "linkedin"]
+          },
+          {
+            "id": "summary",
+            "type": "text",
+            "required": true,
+            "fields": ["summary"],
+            "maxLength": 500
+          },
+          {
+            "id": "experience",
+            "type": "timeline",
+            "required": true,
+            "fields": ["company", "role", "location", "startDate", "endDate", "description", "achievements"]
+          },
+          {
+            "id": "education",
+            "type": "timeline",
+            "required": true,
+            "fields": ["institution", "degree", "field", "graduationYear", "gpa"]
+          },
+          {
+            "id": "skills",
+            "type": "categorized",
+            "required": true,
+            "fields": ["technical", "languages", "soft"]
+          },
+          {
+            "id": "certifications",
+            "type": "list",
+            "required": false,
+            "fields": ["name", "issuer", "date", "expiry"]
+          },
+          {
+            "id": "projects",
+            "type": "list",
+            "required": false,
+            "fields": ["name", "description", "technologies", "url"]
+          }
+        ]
+      },
+      "styling": {
+        "font": "Georgia",
+        "fontSize": 10.5,
+        "color": "#2c3e50",
+        "accentColor": "#3498db",
+        "layout": "two-column"
+      }
+    },
+    "modern": {
+      "name": "Modern CV",
+      "description": "Contemporary design with visual elements",
+      "structure": {
+        "sections": [
+          {
+            "id": "sidebar",
+            "type": "sidebar",
+            "required": true,
+            "fields": ["photo", "name", "title", "contact", "skills", "languages", "interests"]
+          },
+          {
+            "id": "main",
+            "type": "main-content",
+            "required": true,
+            "subsections": [
+              {
+                "id": "profile",
+                "type": "text",
+                "fields": ["profile"]
+              },
+              {
+                "id": "experience",
+                "type": "cards",
+                "fields": ["company", "role", "duration", "description", "highlights"]
+              },
+              {
+                "id": "education",
+                "type": "compact",
+                "fields": ["institution", "degree", "year"]
+              },
+              {
+                "id": "portfolio",
+                "type": "grid",
+                "fields": ["project", "link", "image"]
+              }
+            ]
+          }
+        ]
+      },
+      "styling": {
+        "font": "Roboto",
+        "fontSize": 10,
+        "color": "#444444",
+        "accentColor": "#e74c3c",
+        "sidebarColor": "#2c3e50",
+        "layout": "sidebar-left"
+      }
+    },
+    "academic": {
+      "name": "Academic CV",
+      "description": "Comprehensive academic and research CV",
+      "structure": {
+        "sections": [
+          {
+            "id": "personal",
+            "type": "header",
+            "required": true,
+            "fields": ["name", "title", "institution", "department", "email"]
+          },
+          {
+            "id": "research-interests",
+            "type": "text",
+            "required": true,
+            "fields": ["researchInterests"]
+          },
+          {
+            "id": "education",
+            "type": "detailed",
+            "required": true,
+            "fields": ["institution", "degree", "field", "year", "thesis", "advisor"]
+          },
+          {
+            "id": "appointments",
+            "type": "timeline",
+            "required": true,
+            "fields": ["position", "institution", "department", "startDate", "endDate"]
+          },
+          {
+            "id": "publications",
+            "type": "publications",
+            "required": true,
+            "fields": ["authors", "title", "journal", "year", "doi", "citations"]
+          },
+          {
+            "id": "grants",
+            "type": "funding",
+            "required": false,
+            "fields": ["title", "agency", "amount", "period", "role"]
+          },
+          {
+            "id": "teaching",
+            "type": "list",
+            "required": false,
+            "fields": ["course", "institution", "level", "year", "students"]
+          },
+          {
+            "id": "service",
+            "type": "list",
+            "required": false,
+            "fields": ["activity", "organization", "role", "year"]
+          }
+        ]
+      },
+      "styling": {
+        "font": "Times New Roman",
+        "fontSize": 11,
+        "color": "#000000",
+        "layout": "academic-standard"
+      }
+    }
+  },
+  "default-cv": {
+    "id": "template-default",
+    "version": "1.0.0",
+    "name": "Default Template",
+    "summary": "A default CV template for testing",
+    "contact": {
+      "email": "developer@example.com",
+      "phone": "+1-555-0123",
+      "location": "San Francisco, CA",
+      "linkedin": "linkedin.com/in/developer",
+      "github": "github.com/developer"
+    },
+    "experience": [
+      {
+        "company": "TechCorp Inc.",
+        "role": "Senior Software Engineer",
+        "startDate": "2021-03-01",
+        "endDate": null,
+        "location": "San Francisco, CA",
+        "description": "Leading backend development for microservices architecture",
+        "achievements": [
+          "Reduced API latency by 40% through optimization",
+          "Led migration from monolith to microservices",
+          "Mentored 3 junior engineers"
+        ]
+      },
+      {
+        "company": "StartupXYZ",
+        "role": "Software Engineer",
+        "startDate": "2019-06-01",
+        "endDate": "2021-02-28",
+        "location": "New York, NY",
+        "description": "Full-stack development for SaaS platform",
+        "achievements": [
+          "Built real-time collaboration feature",
+          "Implemented CI/CD pipeline",
+          "Contributed to open source projects"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "institution": "University of Technology",
+        "degree": "Bachelor of Science",
+        "field": "Computer Science",
+        "graduationYear": 2019,
+        "gpa": "3.8/4.0",
+        "honors": "Magna Cum Laude"
+      }
+    ],
+    "skills": {
+      "technical": ["JavaScript", "TypeScript", "Node.js", "React", "Python", "PostgreSQL", "AWS", "Docker"],
+      "languages": ["English (Native)", "Spanish (Conversational)"],
+      "soft": ["Leadership", "Communication", "Problem Solving", "Agile Methodologies"]
+    },
+    "certifications": [
+      {
+        "name": "AWS Solutions Architect Associate",
+        "issuer": "Amazon Web Services",
+        "date": "2022-01-15",
+        "expiry": "2025-01-15",
+        "credentialId": "AWS-123456"
+      },
+      {
+        "name": "Google Cloud Professional Data Engineer",
+        "issuer": "Google",
+        "date": "2023-06-20",
+        "expiry": null
+      }
+    ],
+    "projects": [
+      {
+        "name": "Open Source Analytics",
+        "description": "Real-time analytics dashboard for developers",
+        "technologies": ["React", "D3.js", "Node.js", "WebSocket"],
+        "url": "https://github.com/developer/analytics",
+        "role": "Creator & Maintainer"
+      }
+    ]
+  },
+  "test-cvs": [
+    {
+      "id": "test-cv-001",
+      "name": "Junior Developer",
+      "version": "1.0.0",
+      "email": "junior@example.com",
+      "experience": [{ "years": 1, "level": "junior" }],
+      "skills": ["JavaScript", "HTML", "CSS"]
+    },
+    {
+      "id": "test-cv-002",
+      "name": "Senior Developer",
+      "version": "1.0.0",
+      "email": "senior@example.com",
+      "experience": [{ "years": 8, "level": "senior" }],
+      "skills": ["JavaScript", "Node.js", "React", "AWS", "Kubernetes"]
+    },
+    {
+      "id": "test-cv-003",
+      "name": "Full Stack Developer",
+      "version": "1.0.0",
+      "email": "fullstack@example.com",
+      "experience": [{ "years": 5, "level": "mid" }],
+      "skills": ["JavaScript", "Python", "React", "Django", "PostgreSQL"]
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "_description": "Kimi 2.5 Configuration for CogniMesh",
+  "version": "2.5.0",
+  
+  "api": {
+    "baseURL": "https://api.moonshot.cn/v1",
+    "timeout": 300000,
+    "maxRetries": 3,
+    "retryDelay": 1000
+  },
+
+  "models": {
+    "default": "moonshot-v1-128k",
+    "small": "moonshot-v1-8k",
+    "medium": "moonshot-v1-32k",
+    "large": "moonshot-v1-128k",
+    "max": "moonshot-v1-256k",
+    "vision": "moonshot-v1-vision"
+  },
+
+  "features": {
+    "thinkingMode": {
+      "enabled": true,
+      "defaultTemperature": 0.3,
+      "maxTokens": 16384
+    },
+    "multimodal": {
+      "enabled": true,
+      "maxImageSize": 20971520,
+      "supportedFormats": ["png", "jpg", "jpeg", "gif", "webp", "bmp"],
+      "defaultDetail": "high"
+    },
+    "longContext": {
+      "enabled": true,
+      "maxTokens": 256000,
+      "contextCachingThreshold": 64000,
+      "autoModelSelection": true
+    },
+    "chineseOptimization": {
+      "enabled": true,
+      "defaultType": "general",
+      "types": ["general", "text_processing", "search", "display", "storage"]
+    }
+  },
+
+  "coding": {
+    "batchReview": {
+      "maxFiles": 50,
+      "concurrency": 3
+    },
+    "refactoring": {
+      "maxFiles": 20,
+      "includeTests": true
+    },
+    "documentation": {
+      "types": ["api", "readme", "architecture"],
+      "includeExamples": true
+    }
+  },
+
+  "cli": {
+    "preferApi": true,
+    "defaultTimeout": 180000,
+    "paths": {
+      "win32": [
+        "kimi.cmd",
+        "kimi.exe",
+        "%APPDATA%/npm/kimi.cmd",
+        "%LOCALAPPDATA%/npm/kimi.cmd",
+        "%USERPROFILE%/AppData/Roaming/Code/User/globalStorage/moonshot-ai.kimi-code/bin/kimi.cmd"
+      ],
+      "linux": [
+        "kimi",
+        "/usr/local/bin/kimi",
+        "/usr/bin/kimi",
+        "~/.local/bin/kimi",
+        "~/.npm-global/bin/kimi",
+        "~/.config/Code/User/globalStorage/moonshot-ai.kimi-code/bin/kimi"
+      ],
+      "darwin": [
+        "kimi",
+        "/usr/local/bin/kimi",
+        "/opt/homebrew/bin/kimi",
+        "~/.local/bin/kimi",
+        "~/.npm-global/bin/kimi",
+        "~/Library/Application Support/Code/User/globalStorage/moonshot-ai.kimi-code/bin/kimi"
+      ]
+    }
+  },
+
+  "gateway": {
+    "fallbackChain": ["kimi", "claude", "codex"],
+    "taskRouting": {
+      "multimodal": {
+        "primary": "kimi",
+        "fallback": ["claude"]
+      },
+      "chinese": {
+        "primary": "kimi",
+        "fallback": ["claude", "codex"]
+      },
+      "long_context": {
+        "primary": "kimi",
+        "secondary": "claude",
+        "fallback": ["claude"]
+      },
+      "batch_operations": {
+        "primary": "kimi",
+        "fallback": ["claude"]
+      }
+    }
+  },
+
+  "health": {
+    "checkInterval": 30000,
+    "autoReconnect": true,
+    "maxReconnectAttempts": 5
+  },
+
+  "rateLimiting": {
+    "requestsPerMinute": 60,
+    "tokensPerMinute": 100000,
+    "burstSize": 10
+  }
+}

@@ -1,0 +1,87 @@
+name: 💡 Feature Request
+description: Предложите идею для CogniMesh
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за то, что нашли время предложить новую функцию!
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Связанная проблема
+      description: Ясное и краткое описание проблемы. Например, я всегда расстраиваюсь, когда [...]
+      placeholder: Опишите проблему, которую решает эта функция...
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Предлагаемое решение
+      description: Ясное и краткое описание того, что вы хотите, чтобы произошло
+      placeholder: Опишите желаемое решение...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы
+      description: Ясное и краткое описание любых альтернативных решений или функций, которые вы рассмотрели
+      placeholder: Опишите альтернативы...
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Возможная реализация
+      description: Если у вас есть идеи о том, как это можно реализовать, опишите их здесь
+      placeholder: Опишите возможную реализацию...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Приоритет
+      description: Насколько важна эта функция для вас?
+      options:
+        - Critical - блокирует работу
+        - High - существенно улучшит опыт
+        - Medium - желательно иметь
+        - Low - приятно иметь
+      default: 2
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Компонент
+      description: К какому компоненту относится эта функция?
+      options:
+        - BIOS (github-client, update-manager, patch-verifier)
+        - Core Engine
+        - MCP Integration
+        - Task System
+        - Security Module
+        - Documentation
+        - Other
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Дополнительный контекст
+      description: Любой дополнительный контекст, скриншоты или примеры
+      placeholder: Добавьте любую дополнительную информацию...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Чеклист
+      description: Перед отправкой запроса
+      options:
+        - label: Я проверил, что подобная функция еще не была запрошена
+          required: true
+        - label: Я предоставил четкое описание желаемой функции
+          required: true
+        - label: Я объяснил, почему эта функция была бы полезна
+          required: true

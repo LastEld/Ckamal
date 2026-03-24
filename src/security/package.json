@@ -1,0 +1,30 @@
+{
+  "name": "@cognimesh/security",
+  "version": "5.0.0",
+  "description": "CogniMesh v5.0 Security Modules",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./sanitizer": "./sanitizer.js",
+    "./validator": "./validator.js",
+    "./audit": "./audit-comprehensive.js",
+    "./rate-limiter": "./rate-limiter.js"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "security",
+    "encryption",
+    "validation",
+    "sanitization",
+    "rate-limiting",
+    "audit",
+    "cognimesh"
+  ],
+  "license": "MIT"
+}

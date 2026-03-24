@@ -1,0 +1,210 @@
+# Test Automation Agent CV
+# Automated testing for unit, integration, and e2e tests
+
+identity:
+  id: test-automation
+  name: Test Automation Specialist
+  version: 1.2.0
+  description: Automated testing agent for unit, integration, and end-to-end tests
+  lineage:
+    template_origin: tester
+
+capabilities:
+  languages:
+    - javascript
+    - typescript
+    - python
+    - java
+    - go
+  domains:
+    - testing
+    - qa
+    - automation
+  tools:
+    - mcp
+    - git
+    - jest
+    - cypress
+    - playwright
+    - pytest
+    - junit
+    - selenium
+  ai_features:
+    max_context_tokens: 150000
+    supports_streaming: true
+    supports_vision: true
+    supports_function_calling: true
+    supports_parallel_tool_calls: true
+
+rights:
+  version: "1.0.0"
+  resources:
+    databases:
+      - name: test_db
+        access: [read, write, admin]
+    filesystem:
+      - path: "/workspace/{agent.id}/**"
+        access: [read, write, execute]
+      - path: "/test-reports/**"
+        access: [read, write, delete]
+      - path: "/test-data/**"
+        access: [read, write]
+      - path: "/test-snapshots/**"
+        access: [read, write]
+    network:
+      egress:
+        - host: localhost
+          ports: [3000, 8080, 9229, 4444]
+          allowed: true
+        - host: "*.test"
+          allowed: true
+        - host: "hub.browserstack.com"
+          allowed: true
+        - host: "saucelabs.com"
+          allowed: true
+      ingress:
+        allowed: false
+  models:
+    allowed:
+      - claude:sonnet
+      - kimi:k2
+      - codex:gpt54
+    max_tokens_per_request: 100000
+    max_tokens_per_day: 2000000
+    budget_limit_usd: 20.00
+  execution:
+    operations: [read, write, execute:safe]
+    denied_operations:
+      - execute:system
+      - delete:/system/**
+    sandbox:
+      enabled: true
+      network: true
+      filesystem: isolated
+  communication:
+    can_talk_to:
+      - "agent:ci_*"
+      - "agent:coordinator_*"
+      - "agent:developer_*"
+    can_be_delegated_by:
+      - "agent:coordinator_*"
+      - "agent:ci_*"
+    can_delegate_to: []
+    channels:
+      - "test:results"
+      - "ci:events"
+      - "qa:reports"
+    delegation_depth: 0
+  admin:
+    can_create_cv: false
+    can_update_own_cv: false
+    can_update_others_cv: false
+    can_delete_cv: false
+    can_view_audit: false
+    can_modify_system_config: false
+
+obligations:
+  version: "1.0.0"
+  output_quality:
+    accuracy:
+      min_score: 0.95
+      validation_method: automated_test
+    completeness:
+      required_sections:
+        - test_summary
+        - passed
+        - failed
+        - coverage
+        - duration
+      min_coverage_percent: 90
+      check_missing: true
+    format:
+      default: json
+      supported:
+        - json
+        - junit
+        - markdown
+      structure_required: true
+  performance:
+    response_time:
+      p50_max_ms: 10000
+      p95_max_ms: 60000
+      timeout_absolute_ms: 600000
+    throughput:
+      requests_per_minute: 5
+    availability:
+      uptime_percent: 95.0
+      max_consecutive_failures: 10
+  security:
+    audit_logging:
+      level: standard
+      events:
+        - task_start
+        - task_complete
+        - error
+      retention_days: 30
+  resource_limits:
+    tokens:
+      per_request: 100000
+      per_task: 500000
+      per_day: 2000000
+      warning_threshold: 0.85
+    cost:
+      budget_usd_per_day: 20.00
+      budget_usd_per_task: 10.00
+    compute:
+      max_execution_time_ms: 600000
+      max_memory_mb: 3072
+      max_cpu_percent: 90
+  error_handling:
+    retry_policy:
+      max_attempts: 2
+      backoff_strategy: linear
+      initial_delay_ms: 5000
+      max_delay_ms: 60000
+    fallback:
+      enabled: false
+
+execution:
+  preferred_client: auto
+  fallback_clients: [claude, kimi]
+  parallelizable: true
+  retry_policy:
+    max_retries: 2
+    backoff: linear
+    initial_delay_ms: 5000
+    max_delay_ms: 60000
+  timeout: 600000
+
+resources:
+  min_memory: 1024
+  max_memory: 4096
+  priority: 4
+  cpu_cores: 2
+
+specialization:
+  primary: test_automation
+  secondary:
+    - qa_engineer
+    - test_designer
+    - performance_tester
+  certifications:
+    - testing_foundation
+    - istqb
+    - automation_expert
+
+lifecycle:
+  status: active
+  max_lifetime: 3600000
+
+metadata:
+  author: system
+  tags:
+    - testing
+    - qa
+    - automation
+    - e2e
+    - integration
+    - unit
+  category: specialist
+  domain: qa

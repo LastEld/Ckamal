@@ -1,0 +1,1841 @@
+openapi: 3.0.0
+info:
+  title: CogniMesh MCP API
+  version: 5.0.0
+  description: |
+    Multi-agent AI orchestration platform with 58 MCP (Model Context Protocol) tools.
+    
+    ## API Structure
+    - **MCP Tools**: JSON-RPC style tool definitions for AI assistants
+    - **HTTP REST API**: Standard HTTP endpoints for external integrations
+    - **WebSocket API**: Real-time bidirectional communication
+    
+    ## Authentication
+    Most endpoints require authentication via:
+    - **JWT Token**: `Authorization: Bearer <token>` header
+    - **API Key**: `X-API-Key: <key>` header (for service-to-service)
+    
+    ## Response Format
+    All API responses follow a consistent format:
+    ```json
+    {
+      "success": boolean,
+      "data": object | null,
+      "errors": string[] | undefined,
+      "executionTime": number | undefined
+    }
+    ```
+  contact:
+    name: CogniMesh Team
+    email: support@cognimesh.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.cognimesh.io/v1
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health and status endpoints
+  - name: MCP Tools
+    description: Execute MCP tools via HTTP API
+  - name: Tasks
+    description: Task management with Eisenhower Matrix support
+  - name: Roadmaps
+    description: Educational roadmap creation and management
+  - name: Alerts
+    description: Alert system management
+  - name: Analytics
+    description: Dashboard and analytics endpoints
+  - name: Agents
+    description: Agent management and orchestration
+  - name: Clients
+    description: AI client management
+  - name: System
+    description: System configuration and maintenance
+
+paths:
+  # Health & Status
+  /health:
+    get:
+      summary: Health check
+      description: Check if the system is healthy and all components are operational
+      tags:
+        - Health
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  healthy:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: running
+                  version:
+                    type: string
+                    example: 5.0.0
+                  uptime:
+                    type: number
+                    description: Uptime in milliseconds
+                  timestamp:
+                    type: string
+                    format: date-time
+                  checks:
+                    type: object
+                    properties:
+                      bios:
+                        type: boolean
+                      database:
+                        type: boolean
+                      repositories:
+                        type: boolean
+                      tools:
+                        type: boolean
+                      http:
+                        type: boolean
+                      websocket:
+                        type: boolean
+                  components:
+                    type: object
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /status:
+    get:
+      summary: System status
+      description: Get detailed system status information
+      tags:
+        - Health
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [running, maintenance, degraded]
+                  version:
+                    type: string
+                  uptime:
+                    type: number
+                  bios:
+                    type: object
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # MCP Tools Execution
+  /tools:
+    get:
+      summary: List all MCP tools
+      description: Get a list of all 58 available MCP tools with their metadata
+      tags:
+        - MCP Tools
+      responses:
+        '200':
+          description: List of tools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                        requiresAuth:
+                          type: boolean
+                        registeredAt:
+                          type: string
+                          format: date-time
+                  count:
+                    type: number
+                    example: 58
+
+  /tools/{toolName}:
+    post:
+      summary: Execute MCP Tool
+      description: Execute a specific MCP tool by name
+      tags:
+        - MCP Tools
+      parameters:
+        - name: toolName
+          in: path
+          required: true
+          description: Name of the MCP tool to execute
+          schema:
+            type: string
+            enum:
+              # Task Tools (11)
+              - task_create
+              - task_update
+              - task_delete
+              - task_get
+              - task_list
+              - task_search
+              - task_next_actions
+              - task_bulk_update
+              - task_link
+              - task_stats
+              - task_dependencies
+              # Roadmap Tools (13)
+              - roadmap_create
+              - roadmap_get
+              - roadmap_update
+              - roadmap_delete
+              - roadmap_list
+              - roadmap_update_progress
+              - roadmap_add_node
+              - roadmap_remove_node
+              - roadmap_export
+              - roadmap_import
+              - roadmap_clone
+              - roadmap_stats
+              - roadmap_update_node
+              # Claude Tools (12)
+              - claude_chat
+              - claude_stream
+              - claude_analyze_file
+              - claude_batch_create
+              - claude_batch_status
+              - claude_batch_results
+              - claude_context_compress
+              - claude_token_count
+              - claude_usage_stats
+              - claude_conversation_create
+              - claude_conversation_get
+              - claude_conversation_list
+              # System Tools (12)
+              - system_health
+              - system_metrics
+              - system_config_get
+              - system_config_set
+              - system_logs
+              - system_cache_clear
+              - system_backup_create
+              - system_backup_restore
+              - system_backup_list
+              - system_restart
+              - system_status
+              - system_maintenance
+              # Analysis Tools (10)
+              - analyze_code
+              - analyze_architecture
+              - analyze_dependencies
+              - analyze_performance
+              - analyze_security
+              - analyze_patterns
+              - analyze_diff
+              - analyze_coverage
+              - generate_report
+              - analyze_rag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                params:
+                  type: object
+                  description: Tool-specific parameters
+                context:
+                  type: object
+                  properties:
+                    userId:
+                      type: string
+                    subscription:
+                      type: string
+                      enum: [free, pro, enterprise]
+      responses:
+        '200':
+          description: Tool execution successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - subscription required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tool not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - rate limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tools/{toolName}/execute:
+    post:
+      summary: Execute MCP Tool (alias)
+      description: Alternative endpoint for executing MCP tools
+      tags:
+        - MCP Tools
+      parameters:
+        - name: toolName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                params:
+                  type: object
+      responses:
+        '200':
+          description: Tool execution successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Tasks HTTP Endpoints
+  /tasks:
+    get:
+      summary: List tasks
+      description: Get a list of tasks with optional filtering
+      tags:
+        - Tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [backlog, todo, in_progress, review, done, cancelled]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+        - name: roadmapId
+          in: query
+          schema:
+            type: string
+        - name: projectId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+
+    post:
+      summary: Create task
+      description: Create a new task
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Task'
+
+  /tasks/batch:
+    post:
+      summary: Create tasks batch
+      description: Create multiple tasks at once
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Tasks created
+
+  /tasks/{id}:
+    get:
+      summary: Get task
+      description: Get a single task by ID
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+
+    put:
+      summary: Update task
+      description: Update an existing task
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Task updated
+
+    delete:
+      summary: Delete task
+      description: Delete a task by ID
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task deleted
+
+  /tasks/matrix:
+    get:
+      summary: Get Eisenhower Matrix
+      description: Get tasks organized by Eisenhower Matrix quadrants
+      tags:
+        - Tasks
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Eisenhower Matrix view
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      Q1:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+                        description: Urgent & Important (Do first)
+                      Q2:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+                        description: Not Urgent & Important (Schedule)
+                      Q3:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+                        description: Urgent & Not Important (Delegate)
+                      Q4:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+                        description: Not Urgent & Not Important (Eliminate)
+
+  /tasks/{id}/dependencies:
+    get:
+      summary: Get task dependencies
+      description: Get dependencies and dependents for a task
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task dependencies
+
+  /tasks/stats:
+    get:
+      summary: Get task statistics
+      description: Get comprehensive task statistics
+      tags:
+        - Tasks
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task statistics
+
+  # Roadmaps HTTP Endpoints
+  /roadmaps:
+    get:
+      summary: List roadmaps
+      description: Get all roadmaps with optional filtering
+      tags:
+        - Roadmaps
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, completed, archived]
+        - name: owner
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of roadmaps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoadmapSummary'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+
+    post:
+      summary: Create roadmap
+      description: Create a new roadmap
+      tags:
+        - Roadmaps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoadmapInput'
+      responses:
+        '201':
+          description: Roadmap created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Roadmap'
+
+  /roadmaps/{id}:
+    get:
+      summary: Get roadmap
+      description: Get a roadmap by ID
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: includeNodes
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Roadmap details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Roadmap'
+
+    put:
+      summary: Update roadmap
+      description: Update an existing roadmap
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoadmapInput'
+      responses:
+        '200':
+          description: Roadmap updated
+
+    delete:
+      summary: Delete roadmap
+      description: Delete a roadmap
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Roadmap deleted
+
+  /roadmaps/{id}/nodes:
+    get:
+      summary: Get roadmap nodes
+      description: Get all nodes for a roadmap
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Roadmap nodes
+
+    post:
+      summary: Add node to roadmap
+      description: Add a new node to an existing roadmap
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoadmapNodeInput'
+      responses:
+        '201':
+          description: Node added
+
+  /roadmaps/{id}/progress:
+    get:
+      summary: Get roadmap progress
+      description: Get learning progress for a roadmap
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progress data
+
+    post:
+      summary: Update roadmap progress
+      description: Update progress for roadmap nodes
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nodeProgress:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      nodeId:
+                        type: string
+                      progress:
+                        type: number
+                        minimum: 0
+                        maximum: 100
+                      status:
+                        type: string
+                        enum: [planned, in_progress, completed, skipped]
+      responses:
+        '200':
+          description: Progress updated
+
+  /roadmaps/{id}/export:
+    post:
+      summary: Export roadmap
+      description: Export roadmap to various formats
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [json, pdf, png, markdown, csv, ical]
+                options:
+                  type: object
+      responses:
+        '200':
+          description: Export successful
+
+  /roadmaps/{id}/stats:
+    get:
+      summary: Get roadmap statistics
+      description: Get comprehensive statistics about roadmap progress
+      tags:
+        - Roadmaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: includeVelocity
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: includeForecast
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Roadmap statistics
+
+  # Alerts Endpoints
+  /alerts:
+    get:
+      summary: List alerts
+      description: Get all alerts with optional filtering
+      tags:
+        - Alerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved, muted]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+
+    post:
+      summary: Create alert
+      description: Create a new alert
+      tags:
+        - Alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertInput'
+      responses:
+        '201':
+          description: Alert created
+
+  /alerts/{id}:
+    get:
+      summary: Get alert
+      description: Get a single alert by ID
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert details
+
+    put:
+      summary: Update alert
+      description: Update an alert
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, acknowledged, resolved, muted]
+      responses:
+        '200':
+          description: Alert updated
+
+    delete:
+      summary: Delete alert
+      description: Delete an alert
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert deleted
+
+  /alerts/{id}/acknowledge:
+    post:
+      summary: Acknowledge alert
+      description: Acknowledge an alert
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert acknowledged
+
+  # Analytics Endpoints
+  /analytics/dashboard:
+    get:
+      summary: Dashboard stats
+      description: Get dashboard statistics
+      tags:
+        - Analytics
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      byStatus:
+                        type: object
+                      byPriority:
+                        type: object
+                  roadmaps:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      active:
+                        type: integer
+                  agents:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      active:
+                        type: integer
+                  alerts:
+                    type: object
+                    properties:
+                      active:
+                        type: integer
+                      critical:
+                        type: integer
+
+  /analytics/reports:
+    get:
+      summary: List reports
+      description: Get available analytics reports
+      tags:
+        - Analytics
+      responses:
+        '200':
+          description: List of reports
+
+    post:
+      summary: Generate report
+      description: Generate a new analytics report
+      tags:
+        - Analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [productivity, performance, security, custom]
+                format:
+                  type: string
+                  enum: [html, pdf, json]
+                dateRange:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+      responses:
+        '201':
+          description: Report generated
+
+  # Agents Endpoints
+  /agents:
+    get:
+      summary: List agents
+      description: Get all active agents
+      tags:
+        - Agents
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        cv:
+                          type: string
+                        status:
+                          type: string
+                          enum: [active, idle, busy, error]
+                        tasks:
+                          type: integer
+                        uptime:
+                          type: string
+                  total:
+                    type: integer
+
+  /agents/spawn:
+    post:
+      summary: Spawn agent
+      description: Spawn a new agent
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cvId:
+                  type: string
+                  description: Capability Vector ID
+                options:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    capabilities:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '201':
+          description: Agent spawned
+
+  # Clients Endpoints
+  /clients:
+    get:
+      summary: List clients
+      description: List connected AI clients
+      tags:
+        - Clients
+      responses:
+        '200':
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        connected:
+                          type: boolean
+                        type:
+                          type: string
+                        capabilities:
+                          type: array
+                          items:
+                            type: string
+                        lastSeen:
+                          type: string
+                          format: date-time
+                        tasksActive:
+                          type: integer
+
+  /delegate:
+    post:
+      summary: Delegate task
+      description: Delegate a task to a specific client
+      tags:
+        - Clients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  description: Target client ID
+                task:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, critical]
+                timeout:
+                  type: integer
+                  description: Timeout in milliseconds
+      responses:
+        '200':
+          description: Task delegated
+
+  # System Endpoints
+  /system/config:
+    get:
+      summary: Get system configuration
+      description: Retrieve system configuration values
+      tags:
+        - System
+      parameters:
+        - name: section
+          in: query
+          schema:
+            type: string
+        - name: key
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuration values
+
+    put:
+      summary: Update system configuration
+      description: Update system configuration values
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                section:
+                  type: string
+                key:
+                  type: string
+                value:
+                  type: any
+                validate:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Configuration updated
+
+  /system/logs:
+    get:
+      summary: Get system logs
+      description: Retrieve system logs with filtering
+      tags:
+        - System
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warn, error, fatal]
+        - name: component
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: System logs
+
+  /system/backups:
+    get:
+      summary: List backups
+      description: List all available system backups
+      tags:
+        - System
+      responses:
+        '200':
+          description: List of backups
+
+    post:
+      summary: Create backup
+      description: Create a system backup
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [full, incremental, partial]
+                  default: full
+                components:
+                  type: array
+                  items:
+                    type: string
+                    enum: [database, files, config, logs, all]
+      responses:
+        '201':
+          description: Backup created
+
+  /system/cache/clear:
+    post:
+      summary: Clear cache
+      description: Clear system caches
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caches:
+                  type: array
+                  items:
+                    type: string
+                    enum: [memory, disk, redis, cdn, all]
+                  default: [all]
+      responses:
+        '200':
+          description: Cache cleared
+
+  /system/metrics:
+    get:
+      summary: Get system metrics
+      description: Get real-time system metrics
+      tags:
+        - System
+      parameters:
+        - name: duration
+          in: query
+          schema:
+            type: integer
+            default: 5
+        - name: components
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [cpu, memory, disk, network, all]
+      responses:
+        '200':
+          description: System metrics
+
+components:
+  schemas:
+    # API Response
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          nullable: true
+        errors:
+          type: array
+          items:
+            type: string
+        executionTime:
+          type: number
+          description: Execution time in milliseconds
+
+    # Error Schema
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        errors:
+          type: array
+          items:
+            type: string
+        code:
+          type: string
+          enum: [VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED, FORBIDDEN, RATE_LIMIT, INTERNAL_ERROR]
+
+    # Task Schema
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, review, done, cancelled, pending, completed, blocked]
+        priority:
+          type: string
+          enum: [low, medium, high, critical, urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        roadmapId:
+          type: string
+        nodeId:
+          type: string
+        phase:
+          type: string
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        parentId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    TaskInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, review, done, cancelled]
+        priority:
+          type: string
+          enum: [urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        roadmapId:
+          type: string
+        nodeId:
+          type: string
+        phase:
+          type: string
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    # Roadmap Schema
+    Roadmap:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        status:
+          type: string
+          enum: [draft, active, completed, archived]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoadmapNode'
+        owner:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RoadmapSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, completed, archived]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        nodeCount:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    RoadmapInput:
+      type: object
+      required:
+        - roadmapId
+      properties:
+        roadmapId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        markdown:
+          type: string
+        graph:
+          type: object
+          properties:
+            nodes:
+              type: array
+            edges:
+              type: array
+        overwrite:
+          type: boolean
+          default: false
+
+    RoadmapNode:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [milestone, feature, epic, task]
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [planned, in_progress, completed, skipped, not_started, started, mastered]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        dependencies:
+          type: array
+          items:
+            type: string
+        assignees:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+
+    RoadmapNodeInput:
+      type: object
+      required:
+        - type
+        - title
+      properties:
+        type:
+          type: string
+          enum: [milestone, feature, epic, task]
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        dependencies:
+          type: array
+          items:
+            type: string
+        assignees:
+          type: array
+          items:
+            type: string
+        position:
+          type: object
+          properties:
+            after:
+              type: string
+            before:
+              type: string
+            parent:
+              type: string
+
+    # Alert Schema
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        status:
+          type: string
+          enum: [active, acknowledged, resolved, muted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    AlertInput:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+          default: MEDIUM
+        metadata:
+          type: object
+
+    # MCP Tool Schemas
+    TaskCreateInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        parentId:
+          type: string
+        metadata:
+          type: object
+
+    ClaudeChatInput:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        conversationId:
+          type: string
+        systemPrompt:
+          type: string
+          maxLength: 10000
+        model:
+          type: string
+          enum: [claude-3-opus, claude-3-sonnet, claude-3-haiku]
+          default: claude-3-sonnet
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+        maxTokens:
+          type: integer
+          minimum: 1
+          maximum: 4096
+        context:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant, system]
+              content:
+                type: string
+
+    AnalysisInput:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+        language:
+          type: string
+          enum: [javascript, typescript, python, java, go, rust, csharp]
+        rules:
+          type: array
+          items:
+            type: string
+        severity:
+          type: array
+          items:
+            type: string
+            enum: [info, low, medium, high, critical]
+
+    SystemHealthResponse:
+      type: object
+      properties:
+        overall:
+          type: string
+          enum: [healthy, degraded, unhealthy, unknown]
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [healthy, degraded, unhealthy, unknown]
+              latency:
+                type: number
+                description: Latency in milliseconds
+              lastChecked:
+                type: string
+                format: date-time
+              message:
+                type: string
+        uptime:
+          type: number
+          description: Uptime in seconds
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    # Pagination Schema
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          default: 1
+        pageSize:
+          type: integer
+          default: 20
+        total:
+          type: integer
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service-to-service authentication
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []

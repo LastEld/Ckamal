@@ -1,0 +1,98 @@
+# ============================================================
+# CogniMesh BIOS - Git Ignore Patterns
+# ============================================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# BIOS State Files
+state/
+*.bios
+*.nvram
+temp/
+tmp/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Build outputs
+dist/
+build/
+*.tgz
+
+# Debug logs
+debug.log
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Infrastructure directories (INF-003)
+# ============================================================
+
+# Infrastructure directories
+.tmp/
+.worktrees/
+archive/
+config/*.local.*
+
+# Logs
+logs/*.log
+logs/*.log.*
+!logs/.gitkeep
+!logs/README.md
+!logs/.gitignore
+
+# Cache
+cache/
+*.cache
+
+# State
+data/state/
+!data/state/.gitkeep
+data/*.db
+data/*.db-*
+
+# Generated audit artifacts
+Ckamal-structure-full.txt
+release_audit_findings.csv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup

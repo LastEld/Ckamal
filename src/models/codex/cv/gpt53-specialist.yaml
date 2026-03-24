@@ -1,0 +1,269 @@
+# GPT 5.3 Codex Specialist CV
+# Curriculum Vitae for Cost-Effective AI Coding Specialist
+
+metadata:
+  name: GPT 5.3 Codex Specialist
+  version: "5.3"
+  type: ai_coding_specialist
+  designation: cost_effective_tier
+  created: "2026-03-23"
+  last_updated: "2026-03-23"
+
+# Core Identity
+identity:
+  model_name: gpt-5.3-codex
+  provider: OpenAI
+  specialization: cost_effective_coding
+  description: |
+    GPT 5.3 Codex Specialist is optimized for fast, cost-effective code operations.
+    It provides excellent value for routine coding tasks, quick completions, and
+    standard refactoring operations at a fraction of the cost of premium models.
+
+# Capabilities
+capabilities:
+  context_window: 128000
+  max_output_tokens: 16384
+  supported_modes:
+    - text_completion
+    - code_generation
+    - code_refactoring
+    - code_analysis
+    - unit_test_generation
+    - documentation_generation
+    - simple_debugging
+  
+  languages:
+    - JavaScript/TypeScript
+    - Python
+    - Java
+    - C/C++
+    - Go
+    - Rust
+    - Ruby
+    - PHP
+    - C#
+    - Swift
+    - Kotlin
+    - SQL
+    - HTML/CSS
+    - Shell scripting
+  
+  features:
+    streaming: true
+    function_calling: true
+    json_mode: true
+    tool_use: true
+    batch_processing: true
+    response_caching: true
+  
+  performance_profile:
+    target_response_time: "2000ms"
+    max_concurrent_requests: 10
+    optimal_task_size: "small_to_medium"
+    cost_efficiency_rating: "excellent"
+
+# Rights (Permissions)
+rights:
+  operational:
+    - execute_quick_completions
+    - perform_standard_refactoring
+    - generate_routine_code
+    - create_unit_tests
+    - analyze_code_structure
+    - format_and_lint
+    - generate_documentation
+    - cache_responses
+  
+  resource_access:
+    - access_128k_context
+    - use_batch_processing
+    - enable_response_caching
+    - request_cost_comparison
+    - switch_to_premium_model_on_failure
+  
+  autonomy:
+    - auto_select_for_simple_tasks
+    - suggest_cost_optimizations
+    - batch_similar_requests
+    - cache_frequent_queries
+
+# Obligations (Responsibilities)
+obligations:
+  performance:
+    - respond_within_target_time
+    - maintain_high_throughput
+    - minimize_token_usage
+    - leverage_caching_effectively
+  
+  cost_management:
+    - track_usage_metrics
+    - report_cost_per_operation
+    - suggest_cheaper_alternatives_when_appropriate
+    - respect_daily_budget_limits
+  
+  quality:
+    - produce_clean_readable_code
+    - follow_language_conventions
+    - include_basic_documentation
+    - ensure_syntactic_correctness
+  
+  safety:
+    - validate_generated_code
+    - flag_potential_security_issues
+    - avoid_harmful_code_patterns
+    - respect_rate_limits
+
+# Optimal Use Cases
+optimal_use_cases:
+  high_value:
+    - name: Quick Completions
+      description: Fast code completions for IDE integration
+      expected_speedup: "3x vs GPT 5.4"
+      cost_savings: "75%"
+    
+    - name: Routine Refactoring
+      description: Standard refactoring operations
+      expected_speedup: "2.5x vs GPT 5.4"
+      cost_savings: "75%"
+    
+    - name: Unit Test Generation
+      description: Creating test cases for existing code
+      expected_speedup: "2x vs GPT 5.4"
+      cost_savings: "75%"
+    
+    - name: Code Formatting
+      description: Applying style guides and formatting
+      expected_speedup: "4x vs GPT 5.4"
+      cost_savings: "75%"
+    
+    - name: Simple Analysis
+      description: Basic code structure analysis
+      expected_speedup: "2x vs GPT 5.4"
+      cost_savings: "75%"
+
+  acceptable_use:
+    - Standard code generation
+    - Documentation generation
+    - Comment addition
+    - Variable renaming
+    - Simple bug fixes
+    - Syntax checking
+
+# Limitations
+limitations:
+  context:
+    max_tokens: 128000
+    description: "Cannot process contexts larger than 128K tokens"
+  
+  complexity:
+    threshold: "moderate"
+    description: "May struggle with highly complex architectural decisions"
+  
+  vision:
+    supported: false
+    description: "Text-only model, no image understanding"
+  
+  fallback_conditions:
+    - context_exceeds_128k
+    - task_complexity_score_above_0.6
+    - requires_advanced_reasoning
+    - production_critical_code_review
+
+# Routing Criteria
+routing_criteria:
+  use_gpt53_when:
+    - token_count_less_than_8000
+    - task_type_in_fast_list
+    - complexity_score_below_0.6
+    - speed_priority_enabled
+    - cost_optimization_mode
+  
+  escalate_to_gpt54_when:
+    - token_count_exceeds_120000
+    - complexity_score_above_0.8
+    - task_requires_advanced_reasoning
+    - previous_attempt_failed
+    - user_explicitly_requests_premium
+
+# Cost Profile
+cost_profile:
+  pricing:
+    input_per_1m_tokens: 0.50
+    output_per_1m_tokens: 1.50
+    cached_input_per_1m_tokens: 0.25
+  
+  comparison:
+    vs_gpt54:
+      input_cost_ratio: "1:4"
+      output_cost_ratio: "1:4"
+      typical_savings: "75%"
+  
+  budget_recommendations:
+    daily_budget_development: 10.00
+    daily_budget_production: 50.00
+    monthly_budget_development: 200.00
+    monthly_budget_production: 1000.00
+
+# Performance Targets
+performance_targets:
+  response_time:
+    p50: "1000ms"
+    p95: "3000ms"
+    p99: "5000ms"
+  
+  throughput:
+    requests_per_second: 10
+    concurrent_requests: 10
+  
+  quality:
+    code_correctness: "high"
+    style_consistency: "high"
+    documentation_quality: "good"
+
+# Integration Guidelines
+integration:
+  initialization:
+    - load_configuration
+    - validate_api_key
+    - initialize_cache
+    - setup_metrics_collection
+  
+  request_flow:
+    - check_cache_first
+    - estimate_complexity
+    - route_to_appropriate_model
+    - execute_request
+    - cache_response
+    - track_metrics
+  
+  error_handling:
+    - retry_on_transient_errors
+    - fallback_to_gpt54_on_context_overflow
+    - report_cost_overruns
+    - log_performance_degradation
+
+# Monitoring & Metrics
+monitoring:
+  track:
+    - request_count
+    - token_usage
+    - cost_per_request
+    - response_latency
+    - cache_hit_rate
+    - error_rate
+    - model_selection_distribution
+  
+  alerts:
+    - daily_budget_threshold_exceeded
+    - response_time_degraded
+    - error_rate_spike
+    - cache_hit_rate_drop
+
+# Version History
+version_history:
+  - version: "5.3"
+    date: "2026-03-23"
+    changes:
+      - "Initial GPT 5.3 Codex integration"
+      - "Cost-effective routing implementation"
+      - "Dual-mode client support"

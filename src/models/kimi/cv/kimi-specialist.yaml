@@ -1,0 +1,277 @@
+# Kimi Specialist CV
+# Computer Virtual (CV) definition for Kimi AI Specialist Agent
+# Version: 1.0.0
+
+metadata:
+  id: kimi-specialist
+  name: Kimi Code Specialist
+  version: "1.0.0"
+  created: "2026-03-23"
+  updated: "2026-03-23"
+  author: "CKAMAL Build Agent #5"
+  
+rights:
+  # Technical Capabilities
+  capabilities:
+    - id: 256k_context
+      name: "256K Context Window"
+      description: "Access to 256,000 token context window for comprehensive code analysis"
+      enabled: true
+      constraints:
+        max_tokens: 256000
+        optimal_range: "64000-200000"
+        
+    - id: multimodal_analysis
+      name: "Multimodal Analysis"
+      description: "Process and analyze images alongside text"
+      enabled: true
+      supported_formats:
+        - png
+        - jpg
+        - jpeg
+        - gif
+        - webp
+        - bmp
+      max_image_size: 20971520  # 20MB
+      
+    - id: thinking_mode
+      name: "Deep Thinking Mode"
+      description: "Enable step-by-step reasoning for complex problems"
+      enabled: true
+      max_reasoning_tokens: 8192
+      
+    - id: high_speed_processing
+      name: "High-Speed Processing"
+      description: "Optimized for fast response times"
+      enabled: true
+      target_response_time: "< 5 seconds for < 4K tokens"
+      streaming_support: true
+      
+    - id: chinese_optimization
+      name: "Chinese Language Optimization"
+      description: "Specialized handling for Chinese text and code"
+      enabled: true
+      optimizations:
+        - character_encoding
+        - text_processing
+        - search_indexing
+        - display_rendering
+        
+    - id: batch_processing
+      name: "Batch Processing"
+      description: "Process multiple files simultaneously"
+      enabled: true
+      max_batch_size: 50
+      concurrency: 3
+      
+    - id: cross_file_refactoring
+      name: "Cross-File Refactoring"
+      description: "Analyze and refactor across multiple files"
+      enabled: true
+      max_files: 50
+      
+    - id: documentation_generation
+      name: "Documentation Generation"
+      description: "Automatically generate documentation from code"
+      enabled: true
+      formats:
+        - api_docs
+        - readme
+        - architecture
+        - inline_comments
+
+  # Access Permissions
+  permissions:
+    - read_files
+    - write_files
+    - analyze_code
+    - generate_code
+    - refactor_code
+    - execute_tests
+    - access_repository
+    - network_api_access
+
+obligations:
+  # Performance Requirements
+  performance:
+    - metric: response_time
+      target: "< 5000ms for standard queries"
+      priority: high
+      
+    - metric: context_utilization
+      target: "Efficient use of 256K context window"
+      max_waste_percentage: 10
+      priority: high
+      
+    - metric: token_efficiency
+      target: "Minimize token usage while maintaining quality"
+      optimization_strategy: "context_caching"
+      priority: medium
+      
+    - metric: accuracy
+      target: "> 95% code analysis accuracy"
+      validation_method: "automated_testing"
+      priority: high
+
+  # Quality Standards
+  quality:
+    - standard: code_quality
+      requirement: "Follow project coding standards"
+      checks:
+        - linting
+        - type_checking
+        - formatting
+        
+    - standard: documentation
+      requirement: "All code must be documented"
+      min_coverage: 80
+      
+    - standard: testing
+      requirement: "Generated code must include tests"
+      test_types:
+        - unit_tests
+        - integration_tests
+        
+    - standard: security
+      requirement: "No security vulnerabilities in generated code"
+      scan_tools:
+        - static_analysis
+        - dependency_check
+
+  # Communication Standards
+  communication:
+    - format: bilingual_support
+      languages:
+        - zh
+        - en
+      default: auto_detect
+      
+    - format: response_structure
+      requirements:
+        - clear_sections
+        - code_examples
+        - actionable_suggestions
+        
+    - format: error_reporting
+      requirements:
+        - specific_error_messages
+        - suggested_fixes
+        - fallback_options
+
+  # Ethical Constraints
+  ethics:
+    - constraint: no_malicious_code
+      description: "Never generate code designed to harm"
+      enforcement: strict
+      
+    - constraint: attribution
+      description: "Attribute sources when using existing code"
+      enforcement: strict
+      
+    - constraint: privacy
+      description: "Respect data privacy in all operations"
+      enforcement: strict
+
+  # Operational Protocols
+  protocols:
+    - protocol: initialization
+      steps:
+        - verify_api_connection
+        - load_configuration
+        - establish_context_cache
+        - register_capabilities
+        
+    - protocol: error_handling
+      steps:
+        - log_error_details
+        - attempt_recovery
+        - notify_user
+        - escalate_if_needed
+        
+    - protocol: context_management
+      steps:
+        - estimate_token_count
+        - select_optimal_model
+        - apply_context_caching
+        - monitor_usage
+
+# Integration Configuration
+integration:
+  # API Configuration
+  api:
+    base_url: "https://api.moonshot.cn/v1"
+    timeout: 300000  # 5 minutes
+    max_retries: 3
+    retry_delay: 1000
+    
+  # CLI Configuration
+  cli:
+    enabled: true
+    auto_detect: true
+    fallback_to_api: true
+    preferred_mode: api
+    
+  # IDE Configuration
+  ide:
+    enabled: true
+    tcp_port: 18123
+    host: "localhost"
+    reconnect_attempts: 3
+    features:
+      - inline_completion
+      - code_explanation
+      - test_generation
+      - cross_file_references
+
+# Resource Limits
+resources:
+  max_concurrent_requests: 5
+  max_queue_size: 20
+  cache_size: 104857600  # 100MB
+  cache_ttl: 3600000     # 1 hour
+  rate_limit:
+    requests_per_minute: 60
+    tokens_per_minute: 100000
+
+# Monitoring and Metrics
+monitoring:
+  metrics:
+    - name: request_count
+      type: counter
+      
+    - name: response_time
+      type: histogram
+      buckets: [100, 500, 1000, 5000, 10000, 30000, 60000]
+      
+    - name: token_usage
+      type: counter
+      labels: [model, operation]
+      
+    - name: error_rate
+      type: gauge
+      
+    - name: cache_hit_rate
+      type: gauge
+
+  alerts:
+    - condition: "response_time > 30000"
+      severity: warning
+      action: notify
+      
+    - condition: "error_rate > 0.05"
+      severity: critical
+      action: escalate
+      
+    - condition: "token_usage > 80000"
+      severity: warning
+      action: throttle
+
+# Version History
+history:
+  - version: "1.0.0"
+    date: "2026-03-23"
+    changes:
+      - "Initial CV definition"
+      - "256K context support"
+      - "Multimodal capabilities"
+      - "CLI and IDE integration"

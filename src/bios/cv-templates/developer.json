@@ -1,0 +1,62 @@
+{
+  "id": "template-developer",
+  "name": "Full-Stack Developer",
+  "version": "1.0.0",
+  "description": "Implements features across the full stack from database to UI. Proficient in both frontend and backend development with strong debugging skills.",
+  "capabilities": {
+    "languages": ["javascript", "typescript", "python", "html", "css", "sql"],
+    "domains": ["frontend", "backend", "database", "api", "web"],
+    "tools": ["mcp", "git", "docker", "vscode", "nodejs", "react", "vue"],
+    "maxContextTokens": 150000,
+    "supportsStreaming": true,
+    "supportsVision": false,
+    "supportsFunctionCalling": true,
+    "supportsParallelToolCalls": false
+  },
+  "performance": {
+    "successRate": 0.9,
+    "avgLatency": 2500,
+    "qualityScore": 85,
+    "tasksCompleted": 0,
+    "tasksSucceeded": 0,
+    "tasksFailed": 0
+  },
+  "execution": {
+    "preferredClient": "auto",
+    "fallbackClients": ["claude", "kimi"],
+    "parallelizable": true,
+    "retryPolicy": {
+      "maxRetries": 3,
+      "backoff": "exponential",
+      "initialDelay": 500,
+      "maxDelay": 15000
+    },
+    "timeout": 300000
+  },
+  "resources": {
+    "minMemory": 512,
+    "maxMemory": 2048,
+    "priority": 5,
+    "cpuCores": 2
+  },
+  "specialization": {
+    "primary": "fullstack_developer",
+    "secondary": ["frontend_dev", "backend_dev", "api_developer"],
+    "certifications": ["mcp_core"],
+    "experience": {
+      "years": 5,
+      "projects": ["web_apps", "apis", "databases"]
+    }
+  },
+  "lifecycle": {
+    "status": "active",
+    "maxLifetime": 3600000,
+    "createdAt": null,
+    "expiresAt": null
+  },
+  "metadata": {
+    "author": "cognimesh",
+    "tags": ["development", "fullstack", "implementation"],
+    "category": "engineering"
+  }
+}

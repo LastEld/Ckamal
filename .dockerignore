@@ -1,0 +1,82 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+tests
+test
+__tests__
+*.test.js
+*.spec.js
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (keep only essential)
+docs
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts (not needed in image)
+scripts/*.sh
+scripts/benchmark.js
+
+# Temporary files
+tmp
+temp
+.tmp
+*.tmp
+
+# Archive
+archive
+
+# Cache
+cache
+
+# Planning & Spec
+.planning
+.spec
+
+# Agents configuration (sensitive)
+.agents/*.json
+.agents/*.yaml
+
+# Worktrees
+.worktrees

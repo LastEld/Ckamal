@@ -1,0 +1,191 @@
+groups:
+  - name: cognimesh_alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert
+      - alert: CogniMeshHighErrorRate
+        expr: sum(rate(cognimesh_errors_total[5m])) > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: cognimesh
+        annotations:
+          summary: "High error rate detected in CogniMesh"
+          description: "Error rate is {{ $value }} errors/sec, exceeding threshold of 10/sec"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/high-error-rate"
+
+      # High HTTP Latency Alert
+      - alert: CogniMeshHighLatency
+        expr: histogram_quantile(0.95, sum(rate(cognimesh_http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 3m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "High HTTP request latency detected"
+          description: "p95 latency is {{ $value }}s, exceeding threshold of 2s"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/high-latency"
+
+      # Service Down Alert
+      - alert: CogniMeshServiceDown
+        expr: up{job="cognimesh"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cognimesh
+        annotations:
+          summary: "CogniMesh service is down"
+          description: "CogniMesh instance {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/service-down"
+
+      # High Memory Usage Alert
+      - alert: CogniMeshHighMemoryUsage
+        expr: (cognimesh_process_resident_memory_bytes / cognimesh_process_virtual_memory_max_bytes) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }}, exceeding threshold of 85%"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/high-memory"
+
+      # Database Connection Pool Exhaustion
+      - alert: CogniMeshDBPoolExhaustion
+        expr: cognimesh_db_connections_active{state="in_use"} / (cognimesh_db_connections_active{state="in_use"} + cognimesh_db_connections_active{state="available"}) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: cognimesh
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "{{ $value | humanizePercentage }} of database connections are in use"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/db-pool-exhaustion"
+
+      # AI Request Failures
+      - alert: CogniMeshAIRequestFailures
+        expr: sum(rate(cognimesh_ai_requests_total{status="error"}[5m])) / sum(rate(cognimesh_ai_requests_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "High AI request failure rate"
+          description: "AI request failure rate is {{ $value | humanizePercentage }}, exceeding threshold of 10%"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/ai-failures"
+
+      # Circuit Breaker Open
+      - alert: CogniMeshCircuitBreakerOpen
+        expr: cognimesh_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker {{ $labels.name }} has been open for more than 1 minute"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/circuit-breaker"
+
+      # High Rate Limit Hits
+      - alert: CogniMeshHighRateLimitHits
+        expr: sum(rate(cognimesh_rate_limit_hits_total[5m])) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "High rate limit hit rate"
+          description: "Rate limit is being hit at {{ $value }} hits/sec"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/rate-limit"
+
+      # Task Queue Backlog
+      - alert: CogniMeshTaskQueueBacklog
+        expr: cognimesh_task_queue_size > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "Task queue backlog detected"
+          description: "Task queue {{ $labels.queue }} has {{ $value }} pending tasks"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/task-queue-backlog"
+
+      # WebSocket Connection Spike
+      - alert: CogniMeshWebSocketConnectionSpike
+        expr: |
+          (
+            cognimesh_websocket_connections_active 
+            - 
+            cognimesh_websocket_connections_active offset 1h
+          ) / cognimesh_websocket_connections_active offset 1h > 2
+        for: 5m
+        labels:
+          severity: info
+          service: cognimesh
+        annotations:
+          summary: "WebSocket connection spike detected"
+          description: "WebSocket connections increased by {{ $value | humanizePercentage }} in the last hour"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/ws-spike"
+
+      # BIOS Component Unhealthy
+      - alert: CogniMeshBIOSComponentUnhealthy
+        expr: cognimesh_bios_component_health == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: cognimesh
+        annotations:
+          summary: "BIOS component is unhealthy"
+          description: "BIOS component {{ $labels.component }} is reporting unhealthy status"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/bios-unhealthy"
+
+      # Event Loop Lag
+      - alert: CogniMeshEventLoopLag
+        expr: cognimesh_nodejs_eventloop_lag_seconds > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          service: cognimesh
+        annotations:
+          summary: "High event loop lag detected"
+          description: "Event loop lag is {{ $value }}s, indicating potential performance issues"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/event-loop-lag"
+
+  - name: cognimesh_slo_alerts
+    interval: 60s
+    rules:
+      # SLO: 99.9% Availability
+      - alert: CogniMeshAvailabilitySLOViolation
+        expr: |
+          (
+            sum(rate(cognimesh_http_requests_total{status=~"2..|3.."}[24h]))
+            /
+            sum(rate(cognimesh_http_requests_total[24h]))
+          ) < 0.999
+        for: 5m
+        labels:
+          severity: critical
+          service: cognimesh
+          slo: availability
+        annotations:
+          summary: "Availability SLO violation"
+          description: "24h availability is {{ $value | humanizePercentage }}, below SLO of 99.9%"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/slo-violation"
+
+      # SLO: 95% of requests under 500ms
+      - alert: CogniMeshLatencySLOViolation
+        expr: |
+          (
+            sum(rate(cognimesh_http_request_duration_seconds_bucket{le="0.5"}[24h]))
+            /
+            sum(rate(cognimesh_http_request_duration_seconds_bucket{le="+Inf"}[24h]))
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          service: cognimesh
+          slo: latency
+        annotations:
+          summary: "Latency SLO violation"
+          description: "Only {{ $value | humanizePercentage }} of requests are under 500ms, below SLO of 95%"
+          runbook_url: "https://wiki.internal/cognimesh/runbooks/slo-violation"

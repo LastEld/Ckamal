@@ -1,0 +1,6 @@
+{
+  "server": { "port": 3000 },
+  "database": { "path": "./data/cognimesh.db" },
+  "bios": { "mode": "operational" },
+  "logging": { "level": "info" }
+}

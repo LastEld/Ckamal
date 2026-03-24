@@ -1,0 +1,22 @@
+[
+  {
+    "id": "analyze-utils",
+    "description": "Analyze utility functions",
+    "code": "function debounce(fn, delay) {\n  let timeoutId;\n  return function(...args) {\n    clearTimeout(timeoutId);\n    timeoutId = setTimeout(() => fn.apply(this, args), delay);\n  };\n}",
+    "language": "javascript",
+    "context": "analysis"
+  },
+  {
+    "id": "generate-validation",
+    "description": "Create email validation function",
+    "instructions": "Generate a robust email validation function with TypeScript types",
+    "context": "coding"
+  },
+  {
+    "id": "review-error-handling",
+    "description": "Review error handling patterns",
+    "code": "try {\n  const data = JSON.parse(input);\n  processData(data);\n} catch (e) {\n  console.log('Error occurred');\n}",
+    "language": "javascript",
+    "context": "review"
+  }
+]

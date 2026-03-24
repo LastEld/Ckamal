@@ -1,0 +1,232 @@
+# Analyst Agent CV
+# Analysis tasks, data processing, and reporting
+
+identity:
+  id: analyst
+  name: Data Analyst
+  version: 1.2.0
+  description: Analysis specialist for data processing, insights, and reporting
+  lineage:
+    template_origin: analyst
+
+capabilities:
+  languages:
+    - python
+    - r
+    - sql
+    - javascript
+    - julia
+  domains:
+    - data
+    - analysis
+    - ml
+    - statistics
+    - visualization
+  tools:
+    - mcp
+    - git
+    - jupyter
+    - pandas
+    - numpy
+    - matplotlib
+    - tableau
+    - excel
+  ai_features:
+    max_context_tokens: 200000
+    supports_streaming: true
+    supports_vision: true
+    supports_function_calling: true
+    supports_parallel_tool_calls: false
+
+rights:
+  version: "1.0.0"
+  resources:
+    databases:
+      - name: analytics_db
+        access: [read]
+      - name: data_warehouse
+        access: [read]
+        tables:
+          - metrics
+          - events
+          - logs
+    filesystem:
+      - path: "/workspace/{agent.id}/**"
+        access: [read, write]
+      - path: "/data/datasets/**"
+        access: [read]
+      - path: "/reports/**"
+        access: [read, write]
+      - path: "/raw-data/**"
+        access: [read]
+    apis:
+      - name: analytics_api
+        endpoints: [metrics/*, reports/*]
+        methods: [GET]
+        rate_limit: 1000
+    network:
+      egress:
+        - host: "*.kaggle.com"
+          allowed: true
+        - host: "*.data.gov"
+          allowed: true
+        - host: "api.worldbank.org"
+          allowed: true
+      ingress:
+        allowed: false
+  models:
+    allowed:
+      - claude:sonnet
+      - claude:opus
+      - kimi:k2
+    denied: []
+    max_tokens_per_request: 200000
+    max_tokens_per_day: 3000000
+    budget_limit_usd: 40.00
+  execution:
+    operations: [read, write]
+    denied_operations:
+      - execute:system
+      - delete
+    sandbox:
+      enabled: true
+      network: true
+      filesystem: isolated
+  communication:
+    can_talk_to:
+      - "agent:coordinator_*"
+      - "agent:manager_*"
+    can_be_delegated_by:
+      - "agent:coordinator_*"
+    can_delegate_to: []
+    channels:
+      - "analysis:*"
+      - "reports:*"
+    delegation_depth: 0
+  admin:
+    can_create_cv: false
+    can_update_own_cv: false
+    can_update_others_cv: false
+    can_delete_cv: false
+    can_view_audit: false
+    can_modify_system_config: false
+
+obligations:
+  version: "1.0.0"
+  output_quality:
+    accuracy:
+      min_score: 0.90
+      validation_method: human_review
+    completeness:
+      required_sections:
+        - executive_summary
+        - methodology
+        - findings
+        - visualizations
+        - recommendations
+      min_coverage_percent: 95
+      check_missing: true
+    relevance:
+      on_topic_threshold: 0.85
+      penalize_hallucination: true
+    format:
+      default: markdown
+      supported:
+        - markdown
+        - json
+        - csv
+        - html
+        - pdf
+      structure_required: true
+      max_length: 100000
+  performance:
+    response_time:
+      p50_max_ms: 10000
+      p95_max_ms: 30000
+      p99_max_ms: 60000
+      timeout_absolute_ms: 300000
+    throughput:
+      requests_per_minute: 10
+    availability:
+      uptime_percent: 97.0
+      max_consecutive_failures: 5
+  security:
+    audit_logging:
+      level: standard
+      events:
+        - task_start
+        - task_complete
+        - error
+      retention_days: 90
+    pii_handling:
+      detect: true
+      mask: true
+      log_sanitized_only: true
+  resource_limits:
+    tokens:
+      per_request: 200000
+      per_task: 1000000
+      per_day: 3000000
+      warning_threshold: 0.8
+    cost:
+      budget_usd_per_day: 40.00
+      budget_usd_per_task: 15.00
+      alert_threshold: 0.85
+    compute:
+      max_execution_time_ms: 300000
+      max_memory_mb: 4096
+  compliance:
+    data_retention:
+      task_history_days: 90
+      audit_logs_days: 365
+      output_cache_hours: 48
+    ethics_check:
+      enabled: true
+      prohibited_content:
+        - harmful
+        - discriminatory
+      review_threshold: 0.75
+
+execution:
+  preferred_client: claude
+  fallback_clients: [kimi]
+  parallelizable: false
+  retry_policy:
+    max_retries: 2
+    backoff: exponential
+    initial_delay_ms: 2000
+    max_delay_ms: 30000
+  timeout: 300000
+
+resources:
+  min_memory: 1024
+  max_memory: 4096
+  priority: 5
+  cpu_cores: 2
+
+specialization:
+  primary: data_analyst
+  secondary:
+    - business_analyst
+    - data_scientist
+    - visualization_expert
+  certifications:
+    - data_analysis
+    - statistics_foundation
+    - tableau_certified
+
+lifecycle:
+  status: active
+  max_lifetime: 3600000
+
+metadata:
+  author: system
+  tags:
+    - analysis
+    - data
+    - reporting
+    - statistics
+    - visualization
+    - insights
+  category: specialist
+  domain: data

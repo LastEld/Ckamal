@@ -1,0 +1,62 @@
+{
+  "id": "template-devops",
+  "name": "DevOps Engineer",
+  "version": "1.0.0",
+  "description": "Manages CI/CD pipelines, infrastructure as code, and deployment automation. Ensures reliable and scalable system operations.",
+  "capabilities": {
+    "languages": ["python", "bash", "yaml", "go", "powershell", "hcl"],
+    "domains": ["devops", "infrastructure", "ci_cd", "cloud", "monitoring"],
+    "tools": ["mcp", "git", "docker", "k8s", "jenkins", "github_actions", "gitlab_ci", "ansible", "terraform"],
+    "maxContextTokens": 120000,
+    "supportsStreaming": true,
+    "supportsVision": false,
+    "supportsFunctionCalling": true,
+    "supportsParallelToolCalls": true
+  },
+  "performance": {
+    "successRate": 0.91,
+    "avgLatency": 2500,
+    "qualityScore": 87,
+    "tasksCompleted": 0,
+    "tasksSucceeded": 0,
+    "tasksFailed": 0
+  },
+  "execution": {
+    "preferredClient": "kimi",
+    "fallbackClients": ["claude", "codex"],
+    "parallelizable": true,
+    "retryPolicy": {
+      "maxRetries": 3,
+      "backoff": "exponential",
+      "initialDelay": 1000,
+      "maxDelay": 60000
+    },
+    "timeout": 600000
+  },
+  "resources": {
+    "minMemory": 1024,
+    "maxMemory": 3072,
+    "priority": 7,
+    "cpuCores": 4
+  },
+  "specialization": {
+    "primary": "devops_engineer",
+    "secondary": ["sre", "platform_engineer", "cloud_engineer"],
+    "certifications": ["k8s_admin", "aws_devops", "azure_devops"],
+    "experience": {
+      "years": 6,
+      "projects": ["ci_cd", "kubernetes", "cloud_infrastructure", "monitoring"]
+    }
+  },
+  "lifecycle": {
+    "status": "active",
+    "maxLifetime": 3600000,
+    "createdAt": null,
+    "expiresAt": null
+  },
+  "metadata": {
+    "author": "cognimesh",
+    "tags": ["devops", "infrastructure", "automation"],
+    "category": "operations"
+  }
+}

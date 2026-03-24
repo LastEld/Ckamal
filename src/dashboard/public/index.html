@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniMesh v5.0 Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- SortableJS for drag-and-drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="dashboard">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i data-lucide="hexagon" class="logo-icon"></i>
+          <span class="logo-text">CogniMesh</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+          <i data-lucide="chevron-left"></i>
+        </button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li class="nav-item active">
+            <a href="#dashboard" class="nav-link" data-view="dashboard">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#tasks" class="nav-link" data-view="tasks">
+              <i data-lucide="check-square"></i>
+              <span>Tasks</span>
+              <span class="nav-badge" id="taskBadge">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#roadmaps" class="nav-link" data-view="roadmaps">
+              <i data-lucide="map"></i>
+              <span>Roadmaps</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#analytics" class="nav-link" data-view="analytics">
+              <i data-lucide="bar-chart-3"></i>
+              <span>Analytics</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#agents" class="nav-link" data-view="agents">
+              <i data-lucide="bot"></i>
+              <span>Agents</span>
+              <span class="status-indicator online" id="agentStatus"></span>
+            </a>
+          </li>
+        </ul>
+        
+        <div class="nav-section">
+          <span class="nav-section-title">System</span>
+          <ul class="nav-list">
+            <li class="nav-item">
+              <a href="#alerts" class="nav-link" data-view="alerts">
+                <i data-lucide="bell"></i>
+                <span>Alerts</span>
+                <span class="nav-badge alert" id="alertBadge">0</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#settings" class="nav-link" data-view="settings">
+                <i data-lucide="settings"></i>
+                <span>Settings</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="user-details">
+            <span class="user-name" id="userName">Admin</span>
+            <span class="user-role" id="userRole">Administrator</span>
+          </div>
+        </div>
+        <button class="btn-icon" id="logoutBtn" title="Logout">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="btn-icon mobile-menu-toggle" id="mobileMenuToggle">
+            <i data-lucide="menu"></i>
+          </button>
+          <h1 class="page-title" id="pageTitle">Dashboard</h1>
+        </div>
+        
+        <div class="header-right">
+          <!-- Search -->
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" placeholder="Search tasks, roadmaps..." id="globalSearch">
+          </div>
+          
+          <!-- Theme Toggle -->
+          <button class="btn-icon theme-toggle" id="themeToggle" title="Toggle theme">
+            <i data-lucide="sun" class="light-icon"></i>
+            <i data-lucide="moon" class="dark-icon"></i>
+          </button>
+          
+          <!-- Notifications -->
+          <button class="btn-icon notification-btn" id="notificationBtn">
+            <i data-lucide="bell"></i>
+            <span class="notification-dot" id="notificationDot"></span>
+          </button>
+          
+          <!-- Connection Status -->
+          <div class="connection-status" id="connectionStatus">
+            <span class="status-dot connecting"></span>
+            <span class="status-text">Connecting...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Container -->
+      <div class="view-container" id="viewContainer">
+        <!-- Dashboard View -->
+        <div class="view active" id="dashboardView">
+          <div class="dashboard-grid">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon primary">
+                  <i data-lucide="check-circle"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="completedTasks">0</span>
+                  <span class="stat-label">Completed Tasks</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon warning">
+                  <i data-lucide="clock"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="pendingTasks">0</span>
+                  <span class="stat-label">Pending Tasks</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon success">
+                  <i data-lucide="trending-up"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="completionRate">0%</span>
+                  <span class="stat-label">Completion Rate</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon info">
+                  <i data-lucide="activity"></i>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value" id="activeAgents">0</span>
+                  <span class="stat-label">Active Agents</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Access -->
+            <div class="quick-access">
+              <div class="section-header">
+                <h2>Quick Access</h2>
+              </div>
+              <div class="quick-actions">
+                <button class="quick-action-btn" id="quickAddTask">
+                  <i data-lucide="plus"></i>
+                  <span>New Task</span>
+                </button>
+                <button class="quick-action-btn" id="quickViewMatrix">
+                  <i data-lucide="grid"></i>
+                  <span>Matrix View</span>
+                </button>
+                <button class="quick-action-btn" id="quickViewRoadmaps">
+                  <i data-lucide="map"></i>
+                  <span>Roadmaps</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Recent Activity & Charts -->
+            <div class="dashboard-split">
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Task Trends</h3>
+                  <select class="select-sm" id="trendPeriod">
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                  </select>
+                </div>
+                <div class="panel-body">
+                  <canvas id="trendChart"></canvas>
+                </div>
+              </div>
+              
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Tasks by Quadrant</h3>
+                </div>
+                <div class="panel-body">
+                  <canvas id="quadrantChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Alerts -->
+            <div class="panel alerts-panel">
+              <div class="panel-header">
+                <h3>Recent Alerts</h3>
+                <a href="#alerts" class="link-sm">View all</a>
+              </div>
+              <div class="panel-body" id="recentAlerts">
+                <div class="empty-state">
+                  <i data-lucide="inbox"></i>
+                  <p>No alerts</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks View with Eisenhower Matrix -->
+        <div class="view" id="tasksView">
+          <div class="tasks-container">
+            <div class="view-toolbar">
+              <div class="filter-group">
+                <select class="select" id="taskFilterStatus">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <select class="select" id="taskFilterPriority">
+                  <option value="">All Priorities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="addTaskBtn">
+                <i data-lucide="plus"></i>
+                <span>Add Task</span>
+              </button>
+            </div>
+
+            <!-- Eisenhower Matrix -->
+            <div class="eisenhower-matrix" id="eisenhowerMatrix">
+              <div class="matrix-header">
+                <div class="matrix-label"></div>
+                <div class="matrix-label urgent">Urgent</div>
+                <div class="matrix-label not-urgent">Not Urgent</div>
+              </div>
+              
+              <div class="matrix-row">
+                <div class="matrix-label important">Important</div>
+                <div class="quadrant do-first" data-quadrant="do-first">
+                  <div class="quadrant-header">
+                    <span class="quadrant-title">Do First</span>
+                    <span class="quadrant-count" id="doFirstCount">0</span>
+                  </div>
+                  <div class="quadrant-tasks" id="doFirstTasks">
+                    <!-- Tasks will be rendered here -->
+                  </div>
+                </div>
+                <div class="quadrant schedule" data-quadrant="schedule">
+                  <div class="quadrant-header">
+                    <span class="quadrant-title">Schedule</span>
+                    <span class="quadrant-count" id="scheduleCount">0</span>
+                  </div>
+                  <div class="quadrant-tasks" id="scheduleTasks"></div>
+                </div>
+              </div>
+              
+              <div class="matrix-row">
+                <div class="matrix-label not-important">Not Important</div>
+                <div class="quadrant delegate" data-quadrant="delegate">
+                  <div class="quadrant-header">
+                    <span class="quadrant-title">Delegate</span>
+                    <span class="quadrant-count" id="delegateCount">0</span>
+                  </div>
+                  <div class="quadrant-tasks" id="delegateTasks"></div>
+                </div>
+                <div class="quadrant eliminate" data-quadrant="eliminate">
+                  <div class="quadrant-header">
+                    <span class="quadrant-title">Eliminate</span>
+                    <span class="quadrant-count" id="eliminateCount">0</span>
+                  </div>
+                  <div class="quadrant-tasks" id="eliminateTasks"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roadmaps View -->
+        <div class="view" id="roadmapsView">
+          <div class="roadmaps-container">
+            <div class="view-toolbar">
+              <div class="search-group">
+                <i data-lucide="search"></i>
+                <input type="text" placeholder="Search roadmaps..." id="roadmapSearch">
+              </div>
+              <button class="btn btn-primary" id="createRoadmapBtn">
+                <i data-lucide="plus"></i>
+                <span>Create Roadmap</span>
+              </button>
+            </div>
+            
+            <div class="roadmaps-grid" id="roadmapsGrid">
+              <!-- Roadmap cards will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics View -->
+        <div class="view" id="analyticsView">
+          <div class="analytics-container">
+            <div class="analytics-grid">
+              <div class="panel wide">
+                <div class="panel-header">
+                  <h3>Task Completion Over Time</h3>
+                </div>
+                <div class="panel-body">
+                  <canvas id="completionChart"></canvas>
+                </div>
+              </div>
+              
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Priority Distribution</h3>
+                </div>
+                <div class="panel-body">
+                  <canvas id="priorityChart"></canvas>
+                </div>
+              </div>
+              
+              <div class="panel">
+                <div class="panel-header">
+                  <h3>Team Velocity</h3>
+                </div>
+                <div class="panel-body">
+                  <canvas id="velocityChart"></canvas>
+                </div>
+              </div>
+              
+              <div class="panel wide">
+                <div class="panel-header">
+                  <h3>Agent Performance</h3>
+                </div>
+                <div class="panel-body">
+                  <canvas id="agentChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agents View -->
+        <div class="view" id="agentsView">
+          <div class="agents-container">
+            <div class="view-toolbar">
+              <h2>Active Agents</h2>
+              <button class="btn btn-secondary" id="refreshAgentsBtn">
+                <i data-lucide="refresh-cw"></i>
+                <span>Refresh</span>
+              </button>
+            </div>
+            <div class="agents-grid" id="agentsGrid">
+              <!-- Agent cards will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts View -->
+        <div class="view" id="alertsView">
+          <div class="alerts-container">
+            <div class="view-toolbar">
+              <div class="filter-group">
+                <select class="select" id="alertFilterLevel">
+                  <option value="">All Levels</option>
+                  <option value="critical">Critical</option>
+                  <option value="error">Error</option>
+                  <option value="warning">Warning</option>
+                  <option value="info">Info</option>
+                </select>
+                <select class="select" id="alertFilterStatus">
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="acknowledged">Acknowledged</option>
+                </select>
+              </div>
+              <button class="btn btn-secondary" id="acknowledgeAllBtn">
+                <i data-lucide="check"></i>
+                <span>Acknowledge All</span>
+              </button>
+            </div>
+            <div class="alerts-list" id="alertsList">
+              <!-- Alerts will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings View -->
+        <div class="view" id="settingsView">
+          <div class="settings-container">
+            <div class="settings-section">
+              <h3>Appearance</h3>
+              <div class="setting-item">
+                <label>Theme</label>
+                <select class="select" id="themeSelect">
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                  <option value="system">System</option>
+                </select>
+              </div>
+              <div class="setting-item">
+                <label>Compact Mode</label>
+                <label class="toggle">
+                  <input type="checkbox" id="compactMode">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>Notifications</h3>
+              <div class="setting-item">
+                <label>Enable Notifications</label>
+                <label class="toggle">
+                  <input type="checkbox" id="enableNotifications" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <label>Sound Alerts</label>
+                <label class="toggle">
+                  <input type="checkbox" id="soundAlerts">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>Dashboard</h3>
+              <div class="setting-item">
+                <label>Auto-refresh Interval</label>
+                <select class="select" id="refreshInterval">
+                  <option value="0">Off</option>
+                  <option value="30">30 seconds</option>
+                  <option value="60">1 minute</option>
+                  <option value="300">5 minutes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+    
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+      <div class="modal-header">
+        <h3 id="taskModalTitle">New Task</h3>
+        <button class="btn-icon modal-close" id="closeTaskModal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="taskForm">
+          <div class="form-group">
+            <label for="taskTitle">Title *</label>
+            <input type="text" id="taskTitle" required>
+          </div>
+          <div class="form-group">
+            <label for="taskDescription">Description</label>
+            <textarea id="taskDescription" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskPriority">Priority</label>
+              <select id="taskPriority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="taskDueDate">Due Date</label>
+              <input type="date" id="taskDueDate">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskUrgent">Urgent</label>
+              <label class="toggle">
+                <input type="checkbox" id="taskUrgent">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="taskImportant">Important</label>
+              <label class="toggle">
+                <input type="checkbox" id="taskImportant" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelTaskBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+      </div>
+    </div>
+
+    <!-- Notification Panel -->
+    <div class="notification-panel" id="notificationPanel">
+      <div class="panel-header">
+        <h3>Notifications</h3>
+        <button class="btn-icon" id="clearNotifications">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+      <div class="notification-list" id="notificationList"></div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="components/api-client.js"></script>
+  <script src="components/websocket-client.js"></script>
+  <script src="components/alerts-component.js"></script>
+  <script src="components/tasks-component.js"></script>
+  <script src="components/roadmaps-component.js"></script>
+  <script src="components/analytics-component.js"></script>
+  <script src="components/dashboard-app.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

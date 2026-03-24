@@ -1,0 +1,348 @@
+# Claude Opus 4.6 Specialist Agent CV
+# CKAMAL Autonomous BIOS-Substrate Agent Definition
+# Version: 1.0.0
+
+metadata:
+  id: claude-opus-4-6-specialist
+  name: Claude Opus 4.6 Specialist
+  version: 1.0.0
+  category: ai-model-specialist
+  author: CKAMAL Build Agent #3
+  created_at: 2026-03-23
+  tags:
+    - claude
+    - opus
+    - specialist
+    - coding
+    - architecture
+    - 1m-context
+    - native-integration
+
+description: |
+  The Claude Opus 4.6 Specialist is a deep native integration agent for Anthropic's
+  Claude Opus 4.6 model within the CKAMAL CogniMesh BIOS substrate. This specialist
+  leverages the full 1 million token context window and native protocol implementation
+  to provide superior performance on complex coding tasks, architecture design, and
+  extended reasoning workflows.
+  
+  Unlike API wrapper implementations, this specialist uses direct WebSocket
+  communication with Claude Desktop/App via the native MCP protocol, enabling:
+  - Session persistence and recovery
+  - Bidirectional streaming
+  - File upload and multi-modal context
+  - Extended thinking with budget management
+  - Cost tracking and budget governance
+
+capabilities:
+  languages:
+    - javascript
+    - typescript
+    - python
+    - java
+    - c
+    - cpp
+    - csharp
+    - go
+    - rust
+    - ruby
+    - php
+    - swift
+    - kotlin
+    - html
+    - css
+    - sql
+    - shell
+    - yaml
+    - json
+    - xml
+    - markdown
+  
+  domains:
+    - software-architecture
+    - code-review
+    - refactoring
+    - debugging
+    - system-design
+    - api-design
+    - database-design
+    - performance-optimization
+    - security-analysis
+    - test-generation
+    - documentation
+  
+  tools:
+    - opus-client
+    - opus-session-manager
+    - context-compressor
+    - stream-protocol
+    - git-integration
+    - diff-generator
+    - file-analyzer
+    - cost-tracker
+  
+  maxContextTokens: 1000000
+  maxOutputTokens: 128000
+  supportsStreaming: true
+  supportsVision: true
+  supportsExtendedThinking: true
+  supportsFunctionCalling: true
+  supportsSessionPersistence: true
+  supportsMultiFileAnalysis: true
+  supportsGitIntegration: true
+
+performance:
+  qualityScore: 98
+  successRate: 0.97
+  avgLatency: 8000
+  tasksCompleted: 0
+  tasksSucceeded: 0
+  tasksFailed: 0
+  lastUpdated: 2026-03-23
+
+execution:
+  preferredClient: claude-opus-4-6
+  fallbackClients:
+    - claude-sonnet-4-6
+    - gpt-5.4-codex
+    - kimi-k2-5
+  parallelizable: false
+  retryPolicy:
+    maxRetries: 3
+    backoff: exponential
+    initialDelay: 1000
+    maxDelay: 30000
+  timeout: 600000
+
+resources:
+  minMemory: 512
+  maxMemory: 4096
+  priority: 10
+  cpuCores: 2
+
+specialization:
+  primary: deep-analysis-architecture
+  secondary:
+    - complex-refactoring
+    - code-review
+    - debug-assistance
+    - system-design
+    - extended-thinking-tasks
+  certifications:
+    - claude-opus-4-6-native-protocol
+    - 1m-context-management
+    - mcp-tool-use-advanced
+  experience:
+    years: 0
+    projects: []
+
+lifecycle:
+  status: active
+  maxLifetime: 86400000
+  autoRestart: true
+  healthCheckInterval: 30000
+
+# Rights define what this agent is allowed to do
+rights:
+  token_allocation:
+    maxContextTokens: 1000000
+    maxOutputTokens: 128000
+    optimalWorkingContext: 800000
+    compressionThreshold: 0.8
+    prioritizationThreshold: 0.9
+  
+  session_management:
+    maxSessionsPerUser: 10
+    sessionTTL: 86400000
+    allowSessionSharing: true
+    allowSessionRecovery: true
+    maxCheckpointsPerSession: 50
+  
+  cost_management:
+    dailyBudgetLimit: 100.00
+    monthlyBudgetLimit: 1000.00
+    alertThreshold: 0.8
+    trackUsagePerSession: true
+  
+  file_operations:
+    maxFileSize: 104857600
+    maxFilesPerRequest: 20
+    supportedFormats:
+      - txt
+      - md
+      - json
+      - js
+      - ts
+      - jsx
+      - tsx
+      - py
+      - java
+      - cpp
+      - c
+      - h
+      - hpp
+      - cs
+      - go
+      - rs
+      - rb
+      - php
+      - swift
+      - kt
+      - html
+      - css
+      - scss
+      - less
+      - xml
+      - yaml
+      - yml
+      - sql
+      - sh
+      - bash
+      - ps1
+      - dockerfile
+      - makefile
+  
+  coding_tasks:
+    - code-completion
+    - code-review
+    - refactoring
+    - debug-assistance
+    - architecture-design
+    - test-generation
+    - documentation
+  
+  git_operations:
+    - create-checkpoint
+    - generate-diff
+    - apply-diff
+    - view-history
+  
+  streaming:
+    enabled: true
+    chunkSize: 4096
+    maxStreamDuration: 300000
+    supportThinkingStream: true
+  
+  extended_thinking:
+    enabled: true
+    minBudget: 1024
+    maxBudget: 32000
+    defaultBudget: 16000
+
+# Obligations define what this agent must do
+obligations:
+  quality_standards:
+    minimumQualityScore: 90
+    requireTestsForGeneratedCode: true
+    requireDocumentationForPublicAPIs: true
+    followProjectStyleGuide: true
+    preserveExistingFunctionality: true
+  
+  response_requirements:
+    maxResponseTime: 600000
+    acknowledgeReceiptWithin: 5000
+    provideProgressUpdates: true
+    streamForLongOperations: true
+  
+  context_management:
+    compressWhenThresholdReached: true
+    prioritizeWhenThresholdReached: true
+    maintainSessionHistory: true
+    persistCheckpointsBeforeMajorChanges: true
+  
+  cost_efficiency:
+    trackAllTokenUsage: true
+    reportCostPerRequest: true
+    warnWhenBudgetThresholdReached: true
+    suggestCostOptimizations: true
+  
+  error_handling:
+    retryOnTransientErrors: true
+    maxRetryAttempts: 3
+    fallbackToAlternativeModels: true
+    preserveContextOnError: true
+    reportErrorsWithContext: true
+  
+  security:
+    validateAllInputs: true
+    sanitizeFilePaths: true
+    respectGitIgnorePatterns: true
+    noCredentialExposure: true
+  
+  logging:
+    logAllRequests: true
+    logSessionStateChanges: true
+    logCostTracking: true
+    logErrorsWithStack: true
+
+# Integration configuration
+integration:
+  protocol: native-mcp
+  transport: websocket
+  websocket:
+    url: ws://localhost:3456
+    connectionTimeout: 30000
+    heartbeatInterval: 30000
+    reconnectMaxAttempts: 10
+  
+  authentication:
+    type: session-token
+    source: environment
+    envVar: CLAUDE_SESSION_TOKEN
+  
+  dependencies:
+    - module: opus-config
+      required: true
+    - module: opus-session
+      required: true
+    - module: opus-client
+      required: true
+    - module: opus-coding
+      required: true
+    - module: context-compressor
+      required: true
+    - module: stream-protocol
+      required: true
+
+# Task routing preferences
+taskRouting:
+  primaryTasks:
+    - architecture-design
+    - complex-refactoring
+    - system-analysis
+    - extended-reasoning
+    - large-context-analysis
+  
+  excludedTasks:
+    - quick-fixes
+    - simple-qa
+    - real-time-chat
+  
+  complexityThreshold:
+    min: 8
+    max: 10
+  
+  fallbackChain:
+    - claude-sonnet-4-6
+    - gpt-5.4-codex
+    - kimi-k2-5
+
+# Monitoring and observability
+monitoring:
+  metrics:
+    - token_usage
+    - cost_per_request
+    - latency
+    - success_rate
+    - session_duration
+    - context_compression_ratio
+  
+  alerts:
+    - budget_threshold_exceeded
+    - session_recovery_failed
+    - context_limit_approaching
+    - error_rate_spike
+  
+  tracing:
+    enabled: true
+    sampleRate: 1.0
+    includeContext: true

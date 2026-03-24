@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-package:
+    name: Verify and Package Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run release verification
+        run: npm run verify:release
+
+      - name: Build release bundle
+        run: npm run build -- --skip-lint
+
+      - name: Package release artifacts
+        run: |
+          version="${GITHUB_REF_NAME}"
+          asset_dir="release-assets/cognimesh-${version}"
+          mkdir -p "${asset_dir}"
+          cp -r dist/. "${asset_dir}/"
+          tar -czf "cognimesh-${version}.tar.gz" -C release-assets "cognimesh-${version}"
+          (
+            cd release-assets
+            zip -rq "../cognimesh-${version}.zip" "cognimesh-${version}"
+          )
+
+      - name: Generate checksums
+        run: |
+          version="${GITHUB_REF_NAME}"
+          sha256sum "cognimesh-${version}.tar.gz" > "cognimesh-${version}.sha256"
+          sha256sum "cognimesh-${version}.zip" >> "cognimesh-${version}.sha256"
+          cat "cognimesh-${version}.sha256"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            cognimesh-${{ github.ref_name }}.tar.gz
+            cognimesh-${{ github.ref_name }}.zip
+            cognimesh-${{ github.ref_name }}.sha256
+
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: verify-and-package
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: ./release
+
+      - name: Generate release notes
+        run: |
+          version="${GITHUB_REF_NAME}"
+          {
+            echo "## CogniMesh ${version}"
+            echo
+            echo "Verified by:"
+            echo "- \`npm run verify:release\`"
+            echo "- \`npm run build -- --skip-lint\`"
+            echo
+            echo "Artifacts:"
+            echo "- source bundle: \`cognimesh-${version}.tar.gz\`"
+            echo "- zip bundle: \`cognimesh-${version}.zip\`"
+            echo "- checksums: \`cognimesh-${version}.sha256\`"
+            echo
+            echo "Use the tagged archive locally or checkout the tag in GitHub."
+            echo
+            echo "### SHA256"
+            cat "./release/cognimesh-${version}.sha256"
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            ./release/cognimesh-${{ github.ref_name }}.tar.gz
+            ./release/cognimesh-${{ github.ref_name }}.zip
+            ./release/cognimesh-${{ github.ref_name }}.sha256
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}

@@ -1,0 +1,8 @@
+# Log files - keep directory structure but ignore actual logs
+*.log
+*.log.*
+
+# Keep these files in git
+!.gitkeep
+!README.md
+!.gitignore

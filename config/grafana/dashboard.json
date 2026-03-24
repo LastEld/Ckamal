@@ -1,0 +1,405 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CogniMesh Monitoring",
+    "tags": ["cognimesh", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 36,
+    "refresh": "5s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "query": "label_values(cognimesh_http_requests_total, instance)",
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Annotations & Alerts",
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "iconColor": "red",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Requests Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_http_requests_total[5m]))",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 100 },
+                { "color": "red", "value": 500 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "HTTP Request Duration (p95)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(cognimesh_http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 0.5 },
+                { "color": "red", "value": 2 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_errors_total[5m]))",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "errps",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 10 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "id": 4,
+        "title": "Active WebSocket Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cognimesh_websocket_connections_active",
+            "legendFormat": "Connections"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 100 },
+                { "color": "red", "value": 500 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 }
+      },
+      {
+        "id": 5,
+        "title": "HTTP Request Rate by Method",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_http_requests_total[5m])) by (method)",
+            "legendFormat": "{{ method }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "unit": "reqps"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+      },
+      {
+        "id": 6,
+        "title": "HTTP Request Duration Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_http_request_duration_seconds_bucket[5m])) by (le)",
+            "format": "heatmap",
+            "legendFormat": "{{ le }}"
+          }
+        ],
+        "dataFormat": "tsbuckets",
+        "yBucketBound": "upper",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+      },
+      {
+        "id": 7,
+        "title": "AI Requests by Provider",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_ai_requests_total[5m])) by (provider)",
+            "legendFormat": "{{ provider }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "unit": "reqps"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 }
+      },
+      {
+        "id": 8,
+        "title": "AI Token Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_ai_tokens_total[5m])) by (type)",
+            "legendFormat": "{{ type }} tokens"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Tokens/sec",
+            "unit": "tps"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 }
+      },
+      {
+        "id": 9,
+        "title": "AI Request Duration (p95)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(cognimesh_ai_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 5 },
+                { "color": "red", "value": 30 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 }
+      },
+      {
+        "id": 10,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cognimesh_db_connections_active",
+            "legendFormat": "{{ state }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Connections",
+            "unit": "short"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 }
+      },
+      {
+        "id": 11,
+        "title": "Database Query Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(cognimesh_db_query_duration_seconds_bucket[5m])) by (operation, le))",
+            "legendFormat": "{{ operation }} p95"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration (s)",
+            "unit": "s"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 }
+      },
+      {
+        "id": 12,
+        "title": "BIOS Component Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cognimesh_bios_component_health",
+            "legendFormat": "{{ component }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "green", "value": 1 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 }
+      },
+      {
+        "id": 13,
+        "title": "Tool Executions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_tool_executions_total[5m])) by (tool, status)",
+            "legendFormat": "{{ tool }} - {{ status }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Executions/sec",
+            "unit": "ops"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 }
+      },
+      {
+        "id": 14,
+        "title": "Rate Limit Hits",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(cognimesh_rate_limit_hits_total[5m])) by (endpoint)",
+            "legendFormat": "{{ endpoint }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Hits/sec",
+            "unit": "reqps"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 }
+      },
+      {
+        "id": 15,
+        "title": "Task Queue Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cognimesh_task_queue_size",
+            "legendFormat": "{{ queue }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Tasks",
+            "unit": "short"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 }
+      },
+      {
+        "id": 16,
+        "title": "Circuit Breaker States",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cognimesh_circuit_breaker_state",
+            "legendFormat": "{{ name }}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "State (0=closed, 1=open, 2=half-open)",
+            "unit": "short"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 }
+      },
+      {
+        "id": 17,
+        "title": "Node.js Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cognimesh_process_resident_memory_bytes",
+            "legendFormat": "Resident Memory"
+          },
+          {
+            "expr": "cognimesh_process_heap_bytes",
+            "legendFormat": "Heap Total"
+          },
+          {
+            "expr": "cognimesh_process_heap_used_bytes",
+            "legendFormat": "Heap Used"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes",
+            "unit": "bytes"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 }
+      },
+      {
+        "id": 18,
+        "title": "Node.js Event Loop Lag",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cognimesh_nodejs_eventloop_lag_seconds",
+            "legendFormat": "Lag"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "unit": "s"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 }
+      }
+    ]
+  }
+}

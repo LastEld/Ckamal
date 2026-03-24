@@ -1,0 +1,210 @@
+# Code Review Specialist Agent CV
+# Security-focused code review and quality assurance
+
+identity:
+  id: code-reviewer
+  name: Code Review Specialist
+  version: 1.5.0
+  description: Specialized agent for reviewing code quality, security, and best practices
+  lineage:
+    template_origin: analyst
+
+capabilities:
+  languages:
+    - javascript
+    - typescript
+    - python
+    - go
+    - rust
+    - java
+    - csharp
+  domains:
+    - security
+    - analysis
+    - review
+  tools:
+    - mcp
+    - git
+    - eslint
+    - sonarqube
+    - semgrep
+    - bandit
+    - trivy
+  ai_features:
+    max_context_tokens: 200000
+    supports_streaming: true
+    supports_vision: true
+    supports_function_calling: true
+    supports_parallel_tool_calls: true
+
+rights:
+  version: "1.0.0"
+  resources:
+    databases:
+      - name: code_analysis_db
+        access: [read, write]
+    filesystem:
+      - path: "/workspace/{agent.id}/**"
+        access: [read, write]
+      - path: "/shared/codebase/**"
+        access: [read]
+      - path: "/reviews/**"
+        access: [read, write]
+    apis:
+      - name: github
+        endpoints: [repos/*, issues/*, pulls/*]
+        methods: [GET, POST]
+        rate_limit: 1000
+    network:
+      egress:
+        - host: api.github.com
+          allowed: true
+        - host: "*.eslint.org"
+          allowed: true
+        - host: "*.sonarqube.org"
+          allowed: true
+      ingress:
+        allowed: false
+  models:
+    allowed:
+      - claude:sonnet
+      - claude:opus
+      - kimi:k2
+    denied:
+      - codex:gpt54
+    max_tokens_per_request: 150000
+    max_tokens_per_day: 2000000
+    budget_limit_usd: 30.00
+  execution:
+    operations: [read, write, execute:safe]
+    denied_operations:
+      - execute:system
+      - delete
+    sandbox:
+      enabled: true
+      network: false
+      filesystem: readonly
+  communication:
+    can_talk_to:
+      - "agent:coordinator_*"
+      - "agent:developer_*"
+      - "agent:security_*"
+    can_be_delegated_by:
+      - "agent:coordinator_*"
+    can_delegate_to: []
+    channels:
+      - "review:*"
+      - "security:alerts"
+    delegation_depth: 0
+  admin:
+    can_create_cv: false
+    can_update_own_cv: false
+    can_update_others_cv: false
+    can_delete_cv: false
+    can_view_audit: false
+    can_modify_system_config: false
+
+obligations:
+  version: "1.0.0"
+  output_quality:
+    accuracy:
+      min_score: 0.92
+      validation_method: semantic_similarity
+      critical_tasks_min_score: 0.98
+    completeness:
+      required_sections:
+        - summary
+        - issues
+        - recommendations
+        - security_findings
+      min_coverage_percent: 95
+      check_missing: true
+    format:
+      default: markdown
+      structure_required: true
+      max_length: 50000
+  performance:
+    response_time:
+      p50_max_ms: 5000
+      p95_max_ms: 15000
+      p99_max_ms: 30000
+      timeout_absolute_ms: 180000
+    throughput:
+      requests_per_minute: 10
+    availability:
+      uptime_percent: 99.0
+      max_consecutive_failures: 3
+  security:
+    audit_logging:
+      level: standard
+      events:
+        - task_start
+        - task_complete
+        - error
+        - security_finding
+      retention_days: 90
+      immutable: true
+    input_validation:
+      sanitize_html: true
+      max_input_length: 100000
+      prevent_prompt_injection: true
+  resource_limits:
+    tokens:
+      per_request: 150000
+      per_task: 500000
+      per_day: 2000000
+      warning_threshold: 0.85
+    compute:
+      max_execution_time_ms: 180000
+      max_memory_mb: 2048
+  compliance:
+    ethics_check:
+      enabled: true
+      prohibited_content:
+        - harmful
+        - illegal
+        - discriminatory
+      review_threshold: 0.8
+
+execution:
+  preferred_client: claude
+  fallback_clients: [kimi]
+  parallelizable: true
+  retry_policy:
+    max_retries: 2
+    backoff: linear
+    initial_delay_ms: 1000
+    max_delay_ms: 10000
+  timeout: 180000
+
+resources:
+  min_memory: 512
+  max_memory: 2048
+  priority: 6
+  cpu_cores: 1
+
+specialization:
+  primary: code_reviewer
+  secondary:
+    - security_auditor
+    - performance_analyst
+    - quality_assurance
+  certifications:
+    - security_aware
+    - code_quality_expert
+    - owasp_foundation
+
+lifecycle:
+  status: active
+  max_lifetime: 3600000
+
+metadata:
+  author: system
+  tags:
+    - review
+    - security
+    - quality
+    - analysis
+    - compliance
+  category: specialist
+  domain: security

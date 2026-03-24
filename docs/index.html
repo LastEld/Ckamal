@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ckamal | CogniMesh BIOS Release Surface</title>
+    <meta
+      name="description"
+      content="Ckamal packages CogniMesh BIOS into a controlled GitHub-facing release surface with AMS orchestration, subscription-backed model integrations, and a six-hump architectural identity."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./site.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <div class="hero-meta">
+          <span class="hero-pill">Repo surface: <strong>LastEld/Ckamal</strong></span>
+          <span class="hero-pill">Model groups: <strong>6</strong></span>
+          <span class="hero-pill">Camel humps: <strong>6</strong></span>
+        </div>
+
+        <img class="banner" src="./assets/brand/ckamal-banner.svg" alt="Ckamal banner" />
+
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1>Release-facing control plane for CogniMesh BIOS.</h1>
+            <p>
+              Ckamal is the GitHub-ready presentation and release surface for the
+              existing CogniMesh BIOS codebase. It keeps the scope disciplined:
+              AMS orchestration, subscription-backed GPT/Claude/Kimi routing,
+              database-backed task and roadmap domains, operator UX, and GitHub
+              automation all ship as one controlled artifact.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/LastEld/Ckamal">Open repository</a>
+              <a class="button button-secondary" href="https://github.com/LastEld/Ckamal/actions">View Actions</a>
+              <a class="button button-secondary" href="https://github.com/LastEld/Ckamal/blob/main/README.md">Read operator guide</a>
+            </div>
+          </div>
+
+          <aside class="hero-panel">
+            <div class="eyebrow">Why the camel has six humps</div>
+            <h2>The six structural pillars</h2>
+            <p>
+              The hump count is not decoration. It encodes the minimum stable
+              abstractions that make this project usable and shippable: AMS
+              orchestration, model runtime integration, repository contract,
+              execution bus, operator surfaces, and GitHub release plane.
+            </p>
+            <p>
+              Cross-cutting concerns like security, monitoring, and analytics
+              reinforce every hump, but they are not independent pillars and do
+              not get separate humps.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="humps">
+        <div class="section-header">
+          <div>
+            <div class="section-label">Architectural Count</div>
+            <h2>Six humps hold the project up.</h2>
+          </div>
+          <p>The logo count follows the architecture, not the aesthetics.</p>
+        </div>
+
+        <div class="hump-grid">
+          <article class="card">
+            <div class="eyebrow">01</div>
+            <h3>AMS / BIOS orchestration</h3>
+            <p>Spawn management, modes, agent pool control, and the orchestration lifecycle define how work enters and moves through the system.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">02</div>
+            <h3>Subscription runtime matrix</h3>
+            <p>GPT-5.3/5.4, Claude Opus/Sonnet, and Kimi K2.5 are integrated through declared desktop, CLI, and VS Code operator surfaces.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">03</div>
+            <h3>Repository contract</h3>
+            <p>Tasks, roadmaps, contexts, and merkle state only become trustworthy when schema, migrations, and repository code agree.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">04</div>
+            <h3>Execution bus</h3>
+            <p>Router, queue, tools registry, middleware, and runtime gateways are the control bus that turns plans into executable operations.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">05</div>
+            <h3>Operator surfaces</h3>
+            <p>CLI, dashboard, local UX flows, and browser shell determine whether a human can actually operate the project day to day.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">06</div>
+            <h3>GitHub release plane</h3>
+            <p>README, Actions, Pages, release packaging, tags, and repository polish are required if the project is meant to ship publicly.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="matrix">
+        <div class="section-header">
+          <div>
+            <div class="section-label">Subscription Surface Matrix</div>
+            <h2>Verified model groups and operator surfaces</h2>
+          </div>
+          <p>Code-verified runtime mapping. Live execution still depends on the operator having the corresponding local client installed and authenticated.</p>
+        </div>
+
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Model group</th>
+              <th>Surfaces</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>gpt-5.3-codex</strong></td>
+              <td><span class="surface-tag">CLI</span></td>
+              <td>Codex CLI route for the lighter local execution lane.</td>
+            </tr>
+            <tr>
+              <td><strong>gpt-5.4-codex</strong></td>
+              <td><span class="surface-tag">VS Code</span><span class="surface-tag">App</span><span class="surface-tag">CLI</span></td>
+              <td>Broadest Codex surface coverage in the current catalog.</td>
+            </tr>
+            <tr>
+              <td><strong>claude-opus-4-6</strong></td>
+              <td><span class="surface-tag">Desktop</span><span class="surface-tag">CLI</span></td>
+              <td>Operator-grade Claude desktop lane with CLI fallback.</td>
+            </tr>
+            <tr>
+              <td><strong>claude-sonnet-4-6</strong></td>
+              <td><span class="surface-tag">VS Code</span><span class="surface-tag">CLI</span></td>
+              <td>IDE-first path with CLI fallback.</td>
+            </tr>
+            <tr>
+              <td><strong>claude-sonnet-4-5</strong></td>
+              <td><span class="surface-tag">CLI</span><span class="surface-tag">VS Code</span></td>
+              <td>Compatibility lane preserved in the canonical matrix.</td>
+            </tr>
+            <tr>
+              <td><strong>kimi-k2-5</strong></td>
+              <td><span class="surface-tag">VS Code</span><span class="surface-tag">CLI</span></td>
+              <td>Kimi remains subscription-first and avoids API-first defaults.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="release-gate">
+        <div class="section-header">
+          <div>
+            <div class="section-label">Release Gate</div>
+            <h2>One command path to verify the public surface</h2>
+          </div>
+          <p>These are the commands used to prove the repo is coherent before a push, tag, or release.</p>
+        </div>
+
+        <div class="release-grid">
+          <article class="card">
+            <div class="eyebrow">Static + tests</div>
+            <div class="terminal"><code>npm run verify:release</code></div>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Provider matrix</div>
+            <div class="terminal"><code>npm run verify:provider-matrix</code></div>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Build smoke</div>
+            <div class="terminal"><code>npm run build -- --skip-lint</code></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="github-surface">
+        <div class="section-header">
+          <div>
+            <div class="section-label">GitHub Surface</div>
+            <h2>Pages, Actions, release assets, and public face</h2>
+          </div>
+          <p>The repo is shaped for GitHub as a product surface, not just a code dump.</p>
+        </div>
+
+        <div class="hump-grid">
+          <article class="card">
+            <div class="eyebrow">Actions</div>
+            <h3>CI and release gates</h3>
+            <p><code>ci.yml</code>, <code>patch-verification.yml</code>, and <code>release.yml</code> now follow the actual Node/ESM workflow and the real build/test scripts.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Pages</div>
+            <h3>Static public landing</h3>
+            <p><code>pages.yml</code> deploys the <code>docs/</code> surface as GitHub Pages, making the repo presentable before any deeper docs dive.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Brand</div>
+            <h3>Six-hump camel identity</h3>
+            <p>The camel logo and banner encode the six pillars directly, so branding stays tethered to architecture.</p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="footer">
+        Ckamal / CogniMesh BIOS. Six humps, one control plane, zero mock success on release paths.
+      </footer>
+    </main>
+  </body>
+</html>

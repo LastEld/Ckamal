@@ -1,0 +1,210 @@
+/**
+ * CogniMesh v5.0 - Roadmaps Component
+ * Roadmaps view with progress tracking
+ */
+
+const roadmapsWindow = typeof window !== 'undefined' ? window : globalThis;
+
+class RoadmapsComponent {
+  constructor(options = {}) {
+    this.api = options.api;
+    this.ws = options.ws;
+    
+    this.roadmaps = [];
+    this.filteredRoadmaps = [];
+    this.currentFilter = '';
+  }
+
+  // Load roadmaps from API
+  async loadRoadmaps() {
+    try {
+      if (!this.api?.getRoadmaps) {
+        console.warn('Roadmaps API is unavailable');
+        this.roadmaps = [];
+        this.applyFilter();
+        return;
+      }
+
+      const data = await this.api.getRoadmaps();
+      this.roadmaps = data.roadmaps || [];
+      this.applyFilter();
+    } catch (error) {
+      console.error('Failed to load roadmaps:', error);
+    }
+  }
+
+  // Apply filter and render
+  applyFilter() {
+    const search = this.currentFilter.toLowerCase();
+    
+    this.filteredRoadmaps = this.roadmaps.filter(roadmap => {
+      if (!search) return true;
+      return (
+        roadmap.name?.toLowerCase().includes(search) ||
+        roadmap.description?.toLowerCase().includes(search)
+      );
+    });
+    
+    this.renderRoadmaps();
+  }
+
+  // Filter roadmaps by search query
+  filterRoadmaps(query) {
+    this.currentFilter = query;
+    this.applyFilter();
+  }
+
+  // Render roadmaps grid
+  renderRoadmaps() {
+    const container = document.getElementById('roadmapsGrid');
+    if (!container) return;
+    
+    if (this.filteredRoadmaps.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state wide">
+          <i data-lucide="map"></i>
+          <p>No roadmaps found</p>
+          <button class="btn btn-primary" id="createFirstRoadmap">
+            <i data-lucide="plus"></i>
+            Create your first roadmap
+          </button>
+        </div>
+      `;
+      
+      document.getElementById('createFirstRoadmap')?.addEventListener('click', () => {
+        this.showCreateRoadmapModal();
+      });
+    } else {
+      container.innerHTML = this.filteredRoadmaps.map(roadmap => this.renderRoadmapCard(roadmap)).join('');
+    }
+    
+    // Re-initialize icons
+    if (typeof roadmapsWindow.lucide?.createIcons === 'function') {
+      roadmapsWindow.lucide.createIcons();
+    }
+    
+    // Attach event listeners
+    this.attachEventListeners();
+  }
+
+  // Render single roadmap card
+  renderRoadmapCard(roadmap) {
+    const progress = roadmap.progress || 0;
+    const phases = roadmap.phases || [];
+    const completedPhases = phases.filter(p => p.status === 'completed').length;
+    const milestones = roadmap.milestones || [];
+    const completedMilestones = milestones.filter(m => m.completed).length;
+    
+    return `
+      <div class="roadmap-card" data-roadmap-id="${roadmap.id}">
+        <div class="roadmap-header">
+          <h4 class="roadmap-title">${this.escapeHtml(roadmap.name)}</h4>
+          ${roadmap.description ? `<p class="roadmap-description">${this.escapeHtml(roadmap.description)}</p>` : ''}
+        </div>
+        <div class="roadmap-body">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-text">
+            <span>${Math.round(progress)}% complete</span>
+            <span>${phases.length} phases</span>
+          </div>
+        </div>
+        <div class="roadmap-footer">
+          <div class="roadmap-stats">
+            <span><i data-lucide="layers"></i> ${completedPhases}/${phases.length} phases</span>
+            <span><i data-lucide="flag"></i> ${completedMilestones}/${milestones.length} milestones</span>
+          </div>
+          <button class="btn btn-sm btn-secondary view-roadmap" data-id="${roadmap.id}">
+            View
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Attach event listeners
+  attachEventListeners() {
+    // View roadmap buttons
+    document.querySelectorAll('.view-roadmap').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const roadmapId = e.currentTarget.dataset.id;
+        this.viewRoadmap(roadmapId);
+      });
+    });
+    
+    // Create roadmap button
+    document.getElementById('createRoadmapBtn')?.addEventListener('click', () => {
+      this.showCreateRoadmapModal();
+    });
+    
+    // Roadmap search
+    document.getElementById('roadmapSearch')?.addEventListener('input', (e) => {
+      this.filterRoadmaps(e.target.value);
+    });
+  }
+
+  // View roadmap details
+  async viewRoadmap(roadmapId) {
+    try {
+      if (!this.api?.getRoadmap) {
+        console.warn('Roadmap details API is unavailable');
+        return;
+      }
+
+      const roadmap = await this.api.getRoadmap(roadmapId);
+      this.showRoadmapDetails(roadmap);
+      
+      // Subscribe to real-time updates
+      this.ws?.subscribeRoadmap(roadmapId);
+    } catch (error) {
+      console.error('Failed to load roadmap details:', error);
+    }
+  }
+
+  // Show roadmap details modal
+  showRoadmapDetails(roadmap) {
+    // Implementation for showing roadmap details
+    console.log('Viewing roadmap:', roadmap);
+  }
+
+  // Show create roadmap modal
+  showCreateRoadmapModal() {
+    console.log('Create roadmap modal');
+  }
+
+  // Update roadmap progress (called from WebSocket)
+  updateProgress(roadmapId, progress) {
+    const roadmap = this.roadmaps.find(r => r.id === roadmapId);
+    if (roadmap) {
+      roadmap.progress = progress.overallProgress || progress;
+      this.renderRoadmaps();
+    }
+  }
+
+  // Update roadmap (called from WebSocket)
+  updateRoadmap(updatedRoadmap) {
+    const index = this.roadmaps.findIndex(r => r.id === updatedRoadmap.id);
+    if (index !== -1) {
+      this.roadmaps[index] = { ...this.roadmaps[index], ...updatedRoadmap };
+      this.applyFilter();
+    }
+  }
+
+  // Utility: Escape HTML
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.RoadmapsComponent = RoadmapsComponent;
+}
+
+// Export for module systems if available
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { RoadmapsComponent };
+}
