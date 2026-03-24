@@ -48,14 +48,24 @@ BUILD_END_TIME=0
 # =============================================================================
 
 log() {
-    [[ "$QUIET" == false ]] && echo -e "$1"
+    if [[ "$QUIET" == false ]]; then
+        echo -e "$1"
+    fi
+
+    return 0
 }
 
 log_info() { log "${BLUE}[INFO]${NC} $1"; }
 log_success() { log "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { log "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { log "${RED}[ERROR]${NC} $1" >&2; }
-log_verbose() { [[ "$VERBOSE" == true ]] && log_info "$1"; }
+log_verbose() {
+    if [[ "$VERBOSE" == true ]]; then
+        log_info "$1"
+    fi
+
+    return 0
+}
 
 show_help() {
     cat << EOF
