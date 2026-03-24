@@ -2,7 +2,7 @@
 
 Date: 2026-03-25  
 Project: Ckamal / CogniMesh BIOS  
-Status: release-gate checklist for GitHub publication
+Status: completed release-gate checklist for published GitHub main and `v5.0.0`
 
 ## Core Verification
 
@@ -43,6 +43,7 @@ Status: release-gate checklist for GitHub publication
 - [x] Pages landing page exists under `docs/`
 - [x] transparent camel logo and banner exist under `docs/assets/brand/`
 - [x] GitHub Actions workflows exist for CI, patch verification, Pages, and release
+- [x] repository homepage points to GitHub Pages
 
 ## Release Lane
 
@@ -50,6 +51,7 @@ Status: release-gate checklist for GitHub publication
 - [x] release workflow generates SHA256 checksums
 - [x] tag push path creates a GitHub release
 - [x] Pages deployment path uploads the `docs/` artifact
+- [x] `v5.0.0` release exists with uploaded `.tar.gz`, `.zip`, and `.sha256` assets
 
 ## Remaining External Dependencies
 

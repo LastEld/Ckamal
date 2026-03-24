@@ -2,7 +2,7 @@
 
 Date: 2026-03-25  
 Project: Ckamal / CogniMesh BIOS  
-Status: release-ready repository state, pending first GitHub `main` push
+Status: published on GitHub `main` with live Pages, green Actions, and tagged release `v5.0.0`
 
 ## Scope
 
@@ -50,13 +50,20 @@ Release-critical code and verification already integrated:
 - dashboard browser-shell smoke coverage
 - green unit, integration, e2e, and provider-matrix verification paths
 
+GitHub publication state completed:
+
+- repository: `https://github.com/LastEld/Ckamal`
+- Pages: `https://lasteld.github.io/Ckamal/`
+- release: `https://github.com/LastEld/Ckamal/releases/tag/v5.0.0`
+- successful GitHub workflows for CI, patch verification, Pages, and release packaging
+
 ## Real Constraints That Still Apply
 
 These are operational prerequisites, not repository defects:
 
 - live model execution still requires the corresponding local desktop/CLI/VS Code client to be installed and authenticated
-- GitHub publication steps still require a valid remote and push/tag operations
-- Pages and release workflows only execute after the repository is pushed to GitHub
+- release automation beyond `v5.0.0` still depends on valid GitHub token permissions for future push/tag operations
+- local environment values are still required where a non-default runtime path is expected
 
 ## Authority
 

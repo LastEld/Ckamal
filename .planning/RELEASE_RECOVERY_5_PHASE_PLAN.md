@@ -39,7 +39,7 @@ Constraints:
 | 2 | Provider surface consolidation | Completed |
 | 3 | Subscription-backed integration completion | Completed |
 | 4 | Verification and operator UX | Completed |
-| 5 | Release hardening and GitHub readiness | Completed in repository state; GitHub execution follows on push/tag |
+| 5 | Release hardening and GitHub readiness | Completed and published on GitHub |
 
 ## What This Recovery Closed
 
@@ -74,6 +74,7 @@ Constraints:
 - replaced the README with a GitHub-facing release document
 - added GitHub Pages, CI, patch-verification, and release workflows that match the real package scripts
 - created a public Pages landing surface and brand assets
+- published `main`, enabled Pages, and released `v5.0.0` with packaged artifacts and checksums
 
 ## Release Truth
 
@@ -103,6 +104,8 @@ The repository is considered done when:
 - Pages deploys from `docs/`
 - Actions reflect the real verification surface
 - the tag/release lane packages verified artifacts without hidden API assumptions
+
+Current state: all five conditions are satisfied.
 
 ## Residual Reality
 

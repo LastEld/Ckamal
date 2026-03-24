@@ -25,13 +25,13 @@ Date: 2026-03-25
 
 ## GitHub Operations
 
-- [ ] remote `origin` points to `https://github.com/LastEld/Ckamal.git`
-- [ ] branch `main` contains the verified release state
-- [ ] initial push to `main` completed
-- [ ] Pages workflow completed successfully
-- [ ] CI workflow completed successfully
-- [ ] release tag pushed
-- [ ] release workflow completed successfully
+- [x] remote `origin` points to `https://github.com/LastEld/Ckamal.git`
+- [x] branch `main` contains the verified release state
+- [x] initial push to `main` completed
+- [x] Pages workflow completed successfully
+- [x] CI workflow completed successfully
+- [x] release tag pushed
+- [x] release workflow completed successfully
 
 ## Operator Reality
 
