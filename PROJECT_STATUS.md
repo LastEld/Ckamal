@@ -1,50 +1,70 @@
 # Project Status
 
-Date: 2026-03-25
-Project: Ckamal
-Status: Clean main release candidate staged locally
+Date: 2026-03-25  
+Project: Ckamal / CogniMesh BIOS  
+Status: release-ready repository state, pending first GitHub `main` push
 
 ## Scope
 
-The active scope is still the same:
+This repository packages the existing CogniMesh BIOS codebase into a clean GitHub-facing release surface for:
 
-- finish the existing subscription-backed integrations for Codex GPT-5.3 and GPT-5.4
-- finish the existing subscription-backed integrations for Claude Opus 4.6 and Claude Sonnet 4.5 / 4.6
-- finish the existing subscription-backed integrations for Kimi K2.5
-- keep the supported operator surfaces to `desktop app`, `CLI`, and `VS Code`
-- make the repository honest and publishable on GitHub without mock success paths
+- Codex GPT-5.3 and GPT-5.4
+- Claude Opus 4.6
+- Claude Sonnet 4.5 and 4.6
+- Kimi K2.5
 
-## Verified local state
+Supported operator surfaces:
 
-- `npm run lint` passes
-- `npm run test:unit` passes (`373` tests)
-- `npm run test:integration` passes (`236` tests)
-- `npm run test:e2e` passes (`9` tests)
-- `npm run verify:provider-matrix` passes for all `6` canonical model groups
-- `npm run build -- --skip-lint` passes and creates a release bundle
-- root-level generated clutter was removed and historical reports were moved into `docs/`
-- GitHub workflows now match the real Node/ESM release gate
-- GitHub Pages content and transparent logo assets now exist locally
+- Desktop app
+- CLI
+- VS Code extension
 
-## Architectural hump count
+Hard rules:
 
-The project currently uses a **6-hump** branding model:
+- No new product scope
+- No fake-success normal release paths
+- No API-billing-first defaults
+- No release claims beyond verified code and workflow state
 
-1. AMS / BIOS orchestration
-2. Subscription runtime matrix
-3. Domain state contract
-4. Tool and router bus
-5. Operator surfaces
-6. Observability and release control
+## Verified State
 
-This count is canonical for the current logo assets.
+The release gate now has dedicated commands and workflows:
 
-## What is still pending
+- `npm run verify:release`
+- `npm run verify:provider-matrix`
+- `npm run build -- --skip-lint`
 
-The remaining steps are remote, not local:
+GitHub-facing surfaces prepared in the repository:
 
-- publish the repository into remote `main`
-- observe the first real GitHub Actions runs
-- observe the first real GitHub Pages deployment
+- `README.md` as the public operator entrypoint
+- `docs/index.html` plus `pages.yml` for GitHub Pages
+- `ci.yml`, `patch-verification.yml`, `release.yml`, and `pages.yml`
+- release brand assets under `docs/assets/brand/`
+- historical reports moved to `docs/reports/historical/`
 
-Until those three happen, the repository is a local release candidate rather than a completed GitHub release.
+Release-critical code and verification already integrated:
+
+- repository contract alignment for tasks, roadmaps, contexts, and merkle state
+- canonical provider matrix verification for the six subscription-backed model groups
+- cross-platform build entrypoint through `npm run build`
+- dashboard browser-shell smoke coverage
+- green unit, integration, e2e, and provider-matrix verification paths
+
+## Real Constraints That Still Apply
+
+These are operational prerequisites, not repository defects:
+
+- live model execution still requires the corresponding local desktop/CLI/VS Code client to be installed and authenticated
+- GitHub publication steps still require a valid remote and push/tag operations
+- Pages and release workflows only execute after the repository is pushed to GitHub
+
+## Authority
+
+Current truth documents:
+
+- `README.md`
+- `INTEGRATION_CHECKLIST.md`
+- `.planning/RELEASE_RECOVERY_5_PHASE_PLAN.md`
+- `.planning/GITHUB_RELEASE_CHECKLIST.md`
+
+Historical completion and readiness reports remain preserved under `docs/reports/historical/`, but they are not authoritative.

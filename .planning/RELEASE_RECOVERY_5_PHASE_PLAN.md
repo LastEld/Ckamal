@@ -1,76 +1,109 @@
 # Release Recovery 5-Phase Plan
 
-Date: 2026-03-25
-Owner: Main AMS orchestrator
-Project: Ckamal
+Date: 2026-03-25  
+Owner: Main AMS orchestrator  
+Project: Ckamal / CogniMesh BIOS
 
 ## Objective
 
-Ship the existing subscription-backed integrations for Codex, Claude, and Kimi as a clean GitHub-ready project with:
+Finish the existing subscription-backed integrations and expose them through a clean GitHub-ready release surface.
 
-- honest runtime behavior
-- clean root structure
-- real release workflows
-- branded GitHub Pages surface
-- canonical documentation
+Model groups in scope:
 
-## Phase 1 — Truth and baseline repair
+- `gpt-5.3-codex`
+- `gpt-5.4-codex`
+- `claude-opus-4-6`
+- `claude-sonnet-4-6`
+- `claude-sonnet-4-5`
+- `kimi-k2-5`
 
-State: completed
+Operator surfaces in scope:
 
-Completed:
+- `desktop`
+- `cli`
+- `vscode`
+- `app` where already present in the existing runtime map
 
-- runtime fake-success paths removed from the repaired core paths
-- repository/schema contract aligned through the current repository recovery pass
-- package integrity repaired
-- lint/test suites made runnable again
+Constraints:
 
-## Phase 2 — Provider surface consolidation
+- do not invent new product scope
+- do not default to metered API-first operation
+- do not ship mock success on normal release paths
+- do not let docs, workflows, and runtime drift apart
 
-State: completed
+## Phase Status
 
-Completed:
+| Phase | Name | State |
+| --- | --- | --- |
+| 1 | Truth and baseline repair | Completed |
+| 2 | Provider surface consolidation | Completed |
+| 3 | Subscription-backed integration completion | Completed |
+| 4 | Verification and operator UX | Completed |
+| 5 | Release hardening and GitHub readiness | Completed in repository state; GitHub execution follows on push/tag |
 
-- canonical subscription surface matrix exported from `src/clients/catalog.js`
-- runtime resolution aligned across `src/clients/index.js`, `src/router/subscription-runtime.js`, and `src/bios/client-gateway.js`
-- provider matrix verification script added to the release gate
+## What This Recovery Closed
 
-## Phase 3 — Subscription-backed integration completion
+### Phase 1
 
-State: completed
+- repaired package integrity gaps
+- removed key fake-success runtime paths
+- aligned migration startup with the real database stack
+- restored honest controller and tool runtime behavior
 
-Completed:
+### Phase 2
 
-- subscription-first defaults preserved in the current config/runtime path
-- supported model groups verified through local smoke coverage
-- release workflow no longer assumes npm publication or fake build steps
+- restored the canonical subscription surface matrix in `src/clients/catalog.js`
+- aligned `src/clients/index.js` and `src/router/subscription-runtime.js`
+- added a dedicated provider-matrix verification script
 
-## Phase 4 — Verification and operator UX
+### Phase 3
 
-State: completed
+- hardened subscription-only runtime defaults in config and routing
+- preserved existing local operator surfaces instead of collapsing back to API-first paths
+- verified the six declared model groups against the canonical runtime matrix
 
-Completed:
+### Phase 4
 
-- `lint`, `unit`, `integration`, `e2e`, and provider matrix checks are all part of the canonical release gate
-- root docs cleaned and historical reports moved under `docs/`
-- GitHub Pages landing and transparent logo assets added
+- stabilized unit, integration, e2e, and dashboard operator-surface coverage
+- added a dashboard browser-shell smoke test
+- added a cross-platform build entrypoint through `npm run build`
 
-## Phase 5 — GitHub release hardening
+### Phase 5
 
-State: in final execution
+- cleaned the root so historical reports no longer dominate the public surface
+- replaced the README with a GitHub-facing release document
+- added GitHub Pages, CI, patch-verification, and release workflows that match the real package scripts
+- created a public Pages landing surface and brand assets
 
-Final tasks:
+## Release Truth
 
-1. Commit the cleaned repository state.
-2. Push that state to remote `main`.
-3. Confirm the first live runs for `CI`, `Patch Verification`, `Release`, and `Pages`.
-4. Confirm the repository and Pages surfaces render correctly on GitHub.
+Canonical release commands:
 
-## Definition of done
+```bash
+npm run verify:release
+npm run verify:provider-matrix
+npm run build -- --skip-lint
+```
 
-This recovery is done only when:
+Canonical GitHub surfaces:
 
-- remote `main` contains the cleaned project
-- GitHub Actions run from the canonical workflows
-- GitHub Pages deploys from `docs/`
-- the repository face matches the canonical docs and logo assets
+- `.github/workflows/ci.yml`
+- `.github/workflows/patch-verification.yml`
+- `.github/workflows/release.yml`
+- `.github/workflows/pages.yml`
+- `docs/index.html`
+- `docs/assets/brand/*`
+
+## Definition Of Done
+
+The repository is considered done when:
+
+- the release gate is green locally
+- the repo is pushed to GitHub `main`
+- Pages deploys from `docs/`
+- Actions reflect the real verification surface
+- the tag/release lane packages verified artifacts without hidden API assumptions
+
+## Residual Reality
+
+The repo can verify its runtime map and public surface, but it cannot ship third-party subscriptions for the operator. Live model execution still depends on the user having the relevant desktop, CLI, or VS Code client installed and authenticated locally.

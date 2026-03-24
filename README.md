@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/brand/ckamal-banner.svg" alt="Ckamal banner" width="100%" />
+  <img src="docs/assets/brand/camel-banner.svg" alt="Ckamal banner" width="100%" />
 </p>
 
 <p align="center">
@@ -87,7 +87,7 @@ Build smoke is cross-platform through `npm run build`, which dispatches to the e
 
 ## Runtime Matrix
 
-The canonical runtime matrix is defined in [src/clients/catalog.js](/abs/path/placeholder) and exercised by [tests/e2e/clients.spec.js](/abs/path/placeholder). The current model group to surface map is:
+The canonical runtime matrix is defined in [src/clients/catalog.js](src/clients/catalog.js) and exercised by [tests/e2e/clients.spec.js](tests/e2e/clients.spec.js). The current model group to surface map is:
 
 | Model group | Surfaces |
 | --- | --- |
@@ -162,9 +162,9 @@ Historical reports were moved out of the root into `docs/reports/historical/` to
 
 The current release truth lives in:
 
-- [PROJECT_STATUS.md](/abs/path/placeholder)
-- [INTEGRATION_CHECKLIST.md](/abs/path/placeholder)
-- [.planning/RELEASE_RECOVERY_5_PHASE_PLAN.md](/abs/path/placeholder)
-- [.planning/GITHUB_RELEASE_CHECKLIST.md](/abs/path/placeholder)
+- [PROJECT_STATUS.md](PROJECT_STATUS.md)
+- [INTEGRATION_CHECKLIST.md](INTEGRATION_CHECKLIST.md)
+- [.planning/RELEASE_RECOVERY_5_PHASE_PLAN.md](.planning/RELEASE_RECOVERY_5_PHASE_PLAN.md)
+- [.planning/GITHUB_RELEASE_CHECKLIST.md](.planning/GITHUB_RELEASE_CHECKLIST.md)
 
 Anything older in `docs/reports/historical/` is context, not authority.
