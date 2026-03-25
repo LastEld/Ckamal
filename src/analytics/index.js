@@ -1,241 +1,73 @@
 /**
- * @fileoverview Analytics System for CogniMesh v5.0
- * Centralized analytics module for cost tracking, budget management, and reporting.
+ * @fileoverview Subscription-only Analytics Stub for CogniMesh v5.0
+ *
+ * Subscription-only analytics - metered billing archived.
+ *
+ * The user runs flat-rate subscriptions ($18-20/month) for Claude, GPT,
+ * and Kimi.  All metered cost tracking, budget enforcement, invoice
+ * generation, and report generation code has been moved to
+ * `src/analytics/_archived/` and is no longer active.
+ *
+ * This stub preserves the `Analytics` class name and the
+ * `_initialized` / `init()` / `close()` / `trackRequest()` surface so
+ * that `src/server.js` (and any other call-sites) continue to work
+ * without modification.
+ *
  * @module analytics
  */
 
-import { CostTracker } from './cost-tracker.js';
-import { BudgetManager } from './budget.js';
-import { ReportGenerator } from './reports.js';
-import { AlertManager } from '../alerts/index.js';
-
 /**
- * Analytics system configuration
- * @typedef {Object} AnalyticsConfig
- * @property {string} [dataDir='./data'] - Directory for databases
- * @property {string} [reportsDir='./reports'] - Directory for reports
- * @property {boolean} [autoCheckBudgets=true] - Auto-check budgets periodically
- * @property {number} [checkInterval=60000] - Budget check interval in ms
- */
-
-/**
- * Main Analytics class that coordinates all analytics components
+ * Lightweight subscription-only Analytics stub.
+ *
+ * Every public method is a no-op that returns a success shape so
+ * callers never need to guard against missing analytics.
  */
 export class Analytics {
   /**
-   * Creates a new Analytics instance
-   * @param {AnalyticsConfig} [config={}] - Configuration options
+   * Creates a new Analytics stub.
+   * @param {Object} [config={}] - Accepted for backward compatibility (ignored).
    */
   constructor(config = {}) {
-    this.config = {
-      dataDir: './data',
-      reportsDir: './reports',
-      autoCheckBudgets: true,
-      checkInterval: 60000,
-      ...config
-    };
-
-    this.costTracker = null;
-    this.budgetManager = null;
-    this.reportGenerator = null;
-    this.alertManager = null;
+    this.config = config;
     this._initialized = false;
-    this._checkInterval = null;
   }
 
   /**
-   * Initializes all analytics components
+   * Initializes the analytics stub (no-op).
    * @returns {Promise<void>}
    */
   async init() {
-    if (this._initialized) {
-      return;
-    }
-
-    // Initialize components
-    this.costTracker = new CostTracker({
-      dataDir: this.config.dataDir,
-      dbName: 'costs.db'
-    });
-
-    this.budgetManager = new BudgetManager({
-      dataDir: this.config.dataDir,
-      dbName: 'budgets.db',
-      costTracker: this.costTracker
-    });
-
-    this.reportGenerator = new ReportGenerator({
-      dataDir: this.config.dataDir,
-      reportsDir: this.config.reportsDir,
-      costTracker: this.costTracker,
-      budgetManager: this.budgetManager
-    });
-
-    // Initialize AlertManager for budget alerts
-    this.alertManager = new AlertManager(this.config.alertManager);
-
-    // Initialize databases
-    await this.costTracker.init();
-    await this.budgetManager.init();
-    await this.reportGenerator.init();
-    await this.alertManager.init?.();
-
-    // Set up budget alerts
-    this.budgetManager.on('budget:alert', (alert, status) => {
-      this._handleBudgetAlert(alert, status);
-    });
-
-    // Auto-check budgets if enabled
-    if (this.config.autoCheckBudgets) {
-      this._startBudgetChecks();
-    }
-
     this._initialized = true;
   }
 
   /**
-   * Handles budget alert events
-   * @private
-   * @param {Object} alert - Alert data
-   * @param {Object} status - Budget status
-   */
-  _handleBudgetAlert(alert, status) {
-    // Create alert through AlertManager for real-time notifications
-    if (this.alertManager) {
-      this.alertManager.createAlert(
-        'budget',
-        alert.message,
-        {
-          priority: 'MEDIUM',
-          metadata: { 
-            budgetId: status.budgetId,
-            current: status.current,
-            threshold: status.threshold,
-            percentUsed: status.percentUsed,
-            severity: 'warning'
-          }
-        }
-      );
-    }
-    
-    // Emit event for external handlers (backward compatibility)
-    if (this._onAlert) {
-      this._onAlert(alert, status);
-    }
-  }
-
-  /**
-   * Starts periodic budget checks
-   * @private
-   */
-  _startBudgetChecks() {
-    if (this._checkInterval) {
-      clearInterval(this._checkInterval);
-    }
-
-    this._checkInterval = setInterval(() => {
-      this.budgetManager?.checkAlerts().catch(err => {
-        console.error('[Analytics] Budget check failed:', err);
-      });
-    }, this.config.checkInterval);
-  }
-
-  /**
-   * Stops periodic budget checks
-   * @private
-   */
-  _stopBudgetChecks() {
-    if (this._checkInterval) {
-      clearInterval(this._checkInterval);
-      this._checkInterval = null;
-    }
-  }
-
-  /**
-   * Sets up an alert handler callback
-   * @param {Function} handler - Alert handler function
-   */
-  onAlert(handler) {
-    this._onAlert = handler;
-  }
-
-  /**
-   * Closes all analytics components
+   * Closes the analytics stub (no-op).
    * @returns {Promise<void>}
    */
   async close() {
-    this._stopBudgetChecks();
-
-    await this.costTracker?.close();
-    await this.budgetManager?.close();
-    await this.reportGenerator?.close();
-    this.alertManager?.dispose?.();
-
     this._initialized = false;
   }
 
   /**
-   * Tracks an API request cost
-   * @param {string} provider - AI provider
-   * @param {string} model - Model identifier
-   * @param {Object} tokens - Token counts
-   * @param {number} tokens.input - Input tokens
-   * @param {number} tokens.output - Output tokens
-   * @param {number} cost - Calculated cost
-   * @param {Object} [options] - Additional options
-   * @returns {Promise<Object>} Cost record
+   * Records a request event.
+   *
+   * Under subscriptions there is no metered cost to track, so this
+   * method returns immediately with a success note.
+   *
+   * @param {string} _provider - AI provider (unused).
+   * @param {string} _model - Model identifier (unused).
+   * @param {Object} _tokens - Token counts (unused).
+   * @param {number} _cost - Cost value (unused).
+   * @param {Object} [_options] - Additional options (unused).
+   * @returns {Promise<Object>} Success acknowledgement.
    */
-  async trackRequest(provider, model, tokens, cost, options) {
-    this._ensureInitialized();
-    return this.costTracker.trackRequest(provider, model, tokens, cost, options);
-  }
-
-  /**
-   * Gets cost statistics
-   * @param {Object} [filters] - Filter options
-   * @returns {Promise<Object>} Cost statistics
-   */
-  async getCostStats(filters) {
-    this._ensureInitialized();
-    return this.costTracker.getStats(filters);
-  }
-
-  /**
-   * Checks if an operation is within budget
-   * @param {Object} operation - Operation details
-   * @returns {Promise<Object>} Check result
-   */
-  async checkBudget(operation) {
-    this._ensureInitialized();
-    return this.budgetManager.checkBudget(operation);
-  }
-
-  /**
-   * Generates a report
-   * @param {string} type - Report type
-   * @param {string} format - Output format
-   * @param {Object} dateRange - Date range
-   * @param {Object} [options] - Additional options
-   * @returns {Promise<Object>} Generated report
-   */
-  async generateReport(type, format, dateRange, options) {
-    this._ensureInitialized();
-    return this.reportGenerator.generate(type, format, dateRange, options);
-  }
-
-  /**
-   * Ensures the analytics system is initialized
-   * @private
-   */
-  _ensureInitialized() {
-    if (!this._initialized) {
-      throw new Error('Analytics not initialized. Call init() first.');
-    }
+  async trackRequest(_provider, _model, _tokens, _cost, _options) {
+    return {
+      success: true,
+      note: 'Subscription-only mode - metered billing is not active'
+    };
   }
 }
-
-// Export individual components
-export { CostTracker, BudgetManager, ReportGenerator };
 
 // Default export
 export default Analytics;

@@ -11,6 +11,7 @@ const expectedModels = [
   'gpt-5.3-codex',
   'gpt-5.4-codex',
   'claude-opus-4-6',
+  'claude-opus-4-5',
   'claude-sonnet-4-6',
   'claude-sonnet-4-5',
   'kimi-k2-5'

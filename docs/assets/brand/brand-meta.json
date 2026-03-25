@@ -1,11 +1,8 @@
 {
-  "humpCount": 6,
-  "humpLabels": [
-    "AMS BIOS",
-    "Provider Surfaces",
-    "Domain Data",
-    "Execution Bus",
-    "Operator UX",
-    "Release Control"
-  ]
+  "name": "CogniMesh",
+  "tagline": "Multi-model AI orchestration, subscription-first",
+  "logo": "proposallogo2.png",
+  "providers": ["Anthropic", "OpenAI", "Moonshot"],
+  "modelCount": 7,
+  "billingModel": "subscription-only"
 }

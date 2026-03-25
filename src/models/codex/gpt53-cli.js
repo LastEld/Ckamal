@@ -9,7 +9,7 @@ const readline = require('readline');
 const path = require('path');
 const fs = require('fs').promises;
 const { GPT53App } = require('./gpt53-app');
-const { calculateCost } = require('./gpt53-config');
+const { estimateUsage } = require('./gpt53-config');
 
 /**
  * Cost Tracker

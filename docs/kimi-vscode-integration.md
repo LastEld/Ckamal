@@ -1,5 +1,7 @@
 # Kimi 2.5 VSCode Integration
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## Overview
 
 The `KimiVSCodeClient` provides advanced IDE integration for Kimi 2.5 with 256K context window support, enabling powerful AI-assisted coding features directly within VSCode.

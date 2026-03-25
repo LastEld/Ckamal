@@ -50,6 +50,7 @@ export class Config {
       preferLocalClients: options.preferLocalClients !== undefined
         ? options.preferLocalClients
         : process.env.PREFER_LOCAL_CLIENTS !== 'false',
+      // Metered API fallback is permanently disabled - subscription mode only
       allowMeteredApiFallback: false
     };
     const hasClaudeLocalSurface = Boolean(
@@ -114,11 +115,14 @@ export class Config {
     };
 
     // Clients (Claude, Kimi, Codex)
+    // NOTE: API keys are optional - only used for test mode or direct-API fallback.
+    // In subscription mode (the default), CogniMesh routes through local client
+    // surfaces (Claude Code, Kimi CLI, Codex CLI) which use existing subscriptions.
     this.clients = {
       claude: {
         enabled: hasClaudeLocalSurface,
         sessionToken: options.claudeSessionToken || process.env.CLAUDE_SESSION_TOKEN || '',
-        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',        // Optional: test mode only
         apiUrl: process.env.ANTHROPIC_API_URL || 'https://api.anthropic.com/v1',
         defaultModel: process.env.CLAUDE_DEFAULT_MODEL || 'claude-3-5-sonnet',
         maxTokens: parseInt(process.env.CLAUDE_MAX_TOKENS, 10) || 4096,
@@ -128,18 +132,19 @@ export class Config {
       },
       kimi: {
         enabled: hasKimiLocalSurface,
-        apiKey: kimiApiKey,
+        apiKey: kimiApiKey,                                 // Optional: test mode only
         apiUrl: process.env.KIMI_API_URL || 'https://api.moonshot.cn/v1'
       },
       codex: {
         enabled: hasCodexLocalSurface,
-        apiKey: process.env.OPENAI_API_KEY || '',
+        apiKey: process.env.OPENAI_API_KEY || '',            // Optional: test mode only
         apiUrl: process.env.OPENAI_API_URL || 'https://api.openai.com/v1'
       }
     };
 
     this.runtime = runtimePolicy;
 
+    // Direct API preference is permanently disabled - subscription mode only
     this.clients.claude.preferApi = false;
     this.clients.kimi.preferApi = false;
     this.clients.codex.preferApi = false;
@@ -255,12 +260,14 @@ export class Config {
       errors.push('security.jwtSecret is required in production mode');
     }
 
+    // Safety guards: these are hardcoded to false but validated as a safeguard
+    // against programmatic override via merge() or set()
     if (this.runtime.allowMeteredApiFallback) {
-      errors.push('runtime.allowMeteredApiFallback is disabled in subscription-only release mode');
+      errors.push('runtime.allowMeteredApiFallback is disabled in subscription-only mode');
     }
 
     if (this.clients.claude.preferApi || this.clients.kimi.preferApi || this.clients.codex.preferApi) {
-      errors.push('Provider API fallback is disabled in subscription-only release mode');
+      errors.push('Direct API preference is disabled in subscription-only mode');
     }
 
     // Validate WebSocket settings

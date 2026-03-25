@@ -25,6 +25,7 @@ describe('E2E Client Surface Tests', () => {
 
     assert.equal(verification.ok, true);
     assert.deepEqual(matrix['claude-opus-4-6'], ['desktop', 'cli']);
+    assert.deepEqual(matrix['claude-opus-4-5'], ['desktop', 'cli']);
     assert.deepEqual(matrix['claude-sonnet-4-6'], ['vscode', 'cli']);
     assert.deepEqual(matrix['claude-sonnet-4-5'], ['cli', 'vscode']);
     assert.deepEqual(matrix['gpt-5.4-codex'], ['vscode', 'app', 'cli']);
@@ -37,6 +38,7 @@ describe('E2E Client Surface Tests', () => {
       'gpt-5.3-codex',
       'gpt-5.4-codex',
       'claude-opus-4-6',
+      'claude-opus-4-5',
       'claude-sonnet-4-6',
       'claude-sonnet-4-5',
       'kimi-k2-5'

@@ -1,4 +1,7 @@
 # Kimi 2.5 Integration Report
+
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## CogniMesh Phase 4 - Agent #4
 
 **Date:** 2026-03-23  
@@ -142,7 +145,6 @@ const result = await client.chineseOptimization(code, {
 const gateway = new ClientGateway({
   kimi: {
     cli: {
-      apiKey: process.env.MOONSHOT_API_KEY,
       features: {
         thinkingMode: true,
         multimodal: true,
@@ -212,11 +214,9 @@ const result = await gateway.executeWithKimi({
 - **Models:** `/models`
 - **Features:** reasoning, context_caching, vision
 
-### Environment Variables
+### Access Model
 
-```bash
-MOONSHOT_API_KEY=your_api_key_here
-```
+Kimi 2.5 is accessed through a subscription-backed plan. No per-token or metered API billing is required.
 
 ---
 
@@ -248,9 +248,7 @@ Test coverage includes:
 ```javascript
 import { KimiCliClient } from './src/clients/kimi/cli.js';
 
-const client = new KimiCliClient({
-  apiKey: process.env.MOONSHOT_API_KEY
-});
+const client = new KimiCliClient();
 
 await client.initialize();
 
@@ -357,7 +355,7 @@ export async function quickOptimizeChinese(code, type, options) { ... }
 
 ## 🎯 Next Steps
 
-1. **Environment Setup:** Add `MOONSHOT_API_KEY` to `.env`
+1. **Subscription Verification:** Confirm active subscription covers Kimi 2.5 access
 2. **Testing:** Run test suite to verify all features
 3. **Documentation:** Update API_REFERENCE.md with new methods
 4. **Integration:** Use in Phase 5 orchestration layer

@@ -1,9 +1,10 @@
 <p align="center">
-  <img src="docs/assets/brand/camel-banner.svg" alt="Ckamal banner" width="100%" />
+  <img src="docs/assets/brand/proposallogo2.png" alt="CogniMesh" width="280" />
 </p>
 
 <p align="center">
-  <strong>Ckamal is the GitHub-facing release surface for the existing CogniMesh BIOS codebase.</strong>
+  <strong>Multi-model AI orchestration platform, subscription-first.</strong><br/>
+  Orchestrates GPT, Claude, and Kimi through your existing subscriptions &mdash; no API keys, no metered billing.
 </p>
 
 <p align="center">
@@ -11,59 +12,60 @@
   <a href="https://github.com/LastEld/Ckamal/actions/workflows/patch-verification.yml"><img src="https://github.com/LastEld/Ckamal/actions/workflows/patch-verification.yml/badge.svg" alt="Patch verification status" /></a>
   <a href="https://github.com/LastEld/Ckamal/actions/workflows/pages.yml"><img src="https://github.com/LastEld/Ckamal/actions/workflows/pages.yml/badge.svg" alt="Pages status" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D18-1C130F?logo=node.js&logoColor=white" alt="Node 18+" />
-  <img src="https://img.shields.io/badge/models-6%20groups-B66C41" alt="Six model groups" />
-  <img src="https://img.shields.io/badge/humps-6-D39A66" alt="Six humps" />
+  <img src="https://img.shields.io/badge/models-7-B66C41" alt="7 models" />
+  <img src="https://img.shields.io/badge/providers-3-D39A66" alt="3 providers" />
 </p>
 
 ## Overview
 
-Ckamal keeps one job in scope: package the existing CogniMesh BIOS project into a clean, honest, controllable repository that is ready for GitHub `main`, GitHub Actions, GitHub Pages, and release automation.
+CogniMesh (Ckamal) is a multi-model AI orchestration platform that routes work across GPT, Claude, and Kimi model families through operator-managed subscription surfaces. All provider access is subscription-only at a flat rate of **$18-20/month per provider** -- no API keys, no per-token billing, no usage metering.
 
-The project is built around subscription-backed integrations to existing operator-managed clients, not API-billing-first defaults. The current declared model groups are:
-
-- `gpt-5.3-codex`
-- `gpt-5.4-codex`
-- `claude-opus-4-6`
-- `claude-sonnet-4-6`
-- `claude-sonnet-4-5`
-- `kimi-k2-5`
-
-Supported operator surfaces:
-
-- `desktop app`
-- `CLI`
-- `VS Code extension`
-
-Live execution still depends on the operator having the corresponding local client installed and authenticated. The repo verifies the runtime map and release surface; it does not magically provision third-party subscriptions.
+The platform packages the existing CogniMesh BIOS codebase into a clean, controllable repository ready for GitHub `main`, GitHub Actions, GitHub Pages, and release automation.
 
 ## Table Of Contents
 
-1. [Six Humps](#six-humps)
-2. [Verified Release Gate](#verified-release-gate)
-3. [Runtime Matrix](#runtime-matrix)
+1. [Model Matrix](#model-matrix)
+2. [Subscription Model](#subscription-model)
+3. [Verified Release Gate](#verified-release-gate)
 4. [Quick Start](#quick-start)
 5. [GitHub Surface](#github-surface)
 6. [Repository Shape](#repository-shape)
 7. [Truth Docs](#truth-docs)
 
-## Six Humps
+## Model Matrix
 
-The camel logo uses `6` humps because the project rests on `6` stable release-critical abstractions:
+The canonical runtime matrix is defined in [src/clients/catalog.js](src/clients/catalog.js) and exercised by [tests/e2e/clients.spec.js](tests/e2e/clients.spec.js). All 7 models across 3 providers:
 
-1. `AMS / BIOS orchestration`
-   Spawn lifecycle, modes, agent pool control, and orchestration policy.
-2. `Subscription runtime matrix`
-   GPT, Claude, and Kimi model groups mapped to desktop, CLI, and VS Code surfaces.
-3. `Repository contract`
-   Tasks, roadmaps, contexts, merkle state, migrations, and repository code.
-4. `Execution bus`
-   Router, queue, tools registry, middleware, and runtime gateways.
-5. `Operator surfaces`
-   CLI, dashboard, browser shell, and local control UX.
-6. `GitHub release plane`
-   README, Actions, Pages, release packaging, tags, and public repo hygiene.
+| Model | Provider | Surfaces |
+| --- | --- | --- |
+| `claude-opus-4-6` | Anthropic | `desktop`, `cli` |
+| `claude-opus-4-5` | Anthropic | `desktop`, `cli` |
+| `claude-sonnet-4-6` | Anthropic | `vscode`, `cli` |
+| `claude-sonnet-4-5` | Anthropic | `cli`, `vscode` |
+| `gpt-5.4-codex` | OpenAI | `vscode`, `app`, `cli` |
+| `gpt-5.3-codex` | OpenAI | `cli` |
+| `kimi-k2-5` | Moonshot | `vscode`, `cli` |
 
-Cross-cutting systems like security, monitoring, analytics, and rate limiting strengthen every hump, but they are not counted as separate structural pillars.
+Compatibility aliases:
+
+- `ide` normalizes to `vscode`
+- `claude-opus-4` normalizes to `claude-opus-4-6`
+- `claude-opus-4-5-latest` normalizes to `claude-opus-4-5`
+- `kimi-k2` normalizes to `kimi-k2-5`
+
+Supported operator surfaces: **Desktop App**, **CLI**, **VS Code Extension**.
+
+## Subscription Model
+
+CogniMesh is subscription-only. Every provider integration runs through the operator's existing subscription client -- not through direct API calls.
+
+| Provider | Subscription | Approximate Cost |
+| --- | --- | --- |
+| Anthropic (Claude) | Claude Pro / Max | ~$20/month |
+| OpenAI (Codex) | ChatGPT Pro / Plus | ~$20/month |
+| Moonshot (Kimi) | Kimi subscription | ~$18/month |
+
+Live execution depends on the operator having the corresponding local client installed and authenticated. The repo verifies the runtime map and release surface; it does not provision third-party subscriptions.
 
 ## Verified Release Gate
 
@@ -85,25 +87,6 @@ npm run build -- --skip-lint
 
 Build smoke is cross-platform through `npm run build`, which dispatches to the existing PowerShell or Bash build script depending on the host OS.
 
-## Runtime Matrix
-
-The canonical runtime matrix is defined in [src/clients/catalog.js](src/clients/catalog.js) and exercised by [tests/e2e/clients.spec.js](tests/e2e/clients.spec.js). The current model group to surface map is:
-
-| Model group | Surfaces |
-| --- | --- |
-| `gpt-5.3-codex` | `cli` |
-| `gpt-5.4-codex` | `vscode`, `app`, `cli` |
-| `claude-opus-4-6` | `desktop`, `cli` |
-| `claude-sonnet-4-6` | `vscode`, `cli` |
-| `claude-sonnet-4-5` | `cli`, `vscode` |
-| `kimi-k2-5` | `vscode`, `cli` |
-
-Compatibility aliases:
-
-- `ide` normalizes to `vscode`
-- `sonnet-cli` normalizes to `cli`
-- `sonnet-ide` normalizes to `vscode`
-
 ## Quick Start
 
 ```bash
@@ -114,7 +97,7 @@ npm run verify:release
 npm start
 ```
 
-Optional but common local runtime environment values:
+Optional local runtime environment values:
 
 ```bash
 GITHUB_TOKEN=ghp_your_token_here
@@ -127,7 +110,7 @@ CODEX_VSCODE_PORT=...
 KIMI_VSCODE_SOCKET_PATH=...
 ```
 
-Use API keys only if you intentionally run API-backed workflows outside the subscription-first release path.
+These configure paths to your locally installed subscription clients. No API keys are needed for standard operation.
 
 ## GitHub Surface
 
@@ -138,7 +121,6 @@ The repository is prepared with:
 - `Pages` workflow that deploys the `docs/` surface.
 - `Release` workflow that verifies, builds, packages archives, generates checksums, and creates a GitHub release on tag push.
 - A public landing page at `docs/index.html`.
-- A transparent camel logo and banner under `docs/assets/brand/`.
 
 Intended Pages URL:
 

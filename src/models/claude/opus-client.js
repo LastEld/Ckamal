@@ -887,11 +887,11 @@ export class OpusClient extends EventEmitter {
   }
   
   /**
-   * Gets cost statistics
-   * @returns {Object} Cost statistics
+   * Gets usage statistics (token counts - billing handled by subscription)
+   * @returns {Object} Usage statistics
    */
   getCostStats() {
-    return this.#config.getCostStats();
+    return this.#config.getUsageStats();
   }
   
   /**

@@ -1,5 +1,7 @@
 # CogniMesh v5.0 - Deployment Checklist
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 > 🔴 **CRITICAL**: This checklist must be completed for every production deployment.
 
 ---
@@ -37,6 +39,7 @@
 - [ ] Production `.env` file prepared
 - [ ] Database migrations tested locally
 - [ ] Configuration validated
+- [ ] Subscription-only access verified (no API key billing setup required)
 
 ### 5. Dependencies
 

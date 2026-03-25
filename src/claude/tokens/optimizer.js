@@ -26,22 +26,11 @@ import { EventEmitter } from 'events';
  */
 
 /**
- * @typedef {Object} ModelCost
- * @property {string} model - Model identifier
- * @property {number} inputCost - Cost per 1K input tokens
- * @property {number} outputCost - Cost per 1K output tokens
- * @property {number} [contextWindow] - Maximum context window
- */
-
-/**
- * TokenOptimizer provides intelligent prompt optimization,
- * smart truncation, and cost estimation.
+ * TokenOptimizer provides intelligent prompt optimization
+ * and smart truncation strategies.
  * @extends EventEmitter
  */
 export class TokenOptimizer extends EventEmitter {
-  /** @type {Map<string, ModelCost>} */
-  #modelCosts = new Map();
-  
   /** @type {Set<string>} */
   #subscribers = new Set();
   
@@ -64,29 +53,6 @@ export class TokenOptimizer extends EventEmitter {
       prioritizeInstructions: true,
       ...options.strategies
     };
-
-    // Default model costs (per 1K tokens)
-    this.#initializeDefaultCosts();
-  }
-
-  /**
-   * Initializes default model costs.
-   * @private
-   */
-  #initializeDefaultCosts() {
-    const defaults = [
-      { model: 'claude-3-opus', inputCost: 15.0, outputCost: 75.0, contextWindow: 200000 },
-      { model: 'claude-3-sonnet', inputCost: 3.0, outputCost: 15.0, contextWindow: 200000 },
-      { model: 'claude-3-haiku', inputCost: 0.25, outputCost: 1.25, contextWindow: 200000 },
-      { model: 'claude-3-5-sonnet', inputCost: 3.0, outputCost: 15.0, contextWindow: 200000 },
-      { model: 'gpt-4', inputCost: 30.0, outputCost: 60.0, contextWindow: 8192 },
-      { model: 'gpt-4-turbo', inputCost: 10.0, outputCost: 30.0, contextWindow: 128000 },
-      { model: 'gpt-3.5-turbo', inputCost: 0.5, outputCost: 1.5, contextWindow: 16385 }
-    ];
-
-    for (const cost of defaults) {
-      this.#modelCosts.set(cost.model, cost);
-    }
   }
 
   /**
@@ -294,43 +260,6 @@ export class TokenOptimizer extends EventEmitter {
   }
 
   /**
-   * Estimates cost for token usage.
-   * @param {string} subscriptionKey - Authenticated subscriber key
-   * @param {number} tokens - Token count
-   * @param {string} model - Model identifier
-   * @param {Object} [options] - Cost options
-   * @param {number} [options.outputRatio=0.3] - Expected output ratio
-   * @returns {Object} Cost estimation
-   */
-  estimateCost(subscriptionKey, tokens, model, options = {}) {
-    this.#requireAuth(subscriptionKey);
-    
-    const modelCost = this.#modelCosts.get(model);
-    if (!modelCost) {
-      throw new Error(`Unknown model: ${model}`);
-    }
-
-    const outputRatio = options.outputRatio ?? 0.3;
-    const inputTokens = Math.floor(tokens * (1 - outputRatio));
-    const outputTokens = Math.floor(tokens * outputRatio);
-
-    const inputCost = (inputTokens / 1000) * modelCost.inputCost;
-    const outputCost = (outputTokens / 1000) * modelCost.outputCost;
-    const totalCost = inputCost + outputCost;
-
-    return {
-      model,
-      inputTokens,
-      outputTokens,
-      totalTokens: tokens,
-      inputCost: Math.round(inputCost * 10000) / 10000,
-      outputCost: Math.round(outputCost * 10000) / 10000,
-      totalCost: Math.round(totalCost * 10000) / 10000,
-      currency: 'USD'
-    };
-  }
-
-  /**
    * Performs smart truncation of text.
    * @param {string} subscriptionKey - Authenticated subscriber key
    * @param {string} text - Text to truncate
@@ -400,27 +329,6 @@ export class TokenOptimizer extends EventEmitter {
     if (!text) return 0;
     // Approximate: ~4 characters per token
     return Math.ceil(text.length / 4);
-  }
-
-  /**
-   * Adds or updates model cost configuration.
-   * @param {string} subscriptionKey - Authenticated subscriber key
-   * @param {ModelCost} cost - Model cost configuration
-   */
-  setModelCost(subscriptionKey, cost) {
-    this.#requireAuth(subscriptionKey);
-    this.#modelCosts.set(cost.model, cost);
-    this.emit('modelCostUpdated', { model: cost.model, timestamp: Date.now() });
-  }
-
-  /**
-   * Gets configured model costs.
-   * @param {string} subscriptionKey - Authenticated subscriber key
-   * @returns {ModelCost[]} Model cost configurations
-   */
-  getModelCosts(subscriptionKey) {
-    this.#requireAuth(subscriptionKey);
-    return Array.from(this.#modelCosts.values());
   }
 
   /**
@@ -630,7 +538,6 @@ export class TokenOptimizer extends EventEmitter {
    * Disposes the optimizer and clears resources.
    */
   dispose() {
-    this.#modelCosts.clear();
     this.#subscribers.clear();
     this.removeAllListeners();
   }

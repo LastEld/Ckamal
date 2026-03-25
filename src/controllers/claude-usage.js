@@ -1,17 +1,15 @@
 /**
  * Claude Usage Controller
- * Usage tracking and analytics
- * 
+ * Subscription-only usage tracking and analytics.
+ * Metered billing, invoices, and budget alerts have been removed.
+ *
  * @module controllers/claude-usage
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import {
-    validateRequest,
     formatResponse,
-    formatListResponse,
-    handleError,
-    parsePagination
+    handleError
 } from './helpers.js';
 
 /**
@@ -27,19 +25,18 @@ export const UsagePeriod = {
 };
 
 /**
- * Metric types
+ * Metric types (cost retained for backward compat but not actively tracked)
  * @readonly
  * @enum {string}
  */
 export const MetricType = {
-    COST: 'cost',
     TOKENS: 'tokens',
     REQUESTS: 'requests'
 };
 
 /**
  * ClaudeUsageController class
- * Manages usage tracking, billing, and analytics
+ * Manages usage tracking and analytics (subscription-only, no metered billing)
  */
 export class ClaudeUsageController {
     /**
@@ -51,9 +48,6 @@ export class ClaudeUsageController {
         this.gateway = options.gateway || null;
         this.name = 'ClaudeUsageController';
         this._usage = new Map();
-        this._invoices = new Map();
-        this._alerts = [];
-        this._alertConfig = null;
     }
 
     /**
@@ -294,285 +288,6 @@ export class ClaudeUsageController {
     }
 
     /**
-     * Get invoice
-     * @param {Object} [options] - Options
-     * @param {'current'|'previous'} [options.period='current'] - Period
-     * @returns {Promise<Object>} Invoice
-     */
-    async getInvoice(options = {}) {
-        try {
-            const period = options.period || 'current';
-
-            if (!['current', 'previous'].includes(period)) {
-                return {
-                    success: false,
-                    error: 'Period must be current or previous',
-                    code: 'VALIDATION_ERROR'
-                };
-            }
-
-            return formatResponse(this._buildInvoice(period));
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to get invoice' });
-        }
-    }
-
-    /**
-     * List invoices
-     * @param {Object} [pagination] - Pagination options
-     * @returns {Promise<Object>} List of invoices
-     */
-    async listInvoices(pagination = {}) {
-        try {
-            const invoices = this._listInvoiceSummaries();
-
-            const { limit, offset } = parsePagination(pagination);
-            const paginated = invoices.slice(offset, offset + limit);
-
-            return formatListResponse(paginated, {
-                total: invoices.length,
-                limit,
-                offset
-            });
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to list invoices' });
-        }
-    }
-
-    /**
-     * Configure billing alerts
-     * @param {Object} config - Alert configuration
-     * @param {number} [config.budgetLimit=100] - Monthly budget limit
-     * @param {number[]} [config.thresholds=[50, 75, 90, 100]] - Alert thresholds
-     * @returns {Promise<Object>} Configuration result
-     */
-    async configureAlerts(config) {
-        try {
-            const input = config || {};
-            const validation = validateRequest({
-                types: {
-                    budgetLimit: 'number',
-                    thresholds: 'array'
-                },
-                validators: {
-                    budgetLimit: (value) => value === undefined || value > 0 || 'Budget limit must be positive',
-                    thresholds: (value) =>
-                        value === undefined ||
-                        (Array.isArray(value) && value.every(item => typeof item === 'number' && item >= 0)) ||
-                        'Thresholds must be an array of non-negative numbers'
-                }
-            }, input);
-
-            if (!validation.valid) {
-                return {
-                    success: false,
-                    error: `Validation failed: ${validation.errors.join(', ')}`,
-                    code: 'VALIDATION_ERROR'
-                };
-            }
-
-            const configuration = {
-                budgetLimit: input.budgetLimit || 100,
-                thresholds: [...(input.thresholds || [50, 75, 90, 100])].sort((a, b) => a - b),
-                configuredAt: new Date().toISOString()
-            };
-
-            this._alertConfig = configuration;
-
-            return formatResponse(configuration);
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to configure alerts' });
-        }
-    }
-
-    /**
-     * Check billing alerts
-     * @returns {Promise<Object>} Alert status
-     */
-    async checkAlerts() {
-        try {
-            if (!this._alertConfig) {
-                return {
-                    success: false,
-                    error: 'Billing alerts are not configured',
-                    code: 'NOT_CONFIGURED'
-                };
-            }
-
-            const usage = await this.getUsage();
-            if (!usage.success) {
-                return usage;
-            }
-
-            const currentCost = usage.data.totalCost;
-            const budget = this._alertConfig.budgetLimit;
-            const percentUsed = (currentCost / budget) * 100;
-
-            const activeAlerts = [];
-            for (const threshold of this._alertConfig.thresholds) {
-                if (percentUsed >= threshold) {
-                    activeAlerts.push({
-                        threshold,
-                        level: threshold >= 100 ? 'critical' : threshold >= 90 ? 'warning' : 'info',
-                        message: threshold >= 100
-                            ? 'Budget exceeded'
-                            : `Budget reached ${threshold}%`
-                    });
-                }
-            }
-
-            return formatResponse({
-                currentUsage: currentCost,
-                budget,
-                percentUsed: Math.round(percentUsed),
-                activeAlerts,
-                configuredAt: this._alertConfig.configuredAt
-            });
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to check alerts' });
-        }
-    }
-
-    /**
-     * Project costs
-     * @param {Object} [options] - Options
-     * @param {number} [options.days=30] - Days to project
-     * @param {'conservative'|'expected'|'aggressive'} [options.scenario='expected'] - Scenario
-     * @returns {Promise<Object>} Cost projection
-     */
-    async projectCosts(options = {}) {
-        try {
-            const days = options.days || 30;
-            const scenario = options.scenario || 'expected';
-
-            const multipliers = {
-                conservative: 0.8,
-                expected: 1.0,
-                aggressive: 1.3
-            };
-
-            if (typeof days !== 'number' || days <= 0) {
-                return {
-                    success: false,
-                    error: 'Days must be a positive number',
-                    code: 'VALIDATION_ERROR'
-                };
-            }
-
-            if (!multipliers[scenario]) {
-                return {
-                    success: false,
-                    error: `Invalid scenario. Valid: ${Object.keys(multipliers).join(', ')}`,
-                    code: 'VALIDATION_ERROR'
-                };
-            }
-
-            const end = new Date();
-            const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-            const records = this._getUsageRecords({
-                start,
-                end,
-                sessionId: options.sessionId,
-                projectId: options.projectId
-            });
-            const usage = this._buildUsageSummary(records, {
-                period: UsagePeriod.MONTH,
-                granularity: 'day',
-                start,
-                end
-            });
-
-            if (usage.totalCost === 0) {
-                return {
-                    success: false,
-                    error: 'No cost-tracked usage data available for projection',
-                    code: 'NOT_FOUND'
-                };
-            }
-
-            const coverageDays = this._getCoverageDays(records, start, end);
-            const dailyAverage = usage.totalCost / coverageDays;
-            const projectedCost = dailyAverage * days * multipliers[scenario];
-
-            return formatResponse({
-                period: `${days}d`,
-                scenario,
-                projectedCost: parseFloat(projectedCost.toFixed(2)),
-                dailyAverage: parseFloat((dailyAverage * multipliers[scenario]).toFixed(2)),
-                basedOn: {
-                    records: records.length,
-                    coverageDays
-                }
-            });
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to project costs' });
-        }
-    }
-
-    /**
-     * Get cost optimization recommendations
-     * @param {Object} [options] - Options
-     * @param {UsagePeriod} [options.period='30d'] - Analysis period
-     * @returns {Promise<Object>} Recommendations
-     */
-    async getOptimizationRecommendations(options = {}) {
-        try {
-            const usage = await this.getUsage({
-                period: options.period || UsagePeriod.MONTH,
-                sessionId: options.sessionId,
-                projectId: options.projectId
-            });
-
-            if (!usage.success) {
-                return usage;
-            }
-
-            const recommendations = [];
-            const models = Object.entries(usage.data.byModel).sort((a, b) => b[1].cost - a[1].cost);
-            const totalCost = usage.data.totalCost;
-            const totalRequests = usage.data.totalRequests;
-            const averageTokensPerRequest = totalRequests > 0
-                ? usage.data.totalTokens / totalRequests
-                : 0;
-
-            if (models.length > 0 && totalCost > 0) {
-                const [topModel, topStats] = models[0];
-                const costShare = topStats.cost / totalCost;
-                if (costShare >= 0.8) {
-                    recommendations.push({
-                        type: 'model_selection',
-                        message: `Review routing for ${topModel}; it accounts for ${Math.round(costShare * 100)}% of tracked cost`,
-                        potentialSavings: parseFloat((topStats.cost * 0.15).toFixed(2))
-                    });
-                }
-            }
-
-            if (averageTokensPerRequest >= 8000) {
-                recommendations.push({
-                    type: 'context_optimization',
-                    message: 'Average tokens per request are high; review context compression or truncation policies',
-                    potentialSavings: totalCost > 0 ? parseFloat((totalCost * 0.1).toFixed(2)) : 0
-                });
-            }
-
-            if (usage.data.costTrackedRequests < totalRequests) {
-                recommendations.push({
-                    type: 'telemetry',
-                    message: 'Some usage events do not include cost metadata; enable cost tracking for accurate billing analytics',
-                    potentialSavings: 0
-                });
-            }
-
-            return formatResponse({
-                recommendations,
-                totalPotentialSavings: recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
-            });
-        } catch (error) {
-            return handleError(error, { defaultMessage: 'Failed to get recommendations' });
-        }
-    }
-
-    /**
      * Get efficiency metrics
      * @param {Object} [options] - Options
      * @param {UsagePeriod} [options.period='30d'] - Analysis period
@@ -636,13 +351,13 @@ export class ClaudeUsageController {
      * @param {Object} [options] - Options
      * @param {boolean} [options.includeTrends=true] - Include trends
      * @param {boolean} [options.includeEfficiency=true] - Include efficiency
-     * @param {boolean} [options.includeRecommendations=true] - Include recommendations
      * @returns {Promise<Object>} Dashboard data
      */
     async getDashboard(options = {}) {
         try {
             const dashboard = {
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                subscriptionMode: true
             };
 
             if (options.includeTrends !== false) {
@@ -662,13 +377,6 @@ export class ClaudeUsageController {
                 dashboard.efficiency = efficiency.success
                     ? efficiency.data
                     : { available: false, code: efficiency.code, error: efficiency.error };
-            }
-
-            if (options.includeRecommendations !== false) {
-                const recommendations = await this.getOptimizationRecommendations(options);
-                dashboard.recommendations = recommendations.success
-                    ? recommendations.data
-                    : { available: false, code: recommendations.code, error: recommendations.error };
             }
 
             return formatResponse(dashboard);
@@ -852,74 +560,6 @@ export class ClaudeUsageController {
             .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
 
-    _buildInvoice(period) {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth() + (period === 'previous' ? -1 : 0), 1);
-        const end = new Date(now.getFullYear(), now.getMonth() + (period === 'previous' ? 0 : 1), 1);
-        const key = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
-
-        if (this._invoices.has(key)) {
-            return this._invoices.get(key);
-        }
-
-        const summary = this._buildUsageSummary(
-            this._getUsageRecords({ start, end }),
-            { period: key, granularity: 'month', start, end }
-        );
-        const invoice = {
-            period,
-            invoiceId: `inv_${key.replace('-', '_')}`,
-            startDate: this._formatLocalDate(start),
-            endDate: this._formatLocalDate(new Date(end.getFullYear(), end.getMonth(), 0)),
-            totalAmount: summary.totalCost,
-            currency: 'USD',
-            source: 'local_usage_records',
-            lineItems: Object.entries(summary.byModel).map(([model, stats]) => ({
-                model,
-                tokens: stats.tokens,
-                cost: stats.cost,
-                requests: stats.requests
-            }))
-        };
-
-        this._invoices.set(key, invoice);
-        return invoice;
-    }
-
-    _listInvoiceSummaries() {
-        const months = new Set();
-
-        for (const record of this._usage.values()) {
-            const date = new Date(record.timestamp);
-            if (Number.isNaN(date.getTime())) {
-                continue;
-            }
-
-            months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
-        }
-
-        return [...months]
-            .sort()
-            .reverse()
-            .map(periodKey => {
-                const [year, month] = periodKey.split('-').map(Number);
-                const start = new Date(year, month - 1, 1);
-                const end = new Date(year, month, 1);
-                const summary = this._buildUsageSummary(
-                    this._getUsageRecords({ start, end }),
-                    { period: periodKey, granularity: 'month', start, end }
-                );
-
-                return {
-                    id: `inv_${periodKey.replace('-', '_')}`,
-                    period: periodKey,
-                    amount: summary.totalCost,
-                    status: 'tracked',
-                    requests: summary.totalRequests
-                };
-            });
-    }
-
     _getPeriodStart(period, reference = new Date()) {
         return new Date(reference.getTime() - this._getPeriodDays(period) * 24 * 60 * 60 * 1000);
     }
@@ -981,14 +621,6 @@ export class ClaudeUsageController {
 
     _numberOrZero(value) {
         return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-    }
-
-    _formatLocalDate(date) {
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, '0'),
-            String(date.getDate()).padStart(2, '0')
-        ].join('-');
     }
 }
 

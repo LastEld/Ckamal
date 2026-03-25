@@ -17,10 +17,6 @@ export const SONNET_MODELS = {
     maxOutputTokens: 8192,
     knowledgeCutoff: '2025-01',
     features: ['extended_thinking', 'computer_use', 'vision', 'function_calling', 'streaming'],
-    pricing: {
-      input: 3.00,   // $3.00 per million input tokens
-      output: 15.00  // $15.00 per million output tokens
-    },
     strengths: ['coding', 'reasoning', 'vision', 'multilingual', 'analysis']
   },
   SONNET_4_5: {
@@ -31,10 +27,6 @@ export const SONNET_MODELS = {
     maxOutputTokens: 8192,
     knowledgeCutoff: '2024-10',
     features: ['extended_thinking', 'computer_use', 'vision', 'function_calling', 'streaming'],
-    pricing: {
-      input: 3.00,
-      output: 15.00
-    },
     strengths: ['coding', 'reasoning', 'vision', 'multilingual']
   }
 };
@@ -96,11 +88,9 @@ export const DEFAULT_SONNET_CONFIG = {
     }
   },
   
-  // Cost Tracking
+  // Usage Tracking (billing handled by subscription)
   costTracking: {
     enabled: true,
-    warnThreshold: 10.00,  // Warn when cost exceeds $10
-    maxThreshold: 50.00,   // Stop when cost exceeds $50
     logDetails: true
   },
   
@@ -126,7 +116,6 @@ export class SonnetCostTracker extends EventEmitter {
     this.usage = {
       inputTokens: 0,
       outputTokens: 0,
-      totalCost: 0,
       requests: 0,
       sessions: []
     };
@@ -142,7 +131,6 @@ export class SonnetCostTracker extends EventEmitter {
       startTime: Date.now(),
       inputTokens: 0,
       outputTokens: 0,
-      cost: 0,
       requests: 0
     };
     return this.currentSession;
@@ -165,19 +153,13 @@ export class SonnetCostTracker extends EventEmitter {
    * Record token usage
    */
   recordUsage(inputTokens, outputTokens, model = SONNET_MODELS.SONNET_4_6) {
-    const inputCost = (inputTokens / 1000000) * model.pricing.input;
-    const outputCost = (outputTokens / 1000000) * model.pricing.output;
-    const totalCost = inputCost + outputCost;
-
     this.usage.inputTokens += inputTokens;
     this.usage.outputTokens += outputTokens;
-    this.usage.totalCost += totalCost;
     this.usage.requests++;
 
     if (this.currentSession) {
       this.currentSession.inputTokens += inputTokens;
       this.currentSession.outputTokens += outputTokens;
-      this.currentSession.cost += totalCost;
       this.currentSession.requests++;
     }
 
@@ -185,29 +167,13 @@ export class SonnetCostTracker extends EventEmitter {
       timestamp: Date.now(),
       inputTokens,
       outputTokens,
-      cost: totalCost,
       model: model.id
     };
 
     this.emit('usage', usageRecord);
 
-    // Check thresholds
-    if (this.config.warnThreshold && this.usage.totalCost >= this.config.warnThreshold) {
-      this.emit('thresholdWarning', {
-        threshold: this.config.warnThreshold,
-        currentCost: this.usage.totalCost
-      });
-    }
-
-    if (this.config.maxThreshold && this.usage.totalCost >= this.config.maxThreshold) {
-      this.emit('thresholdExceeded', {
-        threshold: this.config.maxThreshold,
-        currentCost: this.usage.totalCost
-      });
-    }
-
     if (this.config.logDetails) {
-      console.log(`[Sonnet Cost] Input: ${inputTokens} tokens ($${inputCost.toFixed(4)}), Output: ${outputTokens} tokens ($${outputCost.toFixed(4)}), Total: $${totalCost.toFixed(4)}`);
+      console.log(`[Sonnet Usage] Input: ${inputTokens} tokens, Output: ${outputTokens} tokens`);
     }
 
     return usageRecord;
@@ -220,7 +186,6 @@ export class SonnetCostTracker extends EventEmitter {
     return {
       ...this.usage,
       currentSession: this.currentSession,
-      averageCostPerRequest: this.usage.requests > 0 ? this.usage.totalCost / this.usage.requests : 0,
       averageTokensPerRequest: this.usage.requests > 0 ? (this.usage.inputTokens + this.usage.outputTokens) / this.usage.requests : 0
     };
   }
@@ -232,7 +197,6 @@ export class SonnetCostTracker extends EventEmitter {
     this.usage = {
       inputTokens: 0,
       outputTokens: 0,
-      totalCost: 0,
       requests: 0,
       sessions: []
     };
@@ -241,24 +205,14 @@ export class SonnetCostTracker extends EventEmitter {
   }
 
   /**
-   * Estimate cost for a request
+   * Estimate token usage for a request (billing handled by subscription)
    */
-  estimateCost(inputTokens, outputTokens, model = SONNET_MODELS.SONNET_4_6) {
-    const inputCost = (inputTokens / 1000000) * model.pricing.input;
-    const outputCost = (outputTokens / 1000000) * model.pricing.output;
+  estimateUsage(inputTokens, outputTokens) {
     return {
-      inputCost,
-      outputCost,
-      totalCost: inputCost + outputCost
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens
     };
-  }
-
-  /**
-   * Check if request would exceed budget
-   */
-  wouldExceedBudget(estimatedCost) {
-    if (!this.config.maxThreshold) return false;
-    return (this.usage.totalCost + estimatedCost) > this.config.maxThreshold;
   }
 }
 

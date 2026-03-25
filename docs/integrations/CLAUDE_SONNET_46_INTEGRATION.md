@@ -1,5 +1,7 @@
 # Claude Sonnet 4.6 CLI Integration
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## Overview
 
 Полная интеграция Anthropic Claude Sonnet 4.6 с CogniMesh BIOS CLI.
@@ -106,15 +108,13 @@ bios claude batch --file tasks.json --concurrency 2
 
 ## Configuration
 
-### Environment Variables
-```bash
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-```
+### Access Model
+
+Claude Sonnet 4.6 is accessed through a subscription-backed plan. No per-token or metered API billing is required.
 
 ### Constructor Options
 ```javascript
 const client = new ClaudeCliClient({
-  apiKey: 'your-key',
   model: 'claude-sonnet-4-6',  // или 'claude-opus-4'
   preferApi: true,              // API vs CLI
   baseURL: 'https://api.anthropic.com/v1'

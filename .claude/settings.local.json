@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm run:*)",
+      "Bash(ls -la \"E:\\\\Ckamal\\\\.claude\\\\worktrees\\\\eager-khorana\\\\docs\\\\assets\\\\brand 2>/dev/null; find E:Ckamal.claudeworktreeseager-khoranadocsassets\" -type f)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

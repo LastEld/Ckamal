@@ -1,5 +1,7 @@
 # CogniMesh Monitoring & Observability
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## Overview
 
 This document describes the monitoring and observability setup for CogniMesh, including metrics collection, dashboards, and alerting.

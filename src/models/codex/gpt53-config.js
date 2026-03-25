@@ -27,22 +27,8 @@ const GPT53_CONFIG = {
     overlapSize: 2000,
   },
 
-  // Cost optimization settings
-  cost: {
-    // Pricing per 1M tokens (example rates)
-    inputPricePer1M: 0.50,
-    outputPricePer1M: 1.50,
-    cachedInputPricePer1M: 0.25,
-    
-    // Cost thresholds for auto-selection
-    maxInputCost: 0.10,      // Max $0.10 for input
-    maxOutputCost: 0.15,     // Max $0.15 for output
-    
-    // Budget settings
-    dailyBudget: 10.00,
-    monthlyBudget: 200.00,
-    
-    // Optimization flags
+  // Optimization settings (billing handled by subscription)
+  optimization: {
     useCaching: true,
     useBatching: true,
     compressPrompts: true,
@@ -200,29 +186,16 @@ function getTaskConfig(taskType) {
 }
 
 /**
- * Calculate estimated cost for a request
+ * Estimate token usage for a request (billing handled by subscription)
  * @param {number} inputTokens - Number of input tokens
  * @param {number} outputTokens - Number of output tokens
- * @param {boolean} useCache - Whether to use cached pricing
- * @returns {Object} Cost breakdown
+ * @returns {Object} Token usage breakdown
  */
-function calculateCost(inputTokens, outputTokens, useCache = false) {
-  const inputPrice = useCache 
-    ? GPT53_CONFIG.cost.cachedInputPricePer1M 
-    : GPT53_CONFIG.cost.inputPricePer1M;
-  const outputPrice = GPT53_CONFIG.cost.outputPricePer1M;
-  
-  const inputCost = (inputTokens / 1000000) * inputPrice;
-  const outputCost = (outputTokens / 1000000) * outputPrice;
-  const totalCost = inputCost + outputCost;
-  
+function estimateUsage(inputTokens, outputTokens) {
   return {
-    inputCost,
-    outputCost,
-    totalCost,
     inputTokens,
     outputTokens,
-    currency: 'USD',
+    totalTokens: inputTokens + outputTokens,
   };
 }
 
@@ -262,32 +235,22 @@ function createEnvConfig(env = 'development') {
     case 'production':
       return {
         ...baseConfig,
-        cost: {
-          ...baseConfig.cost,
-          dailyBudget: 50.00,
-          monthlyBudget: 1000.00,
-        },
         performance: {
           ...baseConfig.performance,
           maxConcurrentRequests: 20,
         },
       };
-      
+
     case 'testing':
       return {
         ...baseConfig,
-        cost: {
-          ...baseConfig.cost,
-          dailyBudget: 1.00,
-          monthlyBudget: 10.00,
-        },
         performance: {
           ...baseConfig.performance,
           maxRetries: 1,
           requestTimeout: 5000,
         },
       };
-      
+
     default: // development
       return baseConfig;
   }
@@ -297,7 +260,7 @@ module.exports = {
   GPT53_CONFIG,
   TASK_CONFIGS,
   getTaskConfig,
-  calculateCost,
+  estimateUsage,
   shouldUseGPT53,
   createEnvConfig,
 };

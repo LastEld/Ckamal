@@ -6,7 +6,7 @@
 'use strict';
 
 const { GPT53Client } = require('./gpt53-client');
-const { GPT53_CONFIG, calculateCost, shouldUseGPT53 } = require('./gpt53-config');
+const { GPT53_CONFIG, estimateUsage, shouldUseGPT53 } = require('./gpt53-config');
 
 /**
  * GPT 5.4 Client (placeholder - would be implemented similarly)
@@ -255,38 +255,24 @@ class DualModeCodexClient {
    * @param {Object} task - Task to compare
    * @returns {Object} Cost comparison
    */
-  async compareCosts(task) {
+  async compareModels(task) {
     const analysis = this.analyzer.analyze(task);
     const estimatedInputTokens = analysis.estimatedTokens;
     const estimatedOutputTokens = Math.ceil(estimatedInputTokens * 0.5); // Estimate 50% output
 
-    const cost53 = calculateCost(estimatedInputTokens, estimatedOutputTokens, true);
-    const cost54 = calculateCost(estimatedInputTokens, estimatedOutputTokens, false);
-    
-    // Adjust for 5.4 pricing
-    cost54.inputCost *= 4;  // $2 vs $0.50
-    cost54.outputCost *= 4; // $6 vs $1.50
-    cost54.totalCost = cost54.inputCost + cost54.outputCost;
-
-    const savings = cost54.totalCost - cost53.totalCost;
-    const savingsPercent = (savings / cost54.totalCost) * 100;
+    const usage = estimateUsage(estimatedInputTokens, estimatedOutputTokens);
 
     return {
       estimatedInputTokens,
       estimatedOutputTokens,
+      totalTokens: usage.totalTokens,
       gpt53: {
-        ...cost53,
         estimatedLatency: this._estimateLatency(task, 'gpt-5.3'),
       },
       gpt54: {
-        ...cost54,
         estimatedLatency: this._estimateLatency(task, 'gpt-5.4'),
       },
-      savings: {
-        amount: savings,
-        percent: Math.round(savingsPercent * 100) / 100,
-      },
-      recommendation: savingsPercent > 50 ? 'gpt-5.3' : analysis.recommendedModel,
+      recommendation: analysis.recommendedModel,
     };
   }
 

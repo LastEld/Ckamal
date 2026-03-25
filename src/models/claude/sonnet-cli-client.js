@@ -171,13 +171,10 @@ export class SonnetCliClient extends BaseClient {
       throw new Error('Claude Sonnet CLI client not connected');
     }
 
-    // Check cost threshold
+    // Estimate token usage (billing handled by subscription)
     const estimatedInput = this._estimateTokens(message.content || message);
-    const estimatedCost = this.costTracker.estimateCost(estimatedInput, options.maxTokens || 4096, this.modelConfig);
-    
-    if (this.costTracker.wouldExceedBudget(estimatedCost.totalCost)) {
-      throw new Error(`Request would exceed cost budget threshold`);
-    }
+    const estimatedOutput = options.maxTokens || 4096;
+    const estimatedUsage = this.costTracker.estimateUsage(estimatedInput, estimatedOutput);
 
     // Prefer API for direct control and better features
     if (this.preferApi && this.apiKey) {
@@ -619,11 +616,10 @@ export class SonnetCliClient extends BaseClient {
             
           case 'cost':
             const stats = this.costTracker.getStats();
-            console.log(`\n💰 Cost Tracking:`);
-            console.log(`  Total cost: $${stats.totalCost.toFixed(4)}`);
+            console.log(`\nToken Usage:`);
             console.log(`  Total tokens: ${stats.inputTokens + stats.outputTokens}`);
             console.log(`  Requests: ${stats.requests}`);
-            console.log(`  Avg cost/request: $${stats.averageCostPerRequest.toFixed(4)}\n`);
+            console.log(`  Avg tokens/request: ${stats.averageTokensPerRequest.toFixed(0)}\n`);
             rl.prompt();
             return;
             
@@ -730,13 +726,13 @@ export class SonnetCliClient extends BaseClient {
     const costStats = this.costTracker.getStats();
     
     console.log(`\nBatch complete: ${successful}/${tasks.length} successful`);
-    console.log(`Total cost: $${costStats.totalCost.toFixed(4)}`);
+    console.log(`Total tokens: ${costStats.inputTokens + costStats.outputTokens}`);
 
     return {
       total: tasks.length,
       successful,
       failed: tasks.length - successful,
-      cost: costStats.totalCost,
+      totalTokens: costStats.inputTokens + costStats.outputTokens,
       results
     };
   }

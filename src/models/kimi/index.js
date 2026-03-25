@@ -46,7 +46,7 @@ export {
   DEFAULT_CONFIG,
   PRESETS,
   selectModel,
-  estimateCost,
+  estimateUsage,
   getConfig,
   validateConfig
 } from './kimi-config.js';

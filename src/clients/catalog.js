@@ -32,6 +32,7 @@ export const PROVIDER_SURFACES = Object.freeze({
 
 export const MODEL_ALIASES = Object.freeze({
   'claude-opus-4': 'claude-opus-4-6',
+  'claude-opus-4-5-latest': 'claude-opus-4-5',
   'kimi-k2': 'kimi-k2-5'
 });
 
@@ -49,6 +50,26 @@ const SUBSCRIPTION_MODEL_PROFILES = Object.freeze([
     currentLoad: 0,
     maxConcurrency: 4,
     successRate: 0.97,
+    capabilities: Object.freeze({
+      features: Object.freeze(['analysis', 'code', 'extended_thinking', 'reasoning', 'vision']),
+      maxTokens: 200000,
+      languages: Object.freeze(['cpp', 'go', 'java', 'javascript', 'python', 'rust', 'typescript']),
+      domains: Object.freeze(['analysis', 'coding', 'math', 'science', 'writing'])
+    })
+  }),
+  Object.freeze({
+    id: 'claude-opus-4-5',
+    name: 'Claude Opus 4.5',
+    provider: 'anthropic',
+    runtimeProvider: 'claude',
+    billingModel: 'subscription',
+    costPer1kTokens: 0.004,
+    marginalCostPer1kTokens: 0,
+    qualityScore: 0.97,
+    avgLatencyMs: 1800,
+    currentLoad: 0,
+    maxConcurrency: 4,
+    successRate: 0.96,
     capabilities: Object.freeze({
       features: Object.freeze(['analysis', 'code', 'extended_thinking', 'reasoning', 'vision']),
       maxTokens: 200000,
@@ -173,6 +194,20 @@ const MODEL_RUNTIME_CANDIDATES = Object.freeze({
       defaultConfig: Object.freeze({ preferApi: false })
     })
   ]),
+  'claude-opus-4-5': Object.freeze([
+    Object.freeze({
+      provider: 'claude',
+      mode: 'desktop',
+      clientModel: 'claude-opus-4-5',
+      defaultConfig: Object.freeze({ preferApi: false })
+    }),
+    Object.freeze({
+      provider: 'claude',
+      mode: 'cli',
+      clientModel: 'claude-opus-4-5',
+      defaultConfig: Object.freeze({ preferApi: false })
+    })
+  ]),
   'claude-sonnet-4-6': Object.freeze([
     Object.freeze({
       provider: 'claude',
@@ -270,6 +305,7 @@ function buildCanonicalSubscriptionSurfaceMatrix() {
 const CANONICAL_SUBSCRIPTION_SURFACE_MATRIX = Object.freeze(buildCanonicalSubscriptionSurfaceMatrix());
 const EXPECTED_CANONICAL_SURFACES = Object.freeze({
   'claude-opus-4-6': Object.freeze(['desktop', 'cli']),
+  'claude-opus-4-5': Object.freeze(['desktop', 'cli']),
   'claude-sonnet-4-6': Object.freeze(['vscode', 'cli']),
   'claude-sonnet-4-5': Object.freeze(['cli', 'vscode']),
   'gpt-5.4-codex': Object.freeze(['vscode', 'app', 'cli']),
@@ -298,6 +334,7 @@ export const SUBSCRIPTION_FALLBACK_CHAINS = Object.freeze({
   ]),
   premium: Object.freeze([
     'claude-opus-4-6',
+    'claude-opus-4-5',
     'claude-sonnet-4-6',
     'gpt-5.4-codex'
   ]),

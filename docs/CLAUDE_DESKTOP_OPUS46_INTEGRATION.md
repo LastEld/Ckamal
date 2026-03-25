@@ -1,5 +1,7 @@
 # Claude Desktop Integration - Anthropic Opus 4.6
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## Обзор
 
 Интеграция с Claude Desktop приложением для работы с моделью **Anthropic Opus 4.6** с поддержкой **1 миллиона токенов контекста**.

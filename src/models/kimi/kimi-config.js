@@ -17,10 +17,6 @@ export const KIMI_MODELS = {
     maxOutputTokens: 4096,
     description: 'Fast, cost-effective model for simple tasks',
     bestFor: ['quick_chat', 'simple_qa', 'basic_completion'],
-    pricing: {
-      input: 0.000012,   // $ per 1K tokens
-      output: 0.000012   // $ per 1K tokens
-    },
     speed: 'fastest',
     cost: 'lowest'
   },
@@ -32,10 +28,6 @@ export const KIMI_MODELS = {
     maxOutputTokens: 8192,
     description: 'Balanced model for most tasks',
     bestFor: ['code_review', 'document_analysis', 'medium_context'],
-    pricing: {
-      input: 0.000024,
-      output: 0.000024
-    },
     speed: 'fast',
     cost: 'low'
   },
@@ -47,10 +39,6 @@ export const KIMI_MODELS = {
     maxOutputTokens: 8192,
     description: 'Large context model for comprehensive analysis',
     bestFor: ['large_codebase', 'long_documents', 'complex_analysis'],
-    pricing: {
-      input: 0.000060,
-      output: 0.000060
-    },
     speed: 'medium',
     cost: 'medium'
   },
@@ -62,10 +50,6 @@ export const KIMI_MODELS = {
     maxOutputTokens: 8192,
     description: 'Maximum context model for enterprise use',
     bestFor: ['enterprise_analysis', 'multi_file_refactoring', 'deep_research'],
-    pricing: {
-      input: 0.000120,
-      output: 0.000120
-    },
     speed: 'medium',
     cost: 'high'
   },
@@ -78,11 +62,6 @@ export const KIMI_MODELS = {
     maxOutputTokens: 4096,
     description: 'Vision-capable model for image analysis',
     bestFor: ['image_analysis', 'ocr', 'visual_qa', 'ui_analysis'],
-    pricing: {
-      input: 0.000012,
-      output: 0.000012,
-      image: 0.001   // $ per image
-    },
     speed: 'fast',
     cost: 'low',
     vision: true
@@ -381,14 +360,15 @@ export function selectModel(estimatedTokens, options = {}) {
     candidates = ['moonshot-v1-256k'];
   }
 
-  // Apply strategy
+  // Apply strategy (cost strategy uses context size as proxy since billing is subscription-based)
   const modelScores = candidates.map(modelId => {
     const model = KIMI_MODELS[modelId];
     let score = 0;
 
     switch (strategy) {
       case 'cost':
-        score = -model.pricing.input;
+        // Prefer smaller context models as a proxy for efficiency
+        score = -model.contextWindow;
         break;
       case 'speed':
         score = model.speed === 'fastest' ? 3 : model.speed === 'fast' ? 2 : 1;
@@ -398,10 +378,9 @@ export function selectModel(estimatedTokens, options = {}) {
         break;
       case 'balanced':
       default:
-        // Balance cost and speed
-        const costScore = 1 / (model.pricing.input * 1000);
+        // Balance efficiency and speed
         const speedScore = model.speed === 'fastest' ? 3 : model.speed === 'fast' ? 2 : 1;
-        score = costScore * 0.4 + speedScore * 0.6;
+        score = speedScore;
         break;
     }
 
@@ -413,30 +392,26 @@ export function selectModel(estimatedTokens, options = {}) {
 }
 
 /**
- * Estimate cost for a request
+ * Estimate token usage for a request (billing handled by subscription)
  * @param {string} model - Model ID
  * @param {number} inputTokens - Input token count
  * @param {number} outputTokens - Output token count
  * @param {number} [imageCount] - Number of images (for vision model)
- * @returns {Object} Cost breakdown
+ * @returns {Object} Token usage breakdown
  */
-export function estimateCost(model, inputTokens, outputTokens, imageCount = 0) {
+export function estimateUsage(model, inputTokens, outputTokens, imageCount = 0) {
   const modelInfo = KIMI_MODELS[model];
-  
+
   if (!modelInfo) {
     throw new Error(`Unknown model: ${model}`);
   }
 
-  const inputCost = (inputTokens / 1000) * modelInfo.pricing.input;
-  const outputCost = (outputTokens / 1000) * modelInfo.pricing.output;
-  const imageCost = imageCount * (modelInfo.pricing.image || 0);
-
   return {
-    input: inputCost,
-    output: outputCost,
-    images: imageCost,
-    total: inputCost + outputCost + imageCost,
-    currency: 'USD'
+    inputTokens,
+    outputTokens,
+    imageCount,
+    totalTokens: inputTokens + outputTokens,
+    model: modelInfo.id
   };
 }
 
@@ -514,7 +489,7 @@ export default {
   DEFAULT_CONFIG,
   PRESETS,
   selectModel,
-  estimateCost,
+  estimateUsage,
   getConfig,
   validateConfig
 };

@@ -3,215 +3,273 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ckamal | CogniMesh BIOS Release Surface</title>
+    <title>CogniMesh | Multi-Model AI Orchestration Platform</title>
     <meta
       name="description"
-      content="Ckamal packages CogniMesh BIOS into a controlled GitHub-facing release surface with AMS orchestration, subscription-backed model integrations, and a six-hump architectural identity."
+      content="CogniMesh orchestrates GPT, Claude, and Kimi through subscription-backed surfaces across CLI, Desktop, and VS Code. No API billing required."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./site.css" />
   </head>
   <body>
-    <main class="page-shell">
+    <nav class="nav">
+      <div class="nav-inner">
+        <a class="nav-brand" href="#">
+          <img src="./assets/brand/proposallogo2.png" alt="CogniMesh" class="nav-logo" />
+          <span>CogniMesh</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#matrix">Matrix</a>
+          <a href="#release">Release</a>
+          <a href="#github">GitHub</a>
+          <a class="nav-cta" href="https://github.com/LastEld/Ckamal">Star on GitHub</a>
+          <button class="theme-toggle" onclick="document.body.classList.toggle('dark');localStorage.setItem('theme',document.body.classList.contains('dark')?'dark':'light')" aria-label="Toggle theme">
+            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <script>if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark');</script>
+
+    <main>
+      <!-- Hero -->
       <section class="hero">
-        <div class="hero-meta">
-          <span class="hero-pill">Repo surface: <strong>LastEld/Ckamal</strong></span>
-          <span class="hero-pill">Model groups: <strong>6</strong></span>
-          <span class="hero-pill">Camel humps: <strong>6</strong></span>
+        <div class="hero-glow"></div>
+        <div class="hero-content">
+          <div class="hero-badges">
+            <span class="badge badge--green">Subscription-only</span>
+            <span class="badge badge--blue">7 Models</span>
+            <span class="badge badge--amber">3 Providers</span>
+            <span class="badge badge--purple">5 Surfaces</span>
+          </div>
+          <img src="./assets/brand/proposallogo2.png" alt="CogniMesh Camel" class="hero-logo" />
+          <h1>One platform.<br/>Every AI model.<br/><span class="hero-accent">Zero API bills.</span></h1>
+          <p class="hero-sub">
+            CogniMesh orchestrates GPT-5.3/5.4, Claude Opus/Sonnet, and Kimi K2.5
+            through your existing subscriptions. No API keys. No metered billing.
+            Just $18-20/month flat.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn--primary" href="https://github.com/LastEld/Ckamal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              Open Repository
+            </a>
+            <a class="btn btn--outline" href="https://github.com/LastEld/Ckamal/blob/main/README.md">Read Docs</a>
+            <a class="btn btn--outline" href="https://github.com/LastEld/Ckamal/actions">CI Status</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section" id="features">
+        <div class="section-head">
+          <span class="section-tag">Why CogniMesh</span>
+          <h2>Built for subscription users, not API renters</h2>
+          <p>Every feature works with your existing $18-20/month model subscriptions.</p>
         </div>
 
-        <img class="banner" src="./assets/brand/camel-banner.svg" alt="Ckamal banner" />
-
-        <div class="hero-grid">
-          <div class="hero-copy">
-            <h1>Release-facing control plane for CogniMesh BIOS.</h1>
-            <p>
-              Ckamal is the GitHub-ready presentation and release surface for the
-              existing CogniMesh BIOS codebase. It keeps the scope disciplined:
-              AMS orchestration, subscription-backed GPT/Claude/Kimi routing,
-              database-backed task and roadmap domains, operator UX, and GitHub
-              automation all ship as one controlled artifact.
-            </p>
-            <div class="hero-actions">
-              <a class="button button-primary" href="https://github.com/LastEld/Ckamal">Open repository</a>
-              <a class="button button-secondary" href="https://github.com/LastEld/Ckamal/actions">View Actions</a>
-              <a class="button button-secondary" href="https://github.com/LastEld/Ckamal/blob/main/README.md">Read operator guide</a>
+        <div class="grid grid--3">
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             </div>
-          </div>
-
-          <aside class="hero-panel">
-            <div class="eyebrow">Why the camel has six humps</div>
-            <h2>The six structural pillars</h2>
-            <p>
-              The hump count is not decoration. It encodes the minimum stable
-              abstractions that make this project usable and shippable: AMS
-              orchestration, model runtime integration, repository contract,
-              execution bus, operator surfaces, and GitHub release plane.
-            </p>
-            <p>
-              Cross-cutting concerns like security, monitoring, and analytics
-              reinforce every hump, but they are not independent pillars and do
-              not get separate humps.
-            </p>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section" id="humps">
-        <div class="section-header">
-          <div>
-            <div class="section-label">Architectural Count</div>
-            <h2>Six humps hold the project up.</h2>
-          </div>
-          <p>The logo count follows the architecture, not the aesthetics.</p>
-        </div>
-
-        <div class="hump-grid">
-          <article class="card">
-            <div class="eyebrow">01</div>
-            <h3>AMS / BIOS orchestration</h3>
-            <p>Spawn management, modes, agent pool control, and the orchestration lifecycle define how work enters and moves through the system.</p>
+            <h3>Multi-Model Routing</h3>
+            <p>Intelligent routing across GPT, Claude, and Kimi based on task complexity, latency, and quality scores.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">02</div>
-            <h3>Subscription runtime matrix</h3>
-            <p>GPT-5.3/5.4, Claude Opus/Sonnet, and Kimi K2.5 are integrated through declared desktop, CLI, and VS Code operator surfaces.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <h3>5 Operator Surfaces</h3>
+            <p>CLI, Desktop App, VS Code Extension, Copilot, and Cursor IDE. Use the interface that fits your workflow.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">03</div>
-            <h3>Repository contract</h3>
-            <p>Tasks, roadmaps, contexts, and merkle state only become trustworthy when schema, migrations, and repository code agree.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Zero API Billing</h3>
+            <p>No API keys needed. No metered charges. Everything routes through your flat-rate subscriptions.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">04</div>
-            <h3>Execution bus</h3>
-            <p>Router, queue, tools registry, middleware, and runtime gateways are the control bus that turns plans into executable operations.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <h3>BIOS Orchestration</h3>
+            <p>Agent spawn management, mode switching, pool control, and the full orchestration lifecycle.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">05</div>
-            <h3>Operator surfaces</h3>
-            <p>CLI, dashboard, local UX flows, and browser shell determine whether a human can actually operate the project day to day.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h3>Extended Thinking</h3>
+            <p>Deep reasoning with Claude Opus and GPT-5.4. Budget-controlled thinking chains for complex problems.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">06</div>
-            <h3>GitHub release plane</h3>
-            <p>README, Actions, Pages, release packaging, tags, and repository polish are required if the project is meant to ship publicly.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h3>Release-Ready</h3>
+            <p>CI/CD pipelines, provider matrix verification, release packaging, and GitHub Actions built-in.</p>
           </article>
         </div>
       </section>
 
-      <section class="section" id="matrix">
-        <div class="section-header">
-          <div>
-            <div class="section-label">Subscription Surface Matrix</div>
-            <h2>Verified model groups and operator surfaces</h2>
-          </div>
-          <p>Code-verified runtime mapping. Live execution still depends on the operator having the corresponding local client installed and authenticated.</p>
+      <!-- Model Matrix -->
+      <section class="section section--alt" id="matrix">
+        <div class="section-head">
+          <span class="section-tag">Subscription Surface Matrix</span>
+          <h2>7 models, 3 providers, verified at build time</h2>
+          <p>Code-verified runtime mapping. Each model routes through your local subscription client.</p>
         </div>
 
-        <table class="matrix-table">
-          <thead>
-            <tr>
-              <th>Model group</th>
-              <th>Surfaces</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>gpt-5.3-codex</strong></td>
-              <td><span class="surface-tag">CLI</span></td>
-              <td>Codex CLI route for the lighter local execution lane.</td>
-            </tr>
-            <tr>
-              <td><strong>gpt-5.4-codex</strong></td>
-              <td><span class="surface-tag">VS Code</span><span class="surface-tag">App</span><span class="surface-tag">CLI</span></td>
-              <td>Broadest Codex surface coverage in the current catalog.</td>
-            </tr>
-            <tr>
-              <td><strong>claude-opus-4-6</strong></td>
-              <td><span class="surface-tag">Desktop</span><span class="surface-tag">CLI</span></td>
-              <td>Operator-grade Claude desktop lane with CLI fallback.</td>
-            </tr>
-            <tr>
-              <td><strong>claude-sonnet-4-6</strong></td>
-              <td><span class="surface-tag">VS Code</span><span class="surface-tag">CLI</span></td>
-              <td>IDE-first path with CLI fallback.</td>
-            </tr>
-            <tr>
-              <td><strong>claude-sonnet-4-5</strong></td>
-              <td><span class="surface-tag">CLI</span><span class="surface-tag">VS Code</span></td>
-              <td>Compatibility lane preserved in the canonical matrix.</td>
-            </tr>
-            <tr>
-              <td><strong>kimi-k2-5</strong></td>
-              <td><span class="surface-tag">VS Code</span><span class="surface-tag">CLI</span></td>
-              <td>Kimi remains subscription-first and avoids API-first defaults.</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section class="section" id="release-gate">
-        <div class="section-header">
-          <div>
-            <div class="section-label">Release Gate</div>
-            <h2>One command path to verify the public surface</h2>
-          </div>
-          <p>These are the commands used to prove the repo is coherent before a push, tag, or release.</p>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Provider</th>
+                <th>Surfaces</th>
+                <th>Strength</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>claude-opus-4-6</strong></td>
+                <td><span class="provider provider--claude">Anthropic</span></td>
+                <td><span class="tag">Desktop</span><span class="tag">CLI</span></td>
+                <td>Flagship reasoning, 1M context</td>
+              </tr>
+              <tr>
+                <td><strong>claude-opus-4-5</strong></td>
+                <td><span class="provider provider--claude">Anthropic</span></td>
+                <td><span class="tag">Desktop</span><span class="tag">CLI</span></td>
+                <td>Premium fallback, proven stability</td>
+              </tr>
+              <tr>
+                <td><strong>claude-sonnet-4-6</strong></td>
+                <td><span class="provider provider--claude">Anthropic</span></td>
+                <td><span class="tag">VS Code</span><span class="tag">CLI</span></td>
+                <td>Fast IDE coding, computer use</td>
+              </tr>
+              <tr>
+                <td><strong>claude-sonnet-4-5</strong></td>
+                <td><span class="provider provider--claude">Anthropic</span></td>
+                <td><span class="tag">CLI</span><span class="tag">VS Code</span></td>
+                <td>Compatibility lane, balanced cost</td>
+              </tr>
+              <tr>
+                <td><strong>gpt-5.4-codex</strong></td>
+                <td><span class="provider provider--openai">OpenAI</span></td>
+                <td><span class="tag">VS Code</span><span class="tag">App</span><span class="tag">CLI</span></td>
+                <td>Broadest surface coverage, 256K context</td>
+              </tr>
+              <tr>
+                <td><strong>gpt-5.3-codex</strong></td>
+                <td><span class="provider provider--openai">OpenAI</span></td>
+                <td><span class="tag">CLI</span></td>
+                <td>Lightweight local execution</td>
+              </tr>
+              <tr>
+                <td><strong>kimi-k2-5</strong></td>
+                <td><span class="provider provider--kimi">Moonshot</span></td>
+                <td><span class="tag">VS Code</span><span class="tag">CLI</span></td>
+                <td>Long context, multimodal thinking</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div class="release-grid">
-          <article class="card">
-            <div class="eyebrow">Static + tests</div>
-            <div class="terminal"><code>npm run verify:release</code></div>
-          </article>
-          <article class="card">
-            <div class="eyebrow">Provider matrix</div>
-            <div class="terminal"><code>npm run verify:provider-matrix</code></div>
-          </article>
-          <article class="card">
-            <div class="eyebrow">Build smoke</div>
-            <div class="terminal"><code>npm run build -- --skip-lint</code></div>
-          </article>
+        <div class="matrix-note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          All models verified by <code>npm run verify:provider-matrix</code> on every CI run.
         </div>
       </section>
 
-      <section class="section" id="github-surface">
-        <div class="section-header">
-          <div>
-            <div class="section-label">GitHub Surface</div>
-            <h2>Pages, Actions, release assets, and public face</h2>
-          </div>
-          <p>The repo is shaped for GitHub as a product surface, not just a code dump.</p>
+      <!-- Release Gate -->
+      <section class="section" id="release">
+        <div class="section-head">
+          <span class="section-tag">Release Gate</span>
+          <h2>Ship with confidence</h2>
+          <p>Three commands prove the entire surface is coherent before any push, tag, or release.</p>
         </div>
 
-        <div class="hump-grid">
-          <article class="card">
-            <div class="eyebrow">Actions</div>
-            <h3>CI and release gates</h3>
-            <p><code>ci.yml</code>, <code>patch-verification.yml</code>, and <code>release.yml</code> now follow the actual Node/ESM workflow and the real build/test scripts.</p>
+        <div class="grid grid--3">
+          <div class="terminal-card">
+            <div class="terminal-header">
+              <span class="terminal-dot terminal-dot--red"></span>
+              <span class="terminal-dot terminal-dot--yellow"></span>
+              <span class="terminal-dot terminal-dot--green"></span>
+              <span class="terminal-title">Lint + Unit + Integration + E2E</span>
+            </div>
+            <code>npm run verify:release</code>
+          </div>
+          <div class="terminal-card">
+            <div class="terminal-header">
+              <span class="terminal-dot terminal-dot--red"></span>
+              <span class="terminal-dot terminal-dot--yellow"></span>
+              <span class="terminal-dot terminal-dot--green"></span>
+              <span class="terminal-title">Provider Matrix</span>
+            </div>
+            <code>npm run verify:provider-matrix</code>
+          </div>
+          <div class="terminal-card">
+            <div class="terminal-header">
+              <span class="terminal-dot terminal-dot--red"></span>
+              <span class="terminal-dot terminal-dot--yellow"></span>
+              <span class="terminal-dot terminal-dot--green"></span>
+              <span class="terminal-title">Build Smoke</span>
+            </div>
+            <code>npm run build</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- GitHub Surface -->
+      <section class="section section--alt" id="github">
+        <div class="section-head">
+          <span class="section-tag">GitHub Surface</span>
+          <h2>Repository as a product, not a code dump</h2>
+        </div>
+
+        <div class="grid grid--3">
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <h3>CI / CD Pipelines</h3>
+            <p><code>ci.yml</code>, <code>patch-verification.yml</code>, and <code>release.yml</code> gate every merge and release.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">Pages</div>
-            <h3>Static public landing</h3>
-            <p><code>pages.yml</code> deploys the <code>docs/</code> surface as GitHub Pages, making the repo presentable before any deeper docs dive.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            </div>
+            <h3>GitHub Pages</h3>
+            <p>Static landing deployed from <code>docs/</code> on every push to main. You're looking at it.</p>
           </article>
-          <article class="card">
-            <div class="eyebrow">Brand</div>
-            <h3>Six-hump camel identity</h3>
-            <p>The camel logo and banner encode the six pillars directly, so branding stays tethered to architecture.</p>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </div>
+            <h3>Release Packaging</h3>
+            <p>Automated tar.gz + zip + checksums + GitHub Release on version tags.</p>
           </article>
         </div>
       </section>
 
       <footer class="footer">
-        Ckamal / CogniMesh BIOS. Six humps, one control plane, zero mock success on release paths.
+        <img src="./assets/brand/proposallogo2.png" alt="" class="footer-logo" />
+        <p>CogniMesh &mdash; Multi-model AI orchestration, subscription-first.</p>
+        <p class="footer-links">
+          <a href="https://github.com/LastEld/Ckamal">Repository</a>
+          <a href="https://github.com/LastEld/Ckamal/actions">Actions</a>
+          <a href="https://github.com/LastEld/Ckamal/blob/main/README.md">Documentation</a>
+        </p>
       </footer>
     </main>
   </body>

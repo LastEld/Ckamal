@@ -39,11 +39,6 @@ export const GPT54_DEFAULTS = {
   SESSION_TTL: 24 * 60 * 60 * 1000, // 24 hours
   MAX_SESSIONS_PER_USER: 10,
   
-  // Cost tracking (approximate rates per 1M tokens)
-  COST_PER_INPUT_TOKEN: 0.000003,   // $3/MTok input
-  COST_PER_OUTPUT_TOKEN: 0.000012,  // $12/MTok output
-  COST_PER_REASONING_TOKEN: 0.000006, // $6/MTok reasoning
-  
   // Reasoning settings
   REASONING_ENABLED: true,
   REASONING_MODE: 'chain_of_thought',
@@ -102,11 +97,6 @@ export const GPT54_MODELS = {
     maxOutputTokens: 32768,
     description: 'Advanced coding model with reasoning',
     bestFor: ['complex_coding', 'architecture', 'refactoring', 'analysis'],
-    pricing: {
-      input: 0.000003,        // $3/MTok
-      output: 0.000012,       // $12/MTok
-      reasoning: 0.000006,    // $6/MTok
-    },
     supportsReasoning: true,
     supportsVision: false,
     supportsStreaming: true,
@@ -120,12 +110,6 @@ export const GPT54_MODELS = {
     maxOutputTokens: 32768,
     description: 'Coding model with vision capabilities',
     bestFor: ['ui_analysis', 'multimodal_coding', 'image_code_review'],
-    pricing: {
-      input: 0.000004,        // $4/MTok
-      output: 0.000012,       // $12/MTok
-      reasoning: 0.000006,    // $6/MTok
-      image: 0.005,           // $0.005 per image
-    },
     supportsReasoning: true,
     supportsVision: true,
     supportsStreaming: true,
@@ -139,11 +123,6 @@ export const GPT54_MODELS = {
     maxOutputTokens: 16384,
     description: 'Faster, cost-effective coding model',
     bestFor: ['quick_completion', 'simple_refactoring', 'code_review'],
-    pricing: {
-      input: 0.000001,        // $1/MTok
-      output: 0.000004,       // $4/MTok
-      reasoning: 0.000002,    // $2/MTok
-    },
     supportsReasoning: true,
     supportsVision: false,
     supportsStreaming: true,
@@ -416,17 +395,12 @@ export class GPT54Config extends EventEmitter {
       jsonMode: options.jsonMode ?? GPT54_DEFAULTS.JSON_MODE_ENABLED,
     };
     
-    // Initialize cost tracker
+    // Initialize usage tracker (token counting only - billing handled by subscription)
     this.#costTracker = {
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalReasoningTokens: 0,
-      totalCost: 0,
       sessionCosts: new Map(),
-      dailyBudget: options.dailyBudget || Infinity,
-      monthlyBudget: options.monthlyBudget || Infinity,
-      alertsEnabled: options.alertsEnabled ?? true,
-      alertThreshold: options.alertThreshold || 0.8,
     };
     
     // Initialize session store
@@ -522,159 +496,85 @@ export class GPT54Config extends EventEmitter {
   // ==================== Cost Tracking ====================
   
   /**
-   * Records token usage and calculates cost
+   * Records token usage for a session
    * @param {number} inputTokens - Input tokens used
    * @param {number} outputTokens - Output tokens used
    * @param {string} sessionId - Associated session ID
    * @param {number} [reasoningTokens] - Reasoning tokens used
-   * @returns {Object} Cost information
+   * @returns {Object} Usage information
    */
   recordUsage(inputTokens, outputTokens, sessionId = 'default', reasoningTokens = 0) {
-    const inputCost = inputTokens * GPT54_DEFAULTS.COST_PER_INPUT_TOKEN;
-    const outputCost = outputTokens * GPT54_DEFAULTS.COST_PER_OUTPUT_TOKEN;
-    const reasoningCost = reasoningTokens * GPT54_DEFAULTS.COST_PER_REASONING_TOKEN;
-    const totalCost = inputCost + outputCost + reasoningCost;
-    
     // Update global counters
     this.#costTracker.totalInputTokens += inputTokens;
     this.#costTracker.totalOutputTokens += outputTokens;
     this.#costTracker.totalReasoningTokens += reasoningTokens;
-    this.#costTracker.totalCost += totalCost;
-    
-    // Update session costs
+
+    // Update session usage
     if (!this.#costTracker.sessionCosts.has(sessionId)) {
       this.#costTracker.sessionCosts.set(sessionId, {
         inputTokens: 0,
         outputTokens: 0,
         reasoningTokens: 0,
-        totalCost: 0,
         requests: 0,
       });
     }
-    
-    const sessionCost = this.#costTracker.sessionCosts.get(sessionId);
-    sessionCost.inputTokens += inputTokens;
-    sessionCost.outputTokens += outputTokens;
-    sessionCost.reasoningTokens += reasoningTokens;
-    sessionCost.totalCost += totalCost;
-    sessionCost.requests += 1;
-    
-    // Check budget thresholds
-    this.#checkBudgetAlerts();
-    
-    const costInfo = {
+
+    const sessionUsage = this.#costTracker.sessionCosts.get(sessionId);
+    sessionUsage.inputTokens += inputTokens;
+    sessionUsage.outputTokens += outputTokens;
+    sessionUsage.reasoningTokens += reasoningTokens;
+    sessionUsage.requests += 1;
+
+    const usageInfo = {
       inputTokens,
       outputTokens,
       reasoningTokens,
-      inputCost,
-      outputCost,
-      reasoningCost,
-      totalCost,
-      cumulativeCost: this.#costTracker.totalCost,
       sessionId,
     };
-    
-    this.emit('cost:recorded', costInfo);
-    return costInfo;
+
+    this.emit('usage:recorded', usageInfo);
+    return usageInfo;
   }
   
   /**
-   * Checks budget thresholds and emits alerts
-   * @private
+   * Gets current usage statistics (token counts only - billing handled by subscription)
+   * @returns {Object} Usage statistics
    */
-  #checkBudgetAlerts() {
-    if (!this.#costTracker.alertsEnabled) return;
-    
-    const { totalCost, dailyBudget, monthlyBudget, alertThreshold } = this.#costTracker;
-    
-    // Check daily budget
-    if (dailyBudget !== Infinity && totalCost >= dailyBudget * alertThreshold) {
-      if (totalCost >= dailyBudget) {
-        this.emit('budget:exceeded', { type: 'daily', limit: dailyBudget, current: totalCost });
-      } else {
-        this.emit('budget:warning', { type: 'daily', limit: dailyBudget, current: totalCost, threshold: alertThreshold });
-      }
-    }
-    
-    // Check monthly budget
-    if (monthlyBudget !== Infinity && totalCost >= monthlyBudget * alertThreshold) {
-      if (totalCost >= monthlyBudget) {
-        this.emit('budget:exceeded', { type: 'monthly', limit: monthlyBudget, current: totalCost });
-      } else {
-        this.emit('budget:warning', { type: 'monthly', limit: monthlyBudget, current: totalCost, threshold: alertThreshold });
-      }
-    }
-  }
-  
-  /**
-   * Gets current cost statistics
-   * @returns {Object} Cost statistics
-   */
-  getCostStats() {
+  getUsageStats() {
     return {
       totalInputTokens: this.#costTracker.totalInputTokens,
       totalOutputTokens: this.#costTracker.totalOutputTokens,
       totalReasoningTokens: this.#costTracker.totalReasoningTokens,
-      totalCost: this.#costTracker.totalCost,
       sessionCount: this.#costTracker.sessionCosts.size,
-      dailyBudget: this.#costTracker.dailyBudget,
-      monthlyBudget: this.#costTracker.monthlyBudget,
-      budgetUtilization: {
-        daily: this.#costTracker.dailyBudget !== Infinity 
-          ? this.#costTracker.totalCost / this.#costTracker.dailyBudget 
-          : 0,
-        monthly: this.#costTracker.monthlyBudget !== Infinity 
-          ? this.#costTracker.totalCost / this.#costTracker.monthlyBudget 
-          : 0,
-      },
     };
   }
-  
+
   /**
-   * Gets cost breakdown by session
-   * @returns {Object} Session costs
+   * Gets usage breakdown by session
+   * @returns {Object} Session usage
    */
-  getSessionCosts() {
-    const costs = {};
+  getSessionUsage() {
+    const usage = {};
     for (const [sessionId, stats] of this.#costTracker.sessionCosts) {
-      costs[sessionId] = { ...stats };
+      usage[sessionId] = { ...stats };
     }
-    return costs;
+    return usage;
   }
-  
+
   /**
-   * Sets budget limits
-   * @param {Object} limits - Budget limits
+   * Resets usage tracking
+   * @param {boolean} [resetSessions=false] - Also reset session usage
    */
-  setBudgetLimits(limits) {
-    if (limits.daily !== undefined) {
-      this.#costTracker.dailyBudget = limits.daily;
-    }
-    if (limits.monthly !== undefined) {
-      this.#costTracker.monthlyBudget = limits.monthly;
-    }
-    if (limits.alertThreshold !== undefined) {
-      this.#costTracker.alertThreshold = Math.max(0, Math.min(1, limits.alertThreshold));
-    }
-    
-    this.emit('budget:updated', this.getCostStats());
-  }
-  
-  /**
-   * Resets cost tracking
-   * @param {boolean} [resetSessions=false] - Also reset session costs
-   */
-  resetCostTracking(resetSessions = false) {
+  resetUsageTracking(resetSessions = false) {
     this.#costTracker.totalInputTokens = 0;
     this.#costTracker.totalOutputTokens = 0;
     this.#costTracker.totalReasoningTokens = 0;
-    this.#costTracker.totalCost = 0;
-    
+
     if (resetSessions) {
       this.#costTracker.sessionCosts.clear();
     }
-    
-    this.emit('cost:reset');
+
+    this.emit('usage:reset');
   }
   
   // ==================== Context Management ====================
@@ -848,29 +748,18 @@ export function getModelInfo(modelId) {
 }
 
 /**
- * Estimates cost for a request
- * @param {string} model - Model ID
+ * Estimates token usage for a request (billing handled by subscription)
  * @param {number} inputTokens - Input tokens
  * @param {number} outputTokens - Output tokens
  * @param {number} [reasoningTokens] - Reasoning tokens
- * @returns {Object} Cost estimate
+ * @returns {Object} Token usage estimate
  */
-export function estimateCost(model, inputTokens, outputTokens, reasoningTokens = 0) {
-  const modelInfo = GPT54_MODELS[model];
-  if (!modelInfo) {
-    throw new GPT54ConfigError(`Unknown model: ${model}`, 'INVALID_MODEL');
-  }
-  
-  const inputCost = (inputTokens / 1000000) * modelInfo.pricing.input;
-  const outputCost = (outputTokens / 1000000) * modelInfo.pricing.output;
-  const reasoningCost = (reasoningTokens / 1000000) * (modelInfo.pricing.reasoning || 0);
-  
+export function estimateUsage(inputTokens, outputTokens, reasoningTokens = 0) {
   return {
-    input: inputCost,
-    output: outputCost,
-    reasoning: reasoningCost,
-    total: inputCost + outputCost + reasoningCost,
-    currency: 'USD',
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    totalTokens: inputTokens + outputTokens + reasoningTokens,
   };
 }
 

@@ -66,7 +66,7 @@ export {
   GPT54ConfigError,
   getDefaults,
   getModelInfo,
-  estimateCost,
+  estimateUsage,
 } from './gpt54-config.js';
 
 // App client

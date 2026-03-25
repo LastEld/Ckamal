@@ -1,5 +1,7 @@
 # GPT 5.4 Codex CLI Integration
 
+> **All models are accessed through flat-rate subscriptions. No API billing applies.**
+
 ## Обзор
 
 Интеграция GPT 5.4 Codex CLI для CogniMesh Phase 4. Предоставляет расширенные возможности анализа проектов, batch-обработки и автоматизации рабочих процессов.
@@ -20,7 +22,6 @@ src/clients/codex/
 
 ```javascript
 const client = new GPT54CodexCLIClient({
-  apiKey: process.env.OPENAI_API_KEY,
   model: 'gpt-5.4-codex',
   reasoningModel: 'o4-mini',
   projectRoot: './my-project',
@@ -290,7 +291,6 @@ node src/bios/cli.js codex optimize ./src --auto-apply
 import { GPT54CodexCLIClient } from './src/clients/codex/cli.js';
 
 const client = new GPT54CodexCLIClient({
-  apiKey: process.env.OPENAI_API_KEY,
   enableReasoning: true
 });
 
@@ -388,14 +388,14 @@ import { GPT54CodexCLIClient } from '../clients/codex/cli.js';
 
 ## Конфигурация
 
+### Access Model
+
+GPT 5.4 Codex is accessed through a subscription-backed plan. No per-token or metered API billing is required.
+
 ### Переменные окружения
 
 ```bash
-# Обязательная
-export OPENAI_API_KEY="sk-..."
-
 # Опциональные
-export CODEX_API_KEY="sk-..."
 export CODEX_MODEL="gpt-5.4-codex"
 export CODEX_REASONING_MODEL="o4-mini"
 export CODEX_TIMEOUT="300000"
@@ -430,11 +430,6 @@ export CODEX_MAX_BATCH_SIZE="50"
 
 ## Troubleshooting
 
-### Ошибка: API key not found
-```bash
-export OPENAI_API_KEY="your-key-here"
-```
-
 ### Ошибка: CLI not found
 ```bash
 # Установка Codex CLI
@@ -458,7 +453,6 @@ const result = await client.batchRefactor(files, operation, {
 
 ## Безопасность
 
-- Никогда не сохраняйте API ключи в коде
 - Используйте `--dry-run` перед применением изменений
 - Проверяйте сгенерированный код перед деплоем
 - Используйте `.gitignore` для исключения временных файлов

@@ -1498,11 +1498,11 @@ Use professional architecture documentation standards. Include diagrams as text 
   // ==================== Cost and Metrics ====================
   
   /**
-   * Gets cost statistics
-   * @returns {Object} Cost statistics
+   * Gets usage statistics (token counts - billing handled by subscription)
+   * @returns {Object} Usage statistics
    */
   getCostStats() {
-    return this.#config.getCostStats();
+    return this.#config.getUsageStats();
   }
   
   /**

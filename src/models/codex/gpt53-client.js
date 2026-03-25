@@ -6,7 +6,7 @@
 'use strict';
 
 const EventEmitter = require('events');
-const { GPT53_CONFIG, getTaskConfig, calculateCost } = require('./gpt53-config');
+const { GPT53_CONFIG, getTaskConfig, estimateUsage } = require('./gpt53-config');
 
 /**
  * GPT 5.3 Codex Client
@@ -398,7 +398,7 @@ class GPT53Client extends EventEmitter {
 
     const content = completion.choices[0]?.message?.content || '';
     const usage = completion.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-    const cost = calculateCost(usage.prompt_tokens, usage.completion_tokens);
+    const cost = estimateUsage(usage.prompt_tokens, usage.completion_tokens);
 
     return {
       content,
