@@ -10,6 +10,7 @@
     "build": "node scripts/run-build.js",
     "brand:generate": "node scripts/generate-brand-assets.js",
     "server": "node src/server.js",
+    "mcp": "node src/mcp/server.js",
     "bios:boot": "node src/bios/cli.js boot",
     "bios:diagnose": "node src/bios/cli.js diagnose",
     "bios:maintenance": "node src/bios/cli.js maintenance",
@@ -68,6 +69,7 @@
     "DEPLOYMENT.md"
   ],
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
     "better-sqlite3": "^12.8.0",
     "blessed": "^0.1.81",
     "commander": "^12.0.0",
