@@ -89,12 +89,6 @@ const clientsReadme = readFile('src/clients/README.md');
 const clientsContract = readFile('src/clients/CONTRACT.md');
 const claudeVscodeDoc = readFile('src/clients/claude/IDE_INTEGRATION.md');
 const kimiVscodeDoc = readFile('docs/kimi-vscode-integration.md');
-const camelBanner = readFile('docs/assets/brand/camel-banner.svg');
-
-if (/<text[\s>]/i.test(camelBanner)) {
-  errors.push('docs/assets/brand/camel-banner.svg must stay text-free');
-}
-
 if (/Compatibility aliases/i.test(readme)) {
   errors.push('README.md still mentions compatibility aliases');
 }

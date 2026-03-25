@@ -1,7 +1,15 @@
 {
   "name": "CogniMesh",
   "tagline": "Multi-model AI orchestration, subscription-first",
-  "logo": "proposallogo2.png",
+  "logo": "proposallogo2-transparent.png",
+  "layers": [
+    "BIOS Orchestration",
+    "Subscription Runtime",
+    "Domain State",
+    "Execution Bus",
+    "Operator Surfaces",
+    "Release Plane"
+  ],
   "providers": ["Anthropic", "OpenAI", "Moonshot"],
   "modelCount": 7,
   "billingModel": "subscription-only"
