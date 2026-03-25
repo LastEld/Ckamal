@@ -53,6 +53,9 @@ Thumbs.db
 .tmp/
 .worktrees/
 archive/
+!archive/legacy-src/
+!archive/legacy-src/models/
+!archive/legacy-src/models/**
 config/*.local.*
 
 # Logs

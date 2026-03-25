@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'README.md'
+      - 'package.json'
+      - 'scripts/validate-docs.js'
       - '.github/workflows/pages.yml'
 
 permissions:
@@ -25,6 +28,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate docs surface
+        run: npm run verify:docs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

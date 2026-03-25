@@ -13,86 +13,63 @@ import { EventEmitter } from 'events';
 // Client imports
 import { ClaudeCliClient } from '../clients/claude/cli.js';
 import { ClaudeDesktopClient } from '../clients/claude/desktop.js';
-import { ClaudeVSCodeClient } from '../clients/claude/ide.js';
-import { SonnetCliClient } from '../models/claude/sonnet-cli-client.js';
-import { SonnetIdeClient } from '../models/claude/sonnet-ide-client.js';
+import { ClaudeVSCodeClient } from '../clients/claude/vscode.js';
 import { KimiCliClient } from '../clients/kimi/cli.js';
-import { KimiVSCodeClient } from '../clients/kimi/ide.js';
-import { KimiSwarmClient } from '../clients/kimi/swarm.js';
+import { KimiVSCodeClient } from '../clients/kimi/vscode.js';
 import { CodexCliClient } from '../clients/codex/cli.js';
-import { CodexCopilotClient } from '../clients/codex/copilot.js';
-import { CodexCursorClient } from '../clients/codex/cursor.js';
 import { GPT54CodexAppClient } from '../clients/codex/app.js';
 import { GPT54CodexVSCodeClient } from '../clients/codex/vscode.js';
 
-const MODE_ALIASES = Object.freeze({
-  ide: 'vscode',
-  'sonnet-cli': 'cli',
-  'sonnet-ide': 'vscode'
-});
-
 function normalizeGatewayMode(mode) {
-  if (!mode) {
+  return mode || null;
+}
+
+function normalizeRoutingTarget(target) {
+  if (!target) {
     return null;
   }
 
-  return MODE_ALIASES[mode] || mode;
+  if (typeof target === 'string') {
+    return { provider: target, mode: null };
+  }
+
+  return {
+    provider: target.provider,
+    mode: normalizeGatewayMode(target.mode)
+  };
 }
 
 export const PROVIDERS = {
   CLAUDE: 'claude',
-  CLAUDE_SONNET: 'claude-sonnet',
   KIMI: 'kimi',
   CODEX: 'codex'
 };
 
 export const CAPABILITIES = {
   claude: {
-    modes: ['cli', 'desktop', 'vscode', 'ide', 'mcp'],
+    modes: ['cli', 'desktop', 'vscode'],
     context: 1000000,
-    features: ['mcp', 'plan_mode', 'sub_agents', 'streaming', 'computer_use'],
+    features: ['plan_mode', 'sub_agents', 'streaming', 'computer_use', 'extended_thinking', 'vision'],
     pricing: { input: 15, output: 75 },
-    strengths: ['complex_reasoning', 'long_context', 'computer_automation', 'planning']
-  },
-  
-  'claude-sonnet': {
-    modes: ['cli', 'vscode'],
-    context: 200000,
-    features: [
-      'extended_thinking',
-      'computer_use',
-      'vision',
-      'streaming',
-      'function_calling',
-      'code_analysis',
-      'code_generation',
-      'code_review',
-      'refactoring',
-      'lsp_protocol'
-    ],
-    pricing: { input: 3, output: 15 },
-    strengths: ['coding', 'reasoning', 'cost_effective', 'ide_integration', 'cli_integration']
+    strengths: ['complex_reasoning', 'long_context', 'computer_automation', 'planning', 'coding', 'ide_integration', 'cli_integration']
   },
   
   kimi: {
-    modes: ['cli', 'vscode', 'ide', 'swarm'],
+    modes: ['cli', 'vscode'],
     context: 256000,
     features: [
-      'swarm',
       'multimodal',
       'thinking_mode',
       'long_context',
       'chinese_optimization',
-      'batch_code_review',
-      'multi_file_refactoring',
-      'documentation_generation'
+      'batch_code_review'
     ],
     pricing: { input: 5, output: 15 },
-    strengths: ['multimodal', 'chinese_language', 'cost_effective', 'swarm_coordination']
+    strengths: ['multimodal', 'chinese_language', 'cost_effective']
   },
   
   codex: {
-    modes: ['cli', 'app', 'vscode', 'copilot', 'cursor'],
+    modes: ['cli', 'app', 'vscode'],
     context: 128000,
     features: ['completion', 'infilling', 'edit_style', 'code_generation'],
     pricing: { input: 10, output: 30 },
@@ -135,21 +112,33 @@ export const TASK_ROUTING = {
   
   // Use Sonnet for code completion (cost-effective, high quality)
   code_completion: {
-    primary: 'claude-sonnet',
-    secondary: 'codex',
-    fallback: ['kimi', 'claude']
+    primary: { provider: 'claude', mode: 'vscode' },
+    secondary: { provider: 'codex', mode: 'vscode' },
+    fallback: [
+      { provider: 'codex', mode: 'cli' },
+      { provider: 'claude', mode: 'cli' },
+      { provider: 'kimi', mode: 'cli' }
+    ]
   },
   
-  // Use Sonnet for IDE integration
+  // Use Claude VS Code surface for editor integration
   ide_integration: {
-    primary: 'claude-sonnet',
-    fallback: ['claude', 'kimi']
+    primary: { provider: 'claude', mode: 'vscode' },
+    fallback: [
+      { provider: 'codex', mode: 'vscode' },
+      { provider: 'kimi', mode: 'vscode' },
+      { provider: 'claude', mode: 'cli' }
+    ]
   },
   
-  // Use Sonnet for CLI coding tasks
+  // Use Claude Code CLI for CLI coding tasks
   cli_coding: {
-    primary: 'claude-sonnet',
-    fallback: ['claude', 'kimi', 'codex']
+    primary: { provider: 'claude', mode: 'cli' },
+    fallback: [
+      { provider: 'codex', mode: 'cli' },
+      { provider: 'kimi', mode: 'cli' },
+      { provider: 'claude', mode: 'desktop' }
+    ]
   },
   
   // Use Claude for planning
@@ -196,11 +185,6 @@ export class ClientGateway extends EventEmitter {
       initPromises.push(this._initClaudeClients());
     }
 
-    // Initialize Claude Sonnet clients if configured
-    if (this.config.claudeSonnet !== false) {
-      initPromises.push(this._initSonnetClients());
-    }
-
     // Initialize Kimi clients if configured
     if (this.config.kimi !== false) {
       initPromises.push(this._initKimiClients());
@@ -229,73 +213,36 @@ export class ClientGateway extends EventEmitter {
     try {
       // CLI client
       if (configs.cli !== false) {
-        const cliClient = new ClaudeCliClient(configs.cli || {});
+        const cliClient = new ClaudeCliClient({
+          model: 'claude-sonnet-4-6',
+          ...(configs.cli || {})
+        });
         await cliClient.initialize();
         this._registerClient('claude:cli', cliClient);
       }
 
       // Desktop client
       if (configs.desktop !== false) {
-        const desktopClient = new ClaudeDesktopClient(configs.desktop || {});
+        const desktopClient = new ClaudeDesktopClient({
+          model: 'claude-opus-4-6',
+          ...(configs.desktop || {})
+        });
         await desktopClient.initialize();
         this._registerClient('claude:desktop', desktopClient);
       }
 
       // VS Code client
-      const vscodeConfig = configs.vscode ?? configs.ide;
+      const vscodeConfig = configs.vscode;
       if (vscodeConfig !== false) {
-        const vscodeClient = new ClaudeVSCodeClient(vscodeConfig || {});
+        const vscodeClient = new ClaudeVSCodeClient({
+          model: 'claude-sonnet-4-6',
+          ...(vscodeConfig || {})
+        });
         await vscodeClient.initialize();
         this._registerClient('claude:vscode', vscodeClient);
       }
-
-      // MCP client
-      if (configs.mcp !== false) {
-        const { ClaudeMcpClient } = await import('../clients/claude/mcp.js');
-        const mcpClient = new ClaudeMcpClient(configs.mcp || {});
-        await mcpClient.initialize();
-        this._registerClient('claude:mcp', mcpClient);
-      }
     } catch (error) {
       this.emit('clientError', { provider: 'claude', error });
-    }
-  }
-
-  /**
-   * Initialize Claude Sonnet-specific clients (4.6/4.5)
-   */
-  async _initSonnetClients() {
-    const configs = this.config.claudeSonnet || {};
-
-    try {
-      // Sonnet CLI client
-      if (configs.cli !== false) {
-        const cliConfig = configs.cli || {};
-        const enhancedConfig = {
-          modelId: 'SONNET_4_6',
-          features: {
-            extendedThinking: true,
-            costTracking: true,
-            contextCompression: true
-          },
-          preferApi: false,
-          ...cliConfig
-        };
-        
-        const cliClient = new SonnetCliClient(enhancedConfig);
-        await cliClient.initialize();
-        this._registerClient('claude-sonnet:cli', cliClient);
-      }
-
-      // Sonnet VS Code client
-      const vscodeConfig = configs.vscode ?? configs.ide;
-      if (vscodeConfig !== false) {
-        const vscodeClient = new SonnetIdeClient(vscodeConfig || {});
-        await vscodeClient.initialize();
-        this._registerClient('claude-sonnet:vscode', vscodeClient);
-      }
-    } catch (error) {
-      this.emit('clientError', { provider: 'claude-sonnet', error });
     }
   }
 
@@ -328,18 +275,11 @@ export class ClientGateway extends EventEmitter {
       }
 
       // VS Code client
-      const vscodeConfig = configs.vscode ?? configs.ide;
+      const vscodeConfig = configs.vscode;
       if (vscodeConfig !== false) {
         const vscodeClient = new KimiVSCodeClient(vscodeConfig || {});
         await vscodeClient.initialize();
         this._registerClient('kimi:vscode', vscodeClient);
-      }
-
-      // Swarm client
-      if (configs.swarm !== false) {
-        const swarmClient = new KimiSwarmClient(configs.swarm || {});
-        await swarmClient.initialize();
-        this._registerClient('kimi:swarm', swarmClient);
       }
     } catch (error) {
       this.emit('clientError', { provider: 'kimi', error });
@@ -368,25 +308,11 @@ export class ClientGateway extends EventEmitter {
       }
 
       // VS Code client
-      const vscodeConfig = configs.vscode ?? configs.ide;
+      const vscodeConfig = configs.vscode;
       if (vscodeConfig !== false) {
         const vscodeClient = new GPT54CodexVSCodeClient(vscodeConfig || {});
         await vscodeClient.initialize();
         this._registerClient('codex:vscode', vscodeClient);
-      }
-
-      // Copilot client
-      if (configs.copilot !== false) {
-        const copilotClient = new CodexCopilotClient(configs.copilot || {});
-        await copilotClient.initialize();
-        this._registerClient('codex:copilot', copilotClient);
-      }
-
-      // Cursor client
-      if (configs.cursor !== false) {
-        const cursorClient = new CodexCursorClient(configs.cursor || {});
-        await cursorClient.initialize();
-        this._registerClient('codex:cursor', cursorClient);
       }
     } catch (error) {
       this.emit('clientError', { provider: 'codex', error });
@@ -604,14 +530,16 @@ export class ClientGateway extends EventEmitter {
   }
 
   /**
-   * Execute with Claude Sonnet (convenience method for Sonnet-specific features)
+   * Execute with Claude coding surfaces (Sonnet-backed convenience path)
    */
   async executeWithSonnet(task, options = {}) {
-    const client = this._resolveClient('claude-sonnet', 'cli') || 
-                   this._resolveClient('claude-sonnet', 'ide');
+    const preferredMode = normalizeGatewayMode(options.mode) || 'cli';
+    const client = this._resolveClient('claude', preferredMode) ||
+      this._resolveClient('claude', 'vscode') ||
+      this._resolveClient('claude', 'cli');
     
     if (!client) {
-      throw new Error('Claude Sonnet client not available');
+      throw new Error('Claude subscription-backed coding surface not available');
     }
 
     // Map task types to Sonnet methods
@@ -630,9 +558,14 @@ export class ClientGateway extends EventEmitter {
     };
 
     const method = methodMap[task.type];
+    const executionOptions = {
+      ...options,
+      mode: preferredMode,
+      model: options.model || 'claude-sonnet-4-6'
+    };
     
     if (method && typeof client[method] === 'function') {
-      this.emit('executing', { provider: 'claude-sonnet', task, method });
+      this.emit('executing', { provider: 'claude', task, method, model: executionOptions.model });
       
       const startTime = Date.now();
       let result;
@@ -641,39 +574,39 @@ export class ClientGateway extends EventEmitter {
       switch (task.type) {
         case 'code_analyze':
         case 'explain_code':
-          result = await client[method](task.filePath, task.options || {});
+          result = await client[method](task.filePath, task.options || executionOptions);
           break;
         case 'code_generate':
-          result = await client[method](task.prompt, task.language, task.options || {});
+          result = await client[method](task.prompt, task.language, task.options || executionOptions);
           break;
         case 'code_review':
-          result = await client[method](task.filePath, task.options || {});
+          result = await client[method](task.filePath, task.options || executionOptions);
           break;
         case 'inline_completion':
-          result = await client[method](task.document, task.position, task.options || {});
+          result = await client[method](task.document, task.position, task.options || executionOptions);
           break;
         case 'code_action':
           result = await client[method](task.document, task.range, task.context || {});
           break;
         case 'refactoring':
-          result = await client[method](task.document, task.range, task.operation, task.options || {});
+          result = await client[method](task.document, task.range, task.operation, task.options || executionOptions);
           break;
         case 'batch_process':
-          result = await client[method](task.tasks, task.options || {});
+          result = await client[method](task.tasks, task.options || executionOptions);
           break;
         default:
-          result = await client[method](task.data || task.prompt || task.code, task.options || {});
+          result = await client[method](task.data || task.prompt || task.code, task.options || executionOptions);
       }
       
       this.stats.requests++;
       this.stats.latency.push(Date.now() - startTime);
       
-      this.emit('executed', { provider: 'claude-sonnet', task, result, method, latency: Date.now() - startTime });
+      this.emit('executed', { provider: 'claude', task, result, method, model: executionOptions.model, latency: Date.now() - startTime });
       return result;
     }
 
     // Fall back to standard execute
-    return this.executeWithClient('claude-sonnet', task, options);
+    return this.executeWithClient('claude', task, executionOptions);
   }
 
   /**
@@ -686,22 +619,31 @@ export class ClientGateway extends EventEmitter {
     const routing = this._getRoutingForTask(taskType);
     if (routing) {
       // Try primary
-      const primary = this._resolveClient(routing.primary);
+      const primaryTarget = normalizeRoutingTarget(routing.primary);
+      const primary = primaryTarget
+        ? this._resolveClient(primaryTarget.provider, primaryTarget.mode)
+        : null;
       if (primary && primary.isConnected()) {
         return primary;
       }
       
       // Try secondary
       if (routing.secondary) {
-        const secondary = this._resolveClient(routing.secondary);
+        const secondaryTarget = normalizeRoutingTarget(routing.secondary);
+        const secondary = secondaryTarget
+          ? this._resolveClient(secondaryTarget.provider, secondaryTarget.mode)
+          : null;
         if (secondary && secondary.isConnected()) {
           return secondary;
         }
       }
       
       // Try fallback chain
-      for (const provider of routing.fallback || this.fallbackChain) {
-        const client = this._resolveClient(provider);
+      for (const entry of routing.fallback || this.fallbackChain) {
+        const fallbackTarget = normalizeRoutingTarget(entry);
+        const client = fallbackTarget
+          ? this._resolveClient(fallbackTarget.provider, fallbackTarget.mode)
+          : null;
         if (client && client.isConnected()) {
           return client;
         }
@@ -713,12 +655,12 @@ export class ClientGateway extends EventEmitter {
       case 'multimodal':
         // Kimi 2.5 for multimodal tasks
         return this._resolveClient('kimi', 'cli') || 
-               this._resolveClient('kimi', 'ide');
+               this._resolveClient('kimi', 'vscode');
       
       case 'chinese_language':
         // Kimi for Chinese language tasks
         return this._resolveClient('kimi', 'cli') || 
-               this._resolveClient('kimi', 'ide');
+               this._resolveClient('kimi', 'vscode');
       
       case 'long_context':
         // Kimi 2.5 for long context (up to 256K)
@@ -736,35 +678,34 @@ export class ClientGateway extends EventEmitter {
                this._resolveClient('claude', 'desktop');
       
       case 'code_completion':
-        // Try Sonnet IDE first, then Codex
-        return this._resolveClient('claude-sonnet', 'ide') ||
-               this._resolveClient('codex', 'copilot') || 
-               this._resolveClient('codex', 'cursor') ||
+        return this._resolveClient('claude', 'vscode') ||
+               this._resolveClient('codex', 'vscode') ||
+               this._resolveClient('claude', 'cli') ||
                this._resolveClient('codex', 'cli');
       
       case 'ide_integration':
-        // Sonnet for IDE features
-        return this._resolveClient('claude-sonnet', 'ide') ||
-               this._resolveClient('claude', 'ide');
+        return this._resolveClient('claude', 'vscode') ||
+               this._resolveClient('codex', 'vscode') ||
+               this._resolveClient('kimi', 'vscode');
       
       case 'cli_integration':
-        // Sonnet CLI for command-line tasks
-        return this._resolveClient('claude-sonnet', 'cli') ||
-               this._resolveClient('claude', 'cli');
+        return this._resolveClient('claude', 'cli') ||
+               this._resolveClient('codex', 'cli') ||
+               this._resolveClient('kimi', 'cli');
       
       case 'planning':
         // Claude for planning with sub-agents
-        return this._resolveClient('claude', 'mcp') ||
-               this._resolveClient('claude', 'cli');
+        return this._resolveClient('claude', 'cli') ||
+               this._resolveClient('claude', 'desktop');
       
       case 'swarm':
-        // Kimi swarm mode
-        return this._resolveClient('kimi', 'swarm');
+        // Swarm is an orchestration strategy, not a separate provider surface.
+        return this._resolveClient('kimi', 'cli');
       
       case 'batch_operations':
         // Kimi for batch operations
         return this._resolveClient('kimi', 'cli') ||
-               this._resolveClient('kimi', 'swarm');
+               this._resolveClient('kimi', 'vscode');
       
       default:
         // Default to any available client with fallback chain
@@ -1061,7 +1002,7 @@ export class ClientGateway extends EventEmitter {
     this.stopHealthMonitoring();
     
     const disconnectPromises = [];
-    for (const [id, client] of this.clients) {
+    for (const [, client] of this.clients) {
       disconnectPromises.push(
         client.disconnect().catch(() => {}) // Ignore errors during shutdown
       );

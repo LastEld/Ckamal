@@ -6,15 +6,12 @@
 import { BaseClient } from './base-client.js';
 import { ClaudeCliClient } from './claude/cli.js';
 import { ClaudeDesktopClient } from './claude/desktop.js';
-import { ClaudeVSCodeClient, ClaudeIdeClient } from './claude/ide.js';
+import { ClaudeVSCodeClient } from './claude/vscode.js';
 import { CodexCliClient } from './codex/cli.js';
-import { CodexCopilotClient } from './codex/copilot.js';
-import { CodexCursorClient } from './codex/cursor.js';
 import { GPT54CodexAppClient } from './codex/app.js';
 import { GPT54CodexVSCodeClient } from './codex/vscode.js';
 import { KimiCliClient } from './kimi/cli.js';
-import { KimiVSCodeClient, KimiIdeClient } from './kimi/ide.js';
-import { KimiSwarmClient } from './kimi/swarm.js';
+import { KimiVSCodeClient } from './kimi/vscode.js';
 import {
   PROVIDER_SURFACES,
   getOperatorProviderCatalog,
@@ -30,13 +27,10 @@ import {
 export { BaseClient } from './base-client.js';
 export { ClaudeCliClient } from './claude/cli.js';
 export { ClaudeDesktopClient } from './claude/desktop.js';
-export { ClaudeVSCodeClient, ClaudeIdeClient } from './claude/ide.js';
+export { ClaudeVSCodeClient } from './claude/vscode.js';
 export { KimiCliClient } from './kimi/cli.js';
-export { KimiVSCodeClient, KimiIdeClient } from './kimi/ide.js';
-export { KimiSwarmClient } from './kimi/swarm.js';
+export { KimiVSCodeClient } from './kimi/vscode.js';
 export { CodexCliClient } from './codex/cli.js';
-export { CodexCopilotClient } from './codex/copilot.js';
-export { CodexCursorClient } from './codex/cursor.js';
 export { GPT54CodexAppClient } from './codex/app.js';
 export { GPT54CodexVSCodeClient } from './codex/vscode.js';
 export {
@@ -55,20 +49,15 @@ const CLIENT_CLASS_MAP = Object.freeze({
   claude: Object.freeze({
     cli: ClaudeCliClient,
     desktop: ClaudeDesktopClient,
-    ide: ClaudeVSCodeClient,
     vscode: ClaudeVSCodeClient
   }),
   kimi: Object.freeze({
     cli: KimiCliClient,
-    ide: KimiVSCodeClient,
-    swarm: KimiSwarmClient,
     vscode: KimiVSCodeClient
   }),
   codex: Object.freeze({
     app: GPT54CodexAppClient,
     cli: CodexCliClient,
-    copilot: CodexCopilotClient,
-    cursor: CodexCursorClient,
     vscode: GPT54CodexVSCodeClient
   })
 });
@@ -84,13 +73,8 @@ export class ClientFactory {
     }
 
     const ClientClass = providerClasses[mode];
-    if (!ClientClass && !(provider === 'claude' && mode === 'mcp')) {
+    if (!ClientClass) {
       throw new Error(`Unknown ${provider} mode: ${mode}`);
-    }
-
-    if (provider === 'claude' && mode === 'mcp') {
-      const { ClaudeMcpClient } = await import('./claude/mcp.js');
-      return new ClaudeMcpClient(config);
     }
 
     return new ClientClass(config);
@@ -149,14 +133,9 @@ export default {
   ClaudeCliClient,
   ClaudeDesktopClient,
   ClaudeVSCodeClient,
-  ClaudeIdeClient,
   KimiCliClient,
   KimiVSCodeClient,
-  KimiIdeClient,
-  KimiSwarmClient,
   CodexCliClient,
-  CodexCopilotClient,
-  CodexCursorClient,
   GPT54CodexAppClient,
   GPT54CodexVSCodeClient,
   ClientFactory,

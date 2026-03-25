@@ -163,8 +163,6 @@ export class CodexCliClient extends BaseClient {
     });
 
     this.cliPath = config.cliPath || this._findCliPath();
-    this.apiKey = config.apiKey || process.env.OPENAI_API_KEY;
-    this.baseURL = config.baseURL || 'https://api.openai.com/v1';
     
     // Model configuration
     this.model = config.model || 'gpt-5.4-codex';
@@ -242,7 +240,7 @@ export class CodexCliClient extends BaseClient {
 
     try {
       if (this.preferApi) {
-        throw this._notConfigured('Codex API billing fallback is disabled; use the CLI or desktop surface');
+        throw this._notConfigured('Codex API billing fallback is disabled; use the CLI, app, or VS Code surface');
       }
 
       const { execSync } = await import('child_process');
@@ -264,7 +262,7 @@ export class CodexCliClient extends BaseClient {
   }
 
   async _verifyApiAccess() {
-    throw this._notConfigured('Codex API access is test-only and disabled in subscription-only runtime');
+    throw this._notConfigured('Codex metered API access is disabled in subscription-only release mode');
   }
 
   /**
@@ -302,7 +300,7 @@ export class CodexCliClient extends BaseClient {
     try {
       let result;
       if (this.preferApi) {
-        throw this._notConfigured('Codex API billing fallback is disabled; use the CLI or desktop surface');
+      throw this._notConfigured('Codex API billing fallback is disabled; use the CLI, app, or VS Code surface');
       }
 
       result = await this._sendViaCli(message, { ...options, model });
@@ -326,16 +324,14 @@ export class CodexCliClient extends BaseClient {
   /**
    * Send via OpenAI API
    */
-  async _sendViaApi(message, options) {
-    throw this._notConfigured('Codex API billing path is disabled; use the CLI or desktop surface');
+  async _sendViaApi() {
+    throw this._notConfigured('Codex API billing path is disabled; use the CLI, app, or VS Code surface');
   }
 
   /**
    * Send via CLI
    */
   async _sendViaCli(message, options) {
-    const modelConfig = this.getModelConfig(options.model);
-    
     return new Promise((resolve, reject) => {
       const timeout = options.timeout || 120000;
       const args = [];

@@ -18,8 +18,6 @@ export class KimiCliClient extends BaseClient {
       mode: 'cli'
     });
     this.cliPath = config.cliPath || this._findCliPath();
-    this.apiKey = config.apiKey || process.env.MOONSHOT_API_KEY || process.env.KIMI_API_KEY;
-    this.baseURL = config.baseURL || 'https://api.moonshot.cn/v1';
     this.model = config.model || 'moonshot-v1-128k';
     this.maxContextTokens = 256000;
     this.preferApi = false;
@@ -75,7 +73,7 @@ export class KimiCliClient extends BaseClient {
 
     try {
       if (this.preferApi) {
-        throw this._notConfigured('Kimi API billing fallback is disabled; use the CLI or desktop surface');
+        throw this._notConfigured('Kimi API billing fallback is disabled; use the CLI or VS Code surface');
       }
 
       // Verify CLI availability
@@ -96,7 +94,7 @@ export class KimiCliClient extends BaseClient {
    * Verify API access
    */
   async _verifyApiAccess() {
-    throw this._notConfigured('Kimi API access is test-only and disabled in subscription-only runtime');
+    throw this._notConfigured('Kimi metered API access is disabled in subscription-only release mode');
   }
 
   async send(message, options = {}) {
@@ -105,7 +103,7 @@ export class KimiCliClient extends BaseClient {
     }
 
     if (this.preferApi) {
-      throw this._notConfigured('Kimi API billing fallback is disabled; use the CLI or desktop surface');
+      throw this._notConfigured('Kimi API billing fallback is disabled; use the CLI or VS Code surface');
     }
 
     return this._sendViaCli(message, options);
@@ -114,12 +112,12 @@ export class KimiCliClient extends BaseClient {
   /**
    * Send via Moonshot API
    */
-  async _sendViaApi(message, options) {
-    throw this._notConfigured('Kimi API billing path is disabled; use the CLI or desktop surface');
+  async _sendViaApi() {
+    throw this._notConfigured('Kimi API billing path is disabled; use the CLI or VS Code surface');
   }
 
   /**
-   * Build messages array for API
+   * Build a normalized message array for local prompt handling.
    */
   _buildMessages(message, options) {
     const messages = [];

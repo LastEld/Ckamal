@@ -62,7 +62,7 @@ export const DEFAULT_RESOURCE_LIMITS = {
  * Client configuration for multi-client support
  * @typedef {Object} ClientConfig
  * @property {string} name - Client name (kimi, claude, codex)
- * @property {string} type - Client type (cli, desktop, ide, mcp)
+ * @property {string} type - Client type (cli, desktop, vscode, app)
  * @property {Object} capabilities - Client capabilities
  * @property {number} weight - Load balancing weight
  * @property {boolean} healthy - Health status

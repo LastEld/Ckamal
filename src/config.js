@@ -60,7 +60,6 @@ export class Config {
       process.env.CLAUDE_CLI_PATH ||
       options.claudeSocketPath ||
       process.env.CLAUDE_VSCODE_SOCKET_PATH ||
-      process.env.CLAUDE_IDE_SOCKET_PATH ||
       options.claudeDesktopUrl ||
       process.env.CLAUDE_DESKTOP_URL
     );
@@ -68,8 +67,7 @@ export class Config {
       options.kimiCliPath ||
       process.env.KIMI_CLI_PATH ||
       options.kimiSocketPath ||
-      process.env.KIMI_VSCODE_SOCKET_PATH ||
-      process.env.KIMI_IDE_SOCKET_PATH
+      process.env.KIMI_VSCODE_SOCKET_PATH
     );
     const hasCodexLocalSurface = Boolean(
       options.codexCliPath ||

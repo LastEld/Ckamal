@@ -7,7 +7,7 @@
 import { BaseClient } from '../base-client.js';
 import { spawn, execSync } from 'child_process';
 import { existsSync, readFileSync, statSync, readdirSync } from 'fs';
-import { join, resolve, relative, extname } from 'path';
+import { join, resolve, extname } from 'path';
 import os from 'os';
 
 export class ClaudeCliClient extends BaseClient {
@@ -22,8 +22,6 @@ export class ClaudeCliClient extends BaseClient {
     this.messageQueue = [];
     this.responseBuffer = '';
     this.cliPath = config.cliPath || this._findCliPath();
-    this.apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
-    this.baseURL = config.baseURL || 'https://api.anthropic.com/v1';
     this.model = config.model || 'claude-sonnet-4-6';
     this.preferApi = false;
     this.contextWindow = 200000; // 200K context window for Sonnet 4.6
@@ -98,7 +96,7 @@ export class ClaudeCliClient extends BaseClient {
     
     try {
       if (this.preferApi) {
-        throw this._notConfigured('Claude API billing fallback is disabled; use the CLI or desktop surface');
+        throw this._notConfigured('Claude API billing fallback is disabled; use the CLI, VS Code, or desktop surface');
       }
 
       // Verify CLI is available
@@ -118,7 +116,7 @@ export class ClaudeCliClient extends BaseClient {
    * Verify API access
    */
   async _verifyApiAccess() {
-    throw this._notConfigured('Claude API access is test-only and disabled in subscription-only runtime');
+    throw this._notConfigured('Claude metered API access is disabled in subscription-only release mode');
   }
 
   async send(message, options = {}) {
@@ -127,7 +125,7 @@ export class ClaudeCliClient extends BaseClient {
     }
 
     if (this.preferApi) {
-      throw this._notConfigured('Claude API billing fallback is disabled; use the CLI or desktop surface');
+      throw this._notConfigured('Claude API billing fallback is disabled; use the CLI, VS Code, or desktop surface');
     }
 
     return this._sendViaCli(message, options);
@@ -136,8 +134,8 @@ export class ClaudeCliClient extends BaseClient {
   /**
    * Send via Anthropic API
    */
-  async _sendViaApi(message, options = {}) {
-    throw this._notConfigured('Claude API billing path is disabled; use the CLI or desktop surface');
+  async _sendViaApi() {
+    throw this._notConfigured('Claude API billing path is disabled; use the CLI, VS Code, or desktop surface');
   }
 
   /**

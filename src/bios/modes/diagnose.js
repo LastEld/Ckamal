@@ -6,7 +6,6 @@
  */
 
 import { EventEmitter } from 'events';
-import { SystemState } from '../index.js';
 
 /**
  * Diagnostic test categories
@@ -189,10 +188,9 @@ export class DiagnoseMode extends EventEmitter {
   /**
    * Exit diagnostics mode
    * @async
-   * @param {Object} [options={}] - Exit options
    * @returns {Promise<Object>} Exit result
    */
-  async exit(options = {}) {
+  async exit() {
     if (!this._active) {
       return { success: false, reason: 'Not in diagnostics mode' };
     }
@@ -466,13 +464,12 @@ export class DiagnoseMode extends EventEmitter {
    * @returns {Promise<Object>} Test result
    */
   async _checkClaudeAvailability() {
-    // Check if Claude module can be loaded
     try {
-      const claudeModule = await import('../../claude/core/index.js').catch(() => null);
+      const claudeModule = await import('../../clients/index.js').catch(() => null);
       
       return {
         status: claudeModule ? DiagnosticStatus.PASS : DiagnosticStatus.WARNING,
-        message: claudeModule ? 'Claude module available' : 'Claude module not loaded',
+        message: claudeModule ? 'Claude subscription clients available' : 'Claude subscription clients not loaded',
         details: { available: !!claudeModule }
       };
     } catch (error) {

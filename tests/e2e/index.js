@@ -26,7 +26,6 @@ export const E2E_METADATA = {
     'ClaudeCliClient',
     'ClaudeDesktopClient',
     'KimiCliClient',
-    'KimiSwarmClient',
     'CodexCliClient'
   ],
   flows: [

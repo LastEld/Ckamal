@@ -139,7 +139,7 @@ export class SubscriptionRuntimeManager {
     const disabledModes = new Set(
       Object.entries(modeOptions)
         .filter(([, config]) => config === false)
-        .map(([mode]) => mode === 'ide' ? 'vscode' : mode)
+        .map(([mode]) => mode)
     );
 
     const candidates = getModelRuntimeCandidates(modelId).filter((candidate) => !disabledModes.has(candidate.mode));

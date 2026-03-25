@@ -12,21 +12,21 @@ export const PROVIDER_SURFACES = Object.freeze({
     name: 'Claude',
     subscriptionBacked: true,
     preferredModes: Object.freeze(['cli', 'desktop', 'vscode']),
-    supportedModes: Object.freeze(['cli', 'desktop', 'ide', 'mcp', 'vscode'])
+    supportedModes: Object.freeze(['cli', 'desktop', 'vscode'])
   }),
   codex: Object.freeze({
     id: 'codex',
     name: 'Codex',
     subscriptionBacked: true,
     preferredModes: Object.freeze(['vscode', 'app', 'cli']),
-    supportedModes: Object.freeze(['app', 'cli', 'copilot', 'cursor', 'vscode'])
+    supportedModes: Object.freeze(['app', 'cli', 'vscode'])
   }),
   kimi: Object.freeze({
     id: 'kimi',
     name: 'Kimi',
     subscriptionBacked: true,
     preferredModes: Object.freeze(['vscode', 'cli']),
-    supportedModes: Object.freeze(['cli', 'ide', 'swarm', 'vscode'])
+    supportedModes: Object.freeze(['cli', 'vscode'])
   })
 });
 
@@ -314,15 +314,7 @@ const EXPECTED_CANONICAL_SURFACES = Object.freeze({
 });
 
 function normalizeRuntimeMode(mode) {
-  if (!mode) {
-    return null;
-  }
-
-  if (mode === 'ide') {
-    return 'vscode';
-  }
-
-  return mode;
+  return mode || null;
 }
 
 export const SUBSCRIPTION_FALLBACK_CHAINS = Object.freeze({

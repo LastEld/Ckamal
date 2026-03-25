@@ -5,7 +5,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { ClaudeVSCodeClient, ClaudeIdeClient } from '../../../src/clients/claude/ide.js';
+import { ClaudeVSCodeClient } from '../../../src/clients/claude/vscode.js';
 
 describe('ClaudeVSCodeClient', () => {
   let client;
@@ -360,15 +360,6 @@ describe('ClaudeVSCodeClient', () => {
       if (originalPlatform) {
         Object.defineProperty(process, 'platform', originalPlatform);
       }
-    });
-  });
-
-  describe('Legacy Compatibility', () => {
-    it('should support ClaudeIdeClient as alias', () => {
-      const legacyClient = new ClaudeIdeClient({});
-      assert.equal(legacyClient.provider, 'claude');
-      assert.equal(typeof legacyClient.inlineCompletion, 'function');
-      assert.equal(typeof legacyClient.codeAction, 'function');
     });
   });
 

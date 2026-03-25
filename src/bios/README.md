@@ -130,7 +130,7 @@ Multi-client task execution engine supporting various execution strategies.
 | **Single** | Direct task delegation to one client | Simple tasks, specific client requirement |
 | **Parallel** | Execute tasks across multiple clients simultaneously | Batch processing, comparison |
 | **Chain** | Sequential execution with data handoff | Multi-step workflows |
-| **Swarm** | Kimi-style collaborative agent swarm | Complex collaborative tasks |
+| **Swarm** | Parallel orchestration strategy inside BIOS | Complex collaborative tasks |
 | **Plan** | Claude-style plan mode with approval | Complex tasks requiring human oversight |
 
 ---
@@ -166,11 +166,11 @@ Unified interface for multiple AI provider clients.
 
 | Provider | Modes | Context | Key Features |
 |----------|-------|---------|--------------|
-| **Claude** | CLI, Desktop, IDE, MCP | 1M tokens | MCP, Plan Mode, Sub-agents, Streaming |
-| **Kimi** | CLI, IDE, Swarm | 256K tokens | Swarm Mode, Multimodal, Thinking Mode |
-| **Codex** | CLI, Copilot, Cursor | 128K tokens | Code Completion, Infilling, Edit Style |
+| **Claude** | CLI, Desktop, VS Code | 1M tokens | Plan Mode, Sub-agents, Streaming, Extended Thinking |
+| **Kimi** | CLI, VS Code | 256K tokens | Multimodal, Thinking Mode, Long Context |
+| **Codex** | CLI, App, VS Code | 128K tokens | Code Completion, Inline Editing, Quick Generation |
 
-**Fallback Chain:** `claude → codex → kimi`
+**Fallback Chain:** `claude → kimi → codex`
 
 ---
 
@@ -425,17 +425,17 @@ await console.execute('delegate "Optimize React performance" --client claude');
   "clients": {
     "claude": {
       "enabled": true,
-      "modes": ["cli", "desktop"],
+      "modes": ["cli", "desktop", "vscode"],
       "context": 1000000
     },
     "kimi": {
       "enabled": true,
-      "modes": ["cli", "swarm"],
+      "modes": ["cli", "vscode"],
       "context": 256000
     },
     "codex": {
       "enabled": true,
-      "modes": ["cli", "ide"],
+      "modes": ["cli", "app", "vscode"],
       "context": 128000
     }
   },

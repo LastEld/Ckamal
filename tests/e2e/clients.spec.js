@@ -11,7 +11,6 @@ import {
   ClientFactory,
   CodexCliClient,
   KimiCliClient,
-  KimiSwarmClient,
   verifyCanonicalSubscriptionSurfaceMatrix
 } from '../../src/clients/index.js';
 import { TaskComplexityAnalyzer } from '../../src/clients/codex/cli.js';
@@ -85,14 +84,12 @@ describe('E2E Client Surface Tests', () => {
       multimodal: true,
       longContext: true
     });
-    const kimiSwarm = new KimiSwarmClient({ name: 'kimi-swarm' });
 
     assert.equal(claudeDesktop.getCapabilities().mode, 'desktop');
     assert.equal(kimiCli.getCapabilities().provider, 'kimi');
     assert.equal(kimiCli.getCapabilities().featureFlags.thinkingMode, true);
     assert.equal(kimiCli.getCapabilities().featureFlags.multimodal, true);
     assert.equal(kimiCli.getCapabilities().featureFlags.longContext, true);
-    assert.equal(kimiSwarm.getCapabilities().mode, 'swarm');
     assert.ok(kimiCli._estimateTokens('Hello world test') > 0);
   });
 

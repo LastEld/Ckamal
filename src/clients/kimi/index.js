@@ -17,8 +17,7 @@ import { KimiCliClient } from './cli.js';
 
 // Main client exports
 export { KimiCliClient } from './cli.js';
-export { KimiIdeClient } from './ide.js';
-export { KimiSwarmClient } from './swarm.js';
+export { KimiVSCodeClient } from './vscode.js';
 
 // Feature flags and configuration helpers
 export const KIMI_FEATURES = {
@@ -215,8 +214,7 @@ export async function quickOptimizeChinese(code, type = CHINESE_OPT_TYPES.GENERA
 // Default export with all clients and helpers
 export default {
   CliClient: (await import('./cli.js')).KimiCliClient,
-  IdeClient: (await import('./ide.js')).KimiIdeClient,
-  SwarmClient: (await import('./swarm.js')).KimiSwarmClient,
+  VSCodeClient: (await import('./vscode.js')).KimiVSCodeClient,
   
   // Constants
   FEATURES: KIMI_FEATURES,

@@ -5,7 +5,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { KimiVSCodeClient, KimiIdeClient } from '../../../src/clients/kimi/ide.js';
+import { KimiVSCodeClient } from '../../../src/clients/kimi/vscode.js';
 
 describe('KimiVSCodeClient', () => {
   let client;
@@ -140,14 +140,6 @@ describe('KimiVSCodeClient', () => {
       assert.equal(client._detectTestFramework('python'), 'pytest');
       assert.equal(client._detectTestFramework('java'), 'junit');
       assert.equal(client._detectTestFramework('unknown'), 'generic');
-    });
-  });
-
-  describe('Legacy Compatibility', () => {
-    it('should support KimiIdeClient as alias', () => {
-      const legacyClient = new KimiIdeClient({});
-      assert.equal(legacyClient.provider, 'kimi');
-      assert.equal(typeof legacyClient.inlineCompletion, 'function');
     });
   });
 
