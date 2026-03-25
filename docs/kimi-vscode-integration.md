@@ -32,7 +32,7 @@ The `KimiVSCodeClient` provides advanced IDE integration for Kimi 2.5 with 256K 
 ## Configuration
 
 ```javascript
-import { KimiVSCodeClient } from './src/clients/kimi/ide.js';
+import { KimiVSCodeClient } from './src/clients/kimi/vscode.js';
 
 const client = new KimiVSCodeClient({
   port: 18123,              // TCP socket port (default: 18123)
@@ -176,14 +176,10 @@ await client.reconnect();
 
 ## Legacy Support
 
-The `KimiIdeClient` class is maintained for backward compatibility but is deprecated. Use `KimiVSCodeClient` for new implementations.
+The legacy Ide client class is deprecated. Use `KimiVSCodeClient` from `vscode.js` for all implementations.
 
 ```javascript
-// Legacy (deprecated)
-import { KimiIdeClient } from './src/clients/kimi/ide.js';
-
-// Recommended
-import { KimiVSCodeClient } from './src/clients/kimi/ide.js';
+import { KimiVSCodeClient } from './src/clients/kimi/vscode.js';
 ```
 
 ## Testing
