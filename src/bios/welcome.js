@@ -39,6 +39,7 @@ export function renderWelcome(options = {}) {
 
   const pad = (text, width = w) => {
     // Strip ANSI codes for length calculation
+    // eslint-disable-next-line no-control-regex
     const clean = text.replace(/\x1b\[[0-9;]*m/g, '');
     const padding = Math.max(0, width - clean.length);
     return text + ' '.repeat(padding);
