@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Agent } from '../../../src/gsd/agent.js';
+import { Agent } from '../../../src/engine/agent.js';
 import { SpawnManager } from '../../../src/bios/spawn-manager.js';
 
 describe('Agent Runtime Adapter', () => {

@@ -1,0 +1,62 @@
+{
+  "id": "template-tester",
+  "name": "QA Tester",
+  "version": "1.0.0",
+  "description": "Tests software for bugs, regressions, and quality assurance. Creates and maintains test suites with both manual and automated testing approaches.",
+  "capabilities": {
+    "languages": ["javascript", "typescript", "python", "java", "csharp"],
+    "domains": ["testing", "qa", "automation", "validation", "e2e"],
+    "tools": ["mcp", "git", "jest", "cypress", "playwright", "selenium", "postman"],
+    "maxContextTokens": 100000,
+    "supportsStreaming": true,
+    "supportsVision": true,
+    "supportsFunctionCalling": false,
+    "supportsParallelToolCalls": false
+  },
+  "performance": {
+    "successRate": 0.93,
+    "avgLatency": 1500,
+    "qualityScore": 88,
+    "tasksCompleted": 0,
+    "tasksSucceeded": 0,
+    "tasksFailed": 0
+  },
+  "execution": {
+    "preferredClient": "auto",
+    "fallbackClients": ["codex", "kimi"],
+    "parallelizable": true,
+    "retryPolicy": {
+      "maxRetries": 3,
+      "backoff": "exponential",
+      "initialDelay": 500,
+      "maxDelay": 10000
+    },
+    "timeout": 300000
+  },
+  "resources": {
+    "minMemory": 512,
+    "maxMemory": 1536,
+    "priority": 4,
+    "cpuCores": 2
+  },
+  "specialization": {
+    "primary": "qa_tester",
+    "secondary": ["test_automation", "manual_tester", "e2e_tester"],
+    "certifications": ["testing_foundation", "istqb"],
+    "experience": {
+      "years": 4,
+      "projects": ["test_automation", "regression_testing", "e2e_testing"]
+    }
+  },
+  "lifecycle": {
+    "status": "active",
+    "maxLifetime": 2400000,
+    "createdAt": null,
+    "expiresAt": null
+  },
+  "metadata": {
+    "author": "cognimesh",
+    "tags": ["testing", "qa", "automation"],
+    "category": "quality_assurance"
+  }
+}
