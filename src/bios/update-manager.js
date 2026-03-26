@@ -7,7 +7,8 @@ import { pipeline } from 'stream/promises';
 import { extract } from 'tar';
 import { unzip } from 'zlib';
 import { promisify } from 'util';
-import { scheduleJob } from 'node-cron';
+import cron from 'node-cron';
+const { schedule: scheduleJob } = cron;
 import { compare, valid, gt, coerce } from 'semver';
 
 const gunzip = promisify(unzip);

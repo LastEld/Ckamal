@@ -83,4 +83,39 @@ export class BackupManager {
   }
 }
 
+/**
+ * Backup type constants used by examples and scheduling
+ */
+export const BackupType = {
+  FULL: 'full',
+  INCREMENTAL: 'incremental',
+  EMERGENCY: 'emergency'
+};
+
+/**
+ * Factory function to create a BackupManager with separate config and dbPath args
+ */
+export function createBackupManager(config = {}, dbPath) {
+  return new BackupManager({ ...config, dbPath });
+}
+
+/**
+ * Quick one-shot backup without managing a BackupManager instance
+ */
+export async function quickBackup(dbPath, backupDir) {
+  const manager = new BackupManager({ dbPath, backupDir });
+  await manager.initialize();
+  return manager.createBackup();
+}
+
+/**
+ * Quick one-shot restore without managing a BackupManager instance
+ */
+export async function quickRestore(backupPath, dbPath) {
+  const backupDir = path.dirname(backupPath);
+  const backupName = path.basename(backupPath, '.db');
+  const manager = new BackupManager({ dbPath, backupDir });
+  return manager.restoreFromBackup(backupName);
+}
+
 export default BackupManager;

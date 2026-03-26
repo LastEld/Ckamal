@@ -4,51 +4,51 @@
 
 ## Overview
 
-Полная интеграция Anthropic Claude Sonnet 4.6 с CogniMesh BIOS CLI.
+Full integration of Anthropic Claude Sonnet 4.6 with CogniMesh BIOS CLI.
 
 ## Files Created/Modified
 
 ### 1. `src/clients/claude/cli.js` (Updated)
-- **BaseClient extension**: Полная интеграция с базовым клиентом
-- **API + CLI support**: Поддержка как API, так и CLI режимов
-- **200K context window**: Полный доступ к контексту Sonnet 4.6
+- **BaseClient extension**: Full integration with base client
+- **API + CLI support**: Support for both API and CLI modes
+- **200K context window**: Full access to Sonnet 4.6 context
 - **Coding workflows**:
-  - `codeAnalyze(filePath)` - Анализ кода
-  - `codeGenerate(prompt, language)` - Генерация кода
+  - `codeAnalyze(filePath)` - Code analysis
+  - `codeGenerate(prompt, language)` - Code generation
   - `codeReview(filePath)` - Code review
-  - `explainCode(filePath)` - Объяснение кода
-  - `analyzeMultipleFiles(filePaths)` - Мульти-файловый анализ
-  - `generateDiff(original, modified)` - Генерация diff
-- **Project context**: Загрузка и использование контекста проекта
-- **Interactive mode**: Интерактивная сессия чата
-- **Batch processing**: Пакетная обработка задач
-- **Git integration**: Автоматическое обнаружение git diff
-- **Language detection**: Автоопределение 40+ языков программирования
+  - `explainCode(filePath)` - Code explanation
+  - `analyzeMultipleFiles(filePaths)` - Multi-file analysis
+  - `generateDiff(original, modified)` - Diff generation
+- **Project context**: Project context loading and usage
+- **Interactive mode**: Interactive chat session
+- **Batch processing**: Batch task processing
+- **Git integration**: Automatic git diff detection
+- **Language detection**: Auto-detection of 40+ programming languages
 
 ### 2. `src/bios/cli.js` (Updated)
-Добавлены команды:
+Added commands:
 ```
-bios claude chat              # Интерактивный чат
-bios claude analyze <file>    # Анализ файла
-bios claude generate <prompt> # Генерация кода
-bios claude review <file>     # Ревью кода
-bios claude explain <file>    # Объяснение кода
-bios claude batch --file <f>  # Пакетная обработка
-bios claude status            # Статус клиента
+bios claude chat              # Interactive chat
+bios claude analyze <file>    # File analysis
+bios claude generate <prompt> # Code generation
+bios claude review <file>     # Code review
+bios claude explain <file>    # Code explanation
+bios claude batch --file <f>  # Batch processing
+bios claude status            # Client status
 ```
 
 ### 3. `tests/clients/claude/cli.test.js` (Created)
-- Unit tests для всех функций клиента
-- Tests для language detection
-- Tests для project context
-- Tests для code operations
-- Tests для status management
+- Unit tests for all client functions
+- Tests for language detection
+- Tests for project context
+- Tests for code operations
+- Tests for status management
 
 ### 4. `examples/claude-batch-tasks.json` (Created)
-Пример файла задач для batch processing.
+Example task file for batch processing.
 
 ### 5. `examples/claude-usage.md` (Created)
-Документация по использованию с примерами.
+Usage documentation with examples.
 
 ## Features
 
@@ -57,16 +57,16 @@ bios claude status            # Статус клиента
 bios claude chat
 ```
 - Conversation history
-- Команды: `exit`, `clear`, `status`
-- Поддержка streaming (через API)
+- Commands: `exit`, `clear`, `status`
+- Streaming support (via API)
 
 ### Code Analysis
 ```bash
 bios claude analyze src/app.js --focus "security,performance"
 ```
-- Структура и назначение
-- Ключевые функции/классы
-- Потенциальные проблемы
+- Structure and purpose
+- Key functions/classes
+- Potential issues
 - Performance considerations
 - Security concerns
 
@@ -84,7 +84,7 @@ bios claude generate "Create Redis cache wrapper" --language typescript
 bios claude review src/auth.js --strict
 ```
 - Git diff integration
-- Bugs и logical errors
+- Bugs and logical errors
 - Security vulnerabilities
 - Performance bottlenecks
 - Code style violations
@@ -93,8 +93,8 @@ bios claude review src/auth.js --strict
 ```bash
 bios claude explain src/algorithm.js --level beginner
 ```
-- Уровни: beginner, intermediate, expert
-- Ответы на конкретные вопросы
+- Levels: beginner, intermediate, expert
+- Answers to specific questions
 - Line-by-line breakdown
 
 ### Batch Processing
@@ -115,7 +115,7 @@ Claude Sonnet 4.6 is accessed through a subscription-backed plan. No per-token o
 ### Constructor Options
 ```javascript
 const client = new ClaudeCliClient({
-  model: 'claude-sonnet-4-6',  // или 'claude-opus-4'
+  model: 'claude-sonnet-4-6',  // or 'claude-opus-4'
   preferApi: true,              // API vs CLI
   baseURL: 'https://api.anthropic.com/v1'
 });

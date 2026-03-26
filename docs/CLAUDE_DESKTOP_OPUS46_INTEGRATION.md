@@ -2,31 +2,31 @@
 
 > **All models are accessed through flat-rate subscriptions. No API billing applies.**
 
-## Обзор
+## Overview
 
-Интеграция с Claude Desktop приложением для работы с моделью **Anthropic Opus 4.6** с поддержкой **1 миллиона токенов контекста**.
+Integration with the Claude Desktop application for working with the **Anthropic Opus 4.6** model with support for **1 million token context**.
 
-## Возможности
+## Features
 
-### Основные функции
+### Core Features
 
-- ✅ **1M Context Window** - работа с контекстом до 1,000,000 токенов
-- ✅ **Session-based Authentication** - безопасная аутентификация сессий
-- ✅ **WebSocket Connection** - реальное время через `ws://localhost:3456`
-- ✅ **Streaming Responses** - потоковая передача ответов
-- ✅ **File Upload** - загрузка файлов для анализа
-- ✅ **Conversation History** - управление историей диалогов
-- ✅ **Auto-reconnect** - автоматическое восстановление соединения
+- ✅ **1M Context Window** - up to 1,000,000 token context
+- ✅ **Session-based Authentication** - secure session authentication
+- ✅ **WebSocket Connection** - real-time via `ws://localhost:3456`
+- ✅ **Streaming Responses** - streaming responses
+- ✅ **File Upload** - file upload for analysis
+- ✅ **Conversation History** - conversation history management
+- ✅ **Auto-reconnect** - automatic reconnection
 
 ### Coding Tasks
 
-- ✅ **Code Completion** - автодополнение кода
-- ✅ **Code Review** - ревью кода с оценкой
-- ✅ **Refactoring** - рефакторинг с объяснением
-- ✅ **Debug Assistance** - помощь в отладке
-- ✅ **Architecture Design** - проектирование архитектуры
+- ✅ **Code Completion** - code completion
+- ✅ **Code Review** - code review with scoring
+- ✅ **Refactoring** - refactoring with explanation
+- ✅ **Debug Assistance** - debugging assistance
+- ✅ **Architecture Design** - architecture design
 
-## Архитектура
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -52,74 +52,74 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Установка и настройка
+## Installation and Setup
 
-### Требования
+### Requirements
 
-1. Claude Desktop приложение установлено и запущено
-2. API доступен на `localhost:3456`
+1. Claude Desktop application installed and running
+2. API accessible on `localhost:3456`
 3. Node.js 18+
 
-### Настройка клиента
+### Client Setup
 
 ```javascript
 import { ClaudeDesktopClient } from './src/clients/claude/desktop.js';
 
 const client = new ClaudeDesktopClient({
-  apiHost: 'localhost',          // Хост API
-  apiPort: 3456,                 // Порт API
-  autoReconnect: true,           // Автореконнект
-  reconnectInterval: 5000,       // Интервал попыток (ms)
-  maxReconnectAttempts: 10,      // Макс. попыток
-  maxContextTokens: 1000000      // Макс. токенов контекста
+  apiHost: 'localhost',          // API host
+  apiPort: 3456,                 // API port
+  autoReconnect: true,           // Auto-reconnect
+  reconnectInterval: 5000,       // Reconnect interval (ms)
+  maxReconnectAttempts: 10,      // Max attempts
+  maxContextTokens: 1000000      // Max context tokens
 });
 ```
 
-## Использование
+## Usage
 
-### Базовое использование
+### Basic Usage
 
 ```javascript
 import { ClaudeDesktopClient } from './src/clients/claude/desktop.js';
 
 const client = new ClaudeDesktopClient();
 
-// Инициализация
+// Initialize
 await client.initialize();
 
-// Отправка сообщения
+// Send a message
 const response = await client.send({
   content: 'Hello Claude!'
 });
 
 console.log(response.content);
 
-// Отключение
+// Disconnect
 await client.disconnect();
 ```
 
 ### Streaming
 
 ```javascript
-// Потоковая передача ответа
+// Stream a response
 await client.stream(
   { content: 'Write a story...' },
   (chunk) => {
-    process.stdout.write(chunk); // Построчный вывод
+    process.stdout.write(chunk); // Line-by-line output
   }
 );
 ```
 
-### Загрузка файлов
+### File Upload
 
 ```javascript
-// Загрузка файла
+// Upload a file
 const result = await client.uploadFile('./path/to/file.js', {
   processImmediately: true,
   extractText: true
 });
 
-// Запрос об анализе файла
+// Request file analysis
 const analysis = await client.send({
   content: 'Please analyze the uploaded file.'
 });
@@ -184,23 +184,23 @@ const architecture = await client.executeCodingTask('architectureDesign', {
 });
 ```
 
-### История диалогов
+### Conversation History
 
 ```javascript
-// Получение истории с сервера
+// Get history from server
 const history = await client.getConversationHistory({
   limit: 100,
   offset: 0
 });
 
-// Получение локальной истории
+// Get local history
 const localHistory = client.getLocalHistory();
 
-// Очистка истории
-await client.clearHistory(true); // true = также на сервере
+// Clear history
+await client.clearHistory(true); // true = also on server
 ```
 
-### Использование через Client Gateway
+### Using the Client Gateway
 
 ```javascript
 import { ClientGateway } from './src/bios/client-gateway.js';
@@ -213,27 +213,27 @@ const gateway = new ClientGateway({
 
 await gateway.initialize();
 
-// Отправка сообщения
+// Send a message
 const response = await gateway.sendToClient('claude', 'Hello!', {
   mode: 'desktop'
 });
 
-// Выполнение coding task
+// Execute a coding task
 const result = await gateway.executeCodingTask('codeReview', {
   code: 'const x = 1;',
   language: 'javascript'
 });
 
-// Streaming через gateway
+// Streaming via gateway
 await gateway.streamFromClient('claude',
   { content: 'Write code...' },
   (chunk) => process.stdout.write(chunk)
 );
 
-// Загрузка файла
+// Upload a file
 await gateway.uploadFileToClient('claude', './file.js');
 
-// Получение истории
+// Get history
 const history = await gateway.getConversationHistory('claude');
 
 await gateway.shutdown();
@@ -243,7 +243,7 @@ await gateway.shutdown();
 
 ### ClaudeDesktopClient
 
-#### Конструктор
+#### Constructor
 
 ```javascript
 new ClaudeDesktopClient(config)
@@ -253,55 +253,55 @@ new ClaudeDesktopClient(config)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `apiHost` | string | 'localhost' | Хост API |
-| `apiPort` | number | 3456 | Порт API |
+| `apiHost` | string | 'localhost' | API host |
+| `apiPort` | number | 3456 | API port |
 | `wsUrl` | string | `ws://host:port` | WebSocket URL |
-| `sessionId` | string | null | ID сессии |
-| `sessionToken` | string | null | Токен сессии |
-| `conversationId` | string | null | ID диалога |
-| `autoReconnect` | boolean | true | Автореконнект |
-| `reconnectInterval` | number | 5000 | Интервал попыток (ms) |
-| `maxReconnectAttempts` | number | 10 | Макс. попыток |
-| `maxContextTokens` | number | 1000000 | Макс. токенов |
+| `sessionId` | string | null | Session ID |
+| `sessionToken` | string | null | Session token |
+| `conversationId` | string | null | Conversation ID |
+| `autoReconnect` | boolean | true | Auto-reconnect |
+| `reconnectInterval` | number | 5000 | Reconnect interval (ms) |
+| `maxReconnectAttempts` | number | 10 | Max attempts |
+| `maxContextTokens` | number | 1000000 | Max tokens |
 
-#### Методы
+#### Methods
 
 ##### `async initialize()`
-Инициализация соединения и аутентификация.
+Initialize connection and authenticate.
 
 ##### `async send(message, options)`
-Отправка сообщения.
+Send a message.
 
 **Parameters:**
 - `message` - `{ content: string }`
 - `options` - `{ maxTokens?, temperature?, streaming?, ... }`
 
 ##### `async execute(task, options)`
-Выполнение задачи.
+Execute a task.
 
 **Parameters:**
 - `task` - `{ type, description, code, files, ... }`
 - `options` - Execution options
 
 ##### `async stream(request, callback)`
-Потоковая передача ответа.
+Stream a response.
 
 **Parameters:**
 - `request` - Request object
 - `callback` - `(chunk) => void`
 
 ##### `async uploadFile(filePath, options)`
-Загрузка файла.
+Upload a file.
 
 **Parameters:**
 - `filePath` - Path to file
 - `options` - Upload options
 
 ##### `async getConversationHistory(options)`
-Получение истории диалога.
+Get conversation history.
 
 ##### `executeCodingTask(taskType, params)`
-Выполнение coding task.
+Execute a coding task.
 
 **Task types:**
 - `codeCompletion`
@@ -311,19 +311,19 @@ new ClaudeDesktopClient(config)
 - `architectureDesign`
 
 ##### `getCapabilities()`
-Получение возможностей клиента.
+Get client capabilities.
 
 ##### `getContextUsage()`
-Получение статистики использования контекста.
+Get context usage statistics.
 
 ##### `async ping()`
-Проверка соединения.
+Check connection.
 
 ##### `async reconnect()`
-Переподключение.
+Reconnect.
 
 ##### `async disconnect()`
-Отключение.
+Disconnect.
 
 ### Events
 
@@ -340,7 +340,7 @@ client.on('stream', (chunk) => {});
 client.on('tokenUpdate', ({ tokens }) => {});
 ```
 
-## Конфигурация BIOS Gateway
+## BIOS Gateway Configuration
 
 ```javascript
 // src/bios/client-gateway.js
@@ -353,51 +353,51 @@ const gateway = new ClientGateway({
       autoReconnect: true,
       maxReconnectAttempts: 10
     },
-    cli: false,  // Отключить CLI клиент
-    ide: false   // Отключить IDE клиент
+    cli: false,  // Disable CLI client
+    ide: false   // Disable IDE client
   },
   autoReconnect: true,
   healthCheckInterval: 30000
 });
 ```
 
-## Тестирование
+## Testing
 
 ```bash
-# Запуск тестов
+# Run tests
 npm test -- tests/clients/claude-desktop.test.js
 
-# Запуск примеров
+# Run examples
 node examples/claude-desktop-usage.js
 ```
 
 ## Troubleshooting
 
-### Ошибка подключения
+### Connection Error
 
 ```
 Claude Desktop not running: connect ECONNREFUSED 127.0.0.1:3456
 ```
 
-**Решение:** Убедитесь, что Claude Desktop запущен и API доступен.
+**Solution:** Make sure Claude Desktop is running and the API is accessible.
 
-### Таймаут аутентификации
+### Authentication Timeout
 
 ```
 Authentication timeout
 ```
 
-**Решение:** Проверьте настройки Claude Desktop, возможно требуется включить API.
+**Solution:** Check the Claude Desktop settings; you may need to enable the API.
 
-### Ошибка WebSocket
+### WebSocket Error
 
 ```
 WebSocket connection timeout
 ```
 
-**Решение:** Проверьте, что WebSocket сервер запущен на указанном порту.
+**Solution:** Make sure the WebSocket server is running on the specified port.
 
-## Сравнение с другими клиентами
+## Comparison with Other Clients
 
 | Feature | Desktop | CLI | IDE |
 |---------|---------|-----|-----|
@@ -420,6 +420,6 @@ WebSocket connection timeout
 - Coding tasks integration
 - Auto-reconnect
 
-## Лицензия
+## License
 
-MIT License - часть CogniMesh проекта.
+MIT License - part of the CogniMesh project.

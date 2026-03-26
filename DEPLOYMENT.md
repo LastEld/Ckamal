@@ -155,12 +155,12 @@ pm2 --version
 
 ```bash
 # Clone the repository
-git clone https://github.com/cognimesh/cognimesh.git
-cd cognimesh
+git clone https://github.com/LastEld/Ckamal.git
+cd Ckamal
 
 # Or use SSH (recommended for development)
-git clone git@github.com:cognimesh/cognimesh.git
-cd cognimesh
+git clone git@github.com:LastEld/Ckamal.git
+cd Ckamal
 ```
 
 ### Step 2: Install Dependencies
@@ -268,32 +268,34 @@ DB_RETRY_DELAY_MS=200                  # Delay between retries
 # GitHub Configuration (Required for updates and integrations)
 # ============================================================
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx  # GitHub Personal Access Token
-GITHUB_REPO=cognimesh/cognimesh        # Repository for auto-updates
+GITHUB_REPO=LastEld/Ckamal             # Repository for auto-updates
 AUTO_UPDATE=true                       # Enable automatic updates
 CHECK_INTERVAL=1h                      # Update check interval
 
 # ============================================================
-# Claude AI Configuration
+# Claude Configuration (subscription-based, no API key needed)
 # ============================================================
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxx      # Claude API Key
+# Claude is accessed via the Claude CLI/Desktop app subscription.
+# No ANTHROPIC_API_KEY required — the platform uses CLI subprocess spawning.
 CLAUDE_SESSION_TOKEN=                  # Optional: Session token for Claude Desktop
-ANTHROPIC_API_URL=https://api.anthropic.com/v1
-CLAUDE_DEFAULT_MODEL=claude-3-5-sonnet
+CLAUDE_DEFAULT_MODEL=claude-sonnet-4-6
 CLAUDE_MAX_TOKENS=4096                 # Default max tokens
 CLAUDE_TEMPERATURE=0.7                 # Default temperature
 CLAUDE_STREAMING_ENABLED=true          # Enable streaming responses
 CLAUDE_EXTENDED_THINKING_ENABLED=false # Enable extended thinking mode
 
 # ============================================================
-# Kimi AI Configuration
+# Kimi Configuration (subscription-based, no API key needed)
 # ============================================================
-KIMI_API_KEY=sk-xxxxxxxxxxxxxxxx       # Moonshot Kimi API Key
+# Kimi is accessed via the Kimi CLI app subscription.
+# No KIMI_API_KEY required — the platform uses CLI subprocess spawning.
 KIMI_API_URL=https://api.moonshot.cn/v1
 
 # ============================================================
-# OpenAI/Codex Configuration
+# OpenAI/Codex Configuration (subscription-based, no API key needed)
 # ============================================================
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx     # OpenAI API Key
+# Codex is accessed via the Codex CLI app subscription.
+# No OPENAI_API_KEY required — the platform uses CLI subprocess spawning.
 OPENAI_API_URL=https://api.openai.com/v1
 
 # ============================================================
@@ -407,8 +409,8 @@ Environment-specific configuration files:
 
 ```bash
 # Clone and setup
-git clone https://github.com/cognimesh/cognimesh.git
-cd cognimesh
+git clone https://github.com/LastEld/Ckamal.git
+cd Ckamal
 npm install
 cp .env.example .env
 # Edit .env with your settings
@@ -716,9 +718,6 @@ metadata:
 type: Opaque
 stringData:
   GITHUB_TOKEN: "your-github-token"
-  ANTHROPIC_API_KEY: "your-claude-api-key"
-  KIMI_API_KEY: "your-kimi-api-key"
-  OPENAI_API_KEY: "your-openai-api-key"
   JWT_SECRET: "your-jwt-secret"
 ```
 
@@ -947,45 +946,31 @@ sqlite3 data/cognimesh.db "PRAGMA integrity_check;"
 
 ## 6. Client Configuration
 
-### Claude Configuration
+### Claude Configuration (Subscription-Based)
 
-#### API Key Setup
+CogniMesh accesses Claude through the Claude CLI/Desktop application subscription. No API key is needed.
 
-1. Get API key from [Anthropic Console](https://console.anthropic.com/)
-2. Add to `.env`:
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
-```
-
-#### Session Token (for Claude Desktop Integration)
-
-1. Open Claude Desktop app
-2. Go to Settings → Developer → API Keys
-3. Copy session token
-4. Add to `.env`:
+1. Install the [Claude CLI](https://docs.anthropic.com/en/docs/claude-cli) or Claude Desktop app
+2. Sign in to your Claude subscription
+3. Optionally add a session token for Desktop integration:
 
 ```bash
 CLAUDE_SESSION_TOKEN=your-session-token
 ```
 
-### Kimi Configuration
+### Kimi Configuration (Subscription-Based)
 
-1. Get API key from [Moonshot Platform](https://platform.moonshot.cn/)
-2. Add to `.env`:
+CogniMesh accesses Kimi through the Kimi CLI application subscription. No API key is needed.
 
-```bash
-KIMI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-```
+1. Install the Kimi CLI from [Moonshot Platform](https://platform.moonshot.cn/)
+2. Sign in to your Kimi subscription
 
-### Codex Configuration
+### Codex Configuration (Subscription-Based)
 
-1. Get API key from [OpenAI Platform](https://platform.openai.com/)
-2. Add to `.env`:
+CogniMesh accesses Codex through the Codex CLI application subscription. No API key is needed.
 
-```bash
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-```
+1. Install the [Codex CLI](https://github.com/openai/codex): `npm install -g @openai/codex`
+2. Sign in to your OpenAI subscription
 
 ### Testing Connections
 
@@ -1004,21 +989,21 @@ if (config.clients.claude.enabled) {
   console.log('  Model:', config.clients.claude.defaultModel);
   console.log('  Streaming:', config.clients.claude.streamingEnabled);
 } else {
-  console.log('✗ Claude: Disabled (ANTHROPIC_API_KEY not set)');
+  console.log('✗ Claude: Disabled (Claude CLI not found)');
 }
 
 // Test Kimi
 if (config.clients.kimi.enabled) {
   console.log('✓ Kimi: Enabled');
 } else {
-  console.log('✗ Kimi: Disabled (KIMI_API_KEY not set)');
+  console.log('✗ Kimi: Disabled (Kimi CLI not found)');
 }
 
 // Test Codex
 if (config.clients.codex.enabled) {
   console.log('✓ Codex: Enabled');
 } else {
-  console.log('✗ Codex: Disabled (OPENAI_API_KEY not set)');
+  console.log('✗ Codex: Disabled (Codex CLI not found)');
 }
 "
 ```
@@ -1669,7 +1654,7 @@ DEBUG=cognimesh:* npm start
 1. Check logs: `tail -f /opt/cognimesh/logs/app.log`
 2. Run diagnostics: `npm run diagnose`
 3. Check health: `curl http://localhost:3000/health`
-4. Review GitHub Issues: https://github.com/cognimesh/cognimesh/issues
+4. Review GitHub Issues: https://github.com/LastEld/Ckamal/issues
 
 ---
 
@@ -1683,9 +1668,7 @@ DEBUG=cognimesh:* npm start
 | `COGNIMESH_PORT` | No | `3000` | HTTP server port |
 | `DATABASE_PATH` | No | `./data/cognimesh.db` | SQLite database path |
 | `GITHUB_TOKEN` | Yes* | - | GitHub API token |
-| `ANTHROPIC_API_KEY` | No | - | Claude API key |
-| `KIMI_API_KEY` | No | - | Kimi API key |
-| `OPENAI_API_KEY` | No | - | OpenAI/Codex API key |
+| `CLAUDE_SESSION_TOKEN` | No | - | Claude Desktop session token |
 | `JWT_SECRET` | Yes* | - | JWT signing secret |
 
 *Required in production mode

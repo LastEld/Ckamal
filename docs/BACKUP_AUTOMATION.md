@@ -1,17 +1,17 @@
 # Backup Automation System
 
-Полная автоматизация бэкапов для CogniMesh с мониторингом, S3-загрузкой и верификацией.
+Full backup automation for CogniMesh with monitoring, S3 upload, and verification.
 
-## Созданные файлы
+## Created Files
 
-| Файл | Описание |
-|------|----------|
-| `src/db/backup-scheduler.js` | Планировщик бэкапов с cron, метриками, S3 |
-| `scripts/backup-restore.js` | Скрипт восстановления из бэкапа |
-| `scripts/backup-verify.js` | Скрипт верификации бэкапов |
-| `src/api/routes/backup-monitor.js` | API endpoints для мониторинга |
-| `tests/unit/db/backup-scheduler.test.js` | Unit тесты |
-| `examples/backup-automation.js` | Пример использования |
+| File | Description |
+|------|-------------|
+| `src/db/backup-scheduler.js` | Backup scheduler with cron, metrics, S3 |
+| `scripts/backup-restore.js` | Backup restore script |
+| `scripts/backup-verify.js` | Backup verification script |
+| `src/api/routes/backup-monitor.js` | API endpoints for monitoring |
+| `tests/unit/db/backup-scheduler.test.js` | Unit tests |
+| `examples/backup-automation.js` | Usage example |
 
 ## NPM Scripts
 
@@ -22,40 +22,40 @@
 "db:backup:schedule"   // Start scheduled backups
 ```
 
-## Быстрый старт
+## Quick Start
 
-### 1. Запуск планировщика
+### 1. Start the Scheduler
 
 ```javascript
 import { BackupScheduler } from './src/db/backup-scheduler.js';
 
 const scheduler = new BackupScheduler({
-  schedule: '0 2 * * *',      // Ежедневно в 2:00
-  retentionDays: 7,            // Хранить 7 дней
-  verifyBackups: true          // Верифицировать после создания
+  schedule: '0 2 * * *',      // Daily at 2:00
+  retentionDays: 7,            // Retain for 7 days
+  verifyBackups: true          // Verify after creation
 });
 
 await scheduler.initialize();
 scheduler.startScheduler();
 ```
 
-### 2. CLI команды
+### 2. CLI Commands
 
 ```bash
-# Список бэкапов
+# List backups
 node scripts/backup-restore.js --list
 
-# Восстановление
+# Restore
 node scripts/backup-restore.js backup-2024-01-15T10-30-00-000Z --force
 
-# Верификация
+# Verification
 node scripts/backup-verify.js --verbose
 
-# Удаление повреждённых
+# Delete corrupted
 node scripts/backup-verify.js --fix
 ```
 
-### 3. S3 Интеграция
+### 3. S3 Integration
 
 ```javascript
 const scheduler = new BackupScheduler({
@@ -71,17 +71,17 @@ const scheduler = new BackupScheduler({
 
 ## API Endpoints
 
-| Endpoint | Method | Описание |
-|----------|--------|----------|
-| `/api/backup/status` | GET | Статус планировщика |
-| `/api/backup/metrics` | GET | Метрики бэкапов |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/backup/status` | GET | Scheduler status |
+| `/api/backup/metrics` | GET | Backup metrics |
 | `/api/backup/health` | GET | Health check |
-| `/api/backup/trigger` | POST | Запуск бэкапа |
-| `/api/backup/list` | GET | Список бэкапов |
-| `/api/backup/verify` | POST | Верификация |
-| `/api/backup/cleanup` | POST | Очистка старых |
+| `/api/backup/trigger` | POST | Trigger backup |
+| `/api/backup/list` | GET | List backups |
+| `/api/backup/verify` | POST | Verification |
+| `/api/backup/cleanup` | POST | Clean up old backups |
 
-## Метрики
+## Metrics
 
 ```javascript
 const metrics = scheduler.getMetrics();
@@ -101,7 +101,7 @@ const metrics = scheduler.getMetrics();
 curl http://localhost:3000/api/backup/health
 ```
 
-Ответ:
+Response:
 ```json
 {
   "status": "healthy",
@@ -115,23 +115,23 @@ curl http://localhost:3000/api/backup/health
 }
 ```
 
-## Верификация бэкапов
+## Backup Verification
 
-Проверки:
-- ✅ Файл существует и доступен для чтения
-- ✅ Размер файла > 0
+Checks:
+- ✅ File exists and is readable
+- ✅ File size > 0
 - ✅ SQLite magic bytes
 - ✅ SQLite integrity_check
-- ✅ Количество таблиц > 0
-- ✅ SHA-256 хеш (опционально)
+- ✅ Table count > 0
+- ✅ SHA-256 hash (optional)
 
-## Тестирование
+## Testing
 
 ```bash
 npm test -- backup-scheduler.test.js
 ```
 
-## Архитектура
+## Architecture
 
 ```
 ┌─────────────────┐

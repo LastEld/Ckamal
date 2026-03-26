@@ -2,23 +2,23 @@
 
 > **All models are accessed through flat-rate subscriptions. No API billing applies.**
 
-## Обзор
+## Overview
 
-Интеграция GPT 5.4 Codex CLI для CogniMesh Phase 4. Предоставляет расширенные возможности анализа проектов, batch-обработки и автоматизации рабочих процессов.
+GPT 5.4 Codex CLI integration for CogniMesh Phase 4. Provides advanced project analysis, batch processing, and workflow automation capabilities.
 
-## Архитектура
+## Architecture
 
 ```
 src/clients/codex/
-├── cli.js          # GPT54CodexCLIClient - основной клиент
-├── index.js        # Экспорты клиентов Codex
-├── copilot.js      # GitHub Copilot интеграция
-└── cursor.js       # Cursor IDE интеграция
+├── cli.js          # GPT54CodexCLIClient - main client
+├── index.js        # Codex client exports
+├── copilot.js      # GitHub Copilot integration
+└── cursor.js       # Cursor IDE integration
 ```
 
-## Класс GPT54CodexCLIClient
+## Class GPT54CodexCLIClient
 
-### Конструктор
+### Constructor
 
 ```javascript
 const client = new GPT54CodexCLIClient({
@@ -32,10 +32,10 @@ const client = new GPT54CodexCLIClient({
 });
 ```
 
-### Основные методы
+### Core Methods
 
 #### `async initialize()`
-Инициализация клиента и проверка подключения.
+Initialize the client and verify the connection.
 
 ```javascript
 await client.initialize();
@@ -43,26 +43,26 @@ await client.initialize();
 ```
 
 #### `async send(message, options)`
-Отправка сообщения в Codex.
+Send a message to Codex.
 
 ```javascript
 const response = await client.send(
   { content: "Analyze this code" },
-  { 
+  {
     model: 'gpt-5.4-codex',
     reasoning: true,
-    maxTokens: 8192 
+    maxTokens: 8192
   }
 );
 ```
 
 #### `async projectAnalyze(path, options)`
-Анализ всего проекта.
+Analyze an entire project.
 
 ```javascript
 const result = await client.projectAnalyze('./src', {
-  quick: false,        // Полный анализ
-  deep: true,          // Использовать reasoning model
+  quick: false,        // Full analysis
+  deep: true,          // Use reasoning model
   exclude: ['**/node_modules/**']
 });
 
@@ -79,7 +79,7 @@ const result = await client.projectAnalyze('./src', {
 ```
 
 #### `async batchRefactor(files, operation, options)`
-Batch-рефакторинг файлов.
+Batch file refactoring.
 
 ```javascript
 const result = await client.batchRefactor(
@@ -92,7 +92,7 @@ const result = await client.batchRefactor(
   {
     batchSize: 10,
     delay: 1000,
-    dryRun: false        // true = показать изменения без применения
+    dryRun: false        // true = show changes without applying
   }
 );
 
@@ -109,7 +109,7 @@ const result = await client.batchRefactor(
 ```
 
 #### `async generateArchitecture(spec, options)`
-Генерация архитектуры из спецификации.
+Generate architecture from specification.
 
 ```javascript
 const result = await client.generateArchitecture({
@@ -132,11 +132,11 @@ const result = await client.generateArchitecture({
 ```
 
 #### `async optimizeCodebase(path, options)`
-Оптимизация кодовой базы.
+Codebase optimization.
 
 ```javascript
 const result = await client.optimizeCodebase('./src', {
-  autoApply: false,      // true = применить автоматически
+  autoApply: false,      // true = apply automatically
   targets: ['performance', 'security', 'quality']
 });
 
@@ -157,7 +157,7 @@ const result = await client.optimizeCodebase('./src', {
 ```
 
 #### `async runTests(options)`
-Генерация и запуск тестов.
+Generate and run tests.
 
 ```javascript
 const result = await client.runTests({
@@ -168,7 +168,7 @@ const result = await client.runTests({
 ```
 
 #### `async generateDocumentation(options)`
-Генерация документации.
+Generate documentation.
 
 ```javascript
 const result = await client.generateDocumentation({
@@ -179,7 +179,7 @@ const result = await client.generateDocumentation({
 ```
 
 #### `getCapabilities()`
-Получение возможностей клиента.
+Get client capabilities.
 
 ```javascript
 const caps = client.getCapabilities();
@@ -195,9 +195,9 @@ const caps = client.getCapabilities();
 // }
 ```
 
-### События
+### Events
 
-Клиент расширяет EventEmitter и генерирует события:
+The client extends EventEmitter and emits events:
 
 ```javascript
 client.on('ready', () => console.log('Client ready'));
@@ -212,80 +212,80 @@ client.on('batch:complete', ({ batchId, processed, errors }) => {
 });
 ```
 
-## CLI Команды
+## CLI Commands
 
-### Интерактивный режим (REPL)
+### Interactive Mode (REPL)
 
 ```bash
 node src/bios/cli.js -i
-# или
+# or
 bios interactive
 ```
 
-Доступные команды в REPL:
+Available REPL commands:
 
 ```
-bios> codex status                    # Проверить статус клиента
-bios> codex analyze ./src             # Анализ проекта
-bios> codex refactor "*.js" "Convert to TypeScript"  # Batch рефакторинг
-bios> codex generate "E-commerce API" # Генерация архитектуры
-bios> codex optimize ./src            # Оптимизация
+bios> codex status                    # Check client status
+bios> codex analyze ./src             # Project analysis
+bios> codex refactor "*.js" "Convert to TypeScript"  # Batch refactoring
+bios> codex generate "E-commerce API" # Architecture generation
+bios> codex optimize ./src            # Optimization
 ```
 
-### Batch режим
+### Batch Mode
 
 ```bash
-# Анализ проекта
+# Project analysis
 bios codex analyze ./my-project --deep
 
-# Batch рефакторинг
+# Batch refactoring
 bios codex refactor "src/**/*.js" --instruction "Add JSDoc comments" --dry-run
 
-# Генерация архитектуры
+# Architecture generation
 bios codex generate "Microservices API with authentication" -o ./architecture
 
-# Оптимизация кодовой базы
+# Codebase optimization
 bios codex optimize ./src --target performance,security
 
-# Генерация тестов
+# Test generation
 bios codex test ./src --type unit --coverage
 
-# Генерация документации
+# Documentation generation
 bios codex docs ./src -f markdown -o API.md
 
-# Проверка статуса
+# Status check
 bios codex status
 ```
 
-### С использованием CogniMesh CLI
+### Using the CogniMesh CLI
 
 ```bash
-# Полный анализ с reasoning
+# Full analysis with reasoning
 node src/bios/cli.js codex analyze ./src --deep
 
-# Быстрый анализ
+# Quick analysis
 node src/bios/cli.js codex analyze ./src --quick
 
-# Batch рефакторинг с сохранением в файл
+# Batch refactoring with file output
 node src/bios/cli.js codex refactor "src/**/*.js" \
   --instruction "Convert to TypeScript" \
   --batch-size 5 \
   --delay 2000 \
   --dry-run
 
-# Генерация архитектуры
+# Architecture generation
 node src/bios/cli.js codex generate "E-commerce platform" \
   --language typescript \
   --framework nestjs \
   --output ./architecture
 
-# Оптимизация
+# Optimization
 node src/bios/cli.js codex optimize ./src --auto-apply
 ```
 
-## Примеры использования
+## Usage Examples
 
-### Пример 1: Анализ проекта
+### Example 1: Project Analysis
 
 ```javascript
 import { GPT54CodexCLIClient } from './src/clients/codex/cli.js';
@@ -308,7 +308,7 @@ console.log('Recommendations:', result.recommendations);
 await client.disconnect();
 ```
 
-### Пример 2: Batch рефакторинг
+### Example 2: Batch Refactoring
 
 ```javascript
 import { glob } from 'glob';
@@ -342,7 +342,7 @@ console.log(`Errors: ${result.errors}`);
 await client.disconnect();
 ```
 
-### Пример 3: Генерация архитектуры
+### Example 3: Architecture Generation
 
 ```javascript
 const client = new GPT54CodexCLIClient();
@@ -368,15 +368,15 @@ console.log('Files:', result.files);
 await client.disconnect();
 ```
 
-## Интеграция с BIOS
+## BIOS Integration
 
-Клиент полностью интегрирован с BIOS CLI:
+The client is fully integrated with the BIOS CLI:
 
 ```javascript
 // src/bios/cli.js
 import { GPT54CodexCLIClient } from '../clients/codex/cli.js';
 
-// Добавлены команды:
+// Added commands:
 // - bios codex analyze [path]
 // - bios codex refactor <pattern>
 // - bios codex generate <spec>
@@ -386,23 +386,23 @@ import { GPT54CodexCLIClient } from '../clients/codex/cli.js';
 // - bios codex status
 ```
 
-## Конфигурация
+## Configuration
 
 ### Access Model
 
 GPT 5.4 Codex is accessed through a subscription-backed plan. No per-token or metered API billing is required.
 
-### Переменные окружения
+### Environment Variables
 
 ```bash
-# Опциональные
+# Optional
 export CODEX_MODEL="gpt-5.4-codex"
 export CODEX_REASONING_MODEL="o4-mini"
 export CODEX_TIMEOUT="300000"
 export CODEX_MAX_BATCH_SIZE="50"
 ```
 
-### Конфигурационный файл
+### Configuration File
 
 ```json
 {
@@ -419,9 +419,9 @@ export CODEX_MAX_BATCH_SIZE="50"
 }
 ```
 
-## Модели
+## Models
 
-| Модель | Context Window | Max Output | Лучше для |
+| Model | Context Window | Max Output | Best for |
 |--------|---------------|------------|-----------|
 | gpt-5.4-codex | 128K | 8192 | Code generation, analysis |
 | gpt-5.4 | 128K | 4096 | General tasks |
@@ -430,33 +430,33 @@ export CODEX_MAX_BATCH_SIZE="50"
 
 ## Troubleshooting
 
-### Ошибка: CLI not found
+### Error: CLI not found
 ```bash
-# Установка Codex CLI
+# Install Codex CLI
 npm install -g @openai/codex
 ```
 
-### Ошибка: Timeout
+### Error: Timeout
 ```javascript
 const client = new GPT54CodexCLIClient({
-  timeout: 600000  // 10 минут для больших проектов
+  timeout: 600000  // 10 minutes for large projects
 });
 ```
 
-### Ошибка: Rate limit
+### Error: Rate limit
 ```javascript
 const result = await client.batchRefactor(files, operation, {
-  batchSize: 5,   // Меньше файлов за раз
-  delay: 5000     // Большая задержка между batch
+  batchSize: 5,   // Fewer files per batch
+  delay: 5000     // Longer delay between batches
 });
 ```
 
-## Безопасность
+## Security
 
-- Используйте `--dry-run` перед применением изменений
-- Проверяйте сгенерированный код перед деплоем
-- Используйте `.gitignore` для исключения временных файлов
+- Use `--dry-run` before applying changes
+- Review generated code before deploying
+- Use `.gitignore` to exclude temporary files
 
-## Лицензия
+## License
 
-MIT License - см. LICENSE файл в корне проекта.
+MIT License - see LICENSE file in the project root.

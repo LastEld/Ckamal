@@ -346,6 +346,9 @@ Three commands verify the entire surface before any push, tag, or release:
 
 | Document | Description |
 |:---------|:------------|
+| [Architecture](ARCHITECTURE.md) | System design, layers, and component overview |
+| [Deployment Guide](DEPLOYMENT.md) | Production deployment and configuration |
+| [API Reference](API_REFERENCE.md) | HTTP endpoints and MCP tool catalog |
 | [Claude Sonnet 4.6 Integration](docs/integrations/CLAUDE_SONNET_46_INTEGRATION.md) | Sonnet IDE and CLI integration guide |
 | [GPT-5.4 Codex Integration](docs/integrations/GPT54_CODEX_INTEGRATION.md) | Codex multi-surface integration |
 | [Kimi 2.5 Integration](docs/integrations/KIMI_25_INTEGRATION_REPORT.md) | Moonshot/Kimi setup and config |
