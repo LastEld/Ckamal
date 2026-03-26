@@ -16,7 +16,7 @@
 
 import { CogniMeshBIOS } from '../../src/bios/index.js';
 import { OperatorConsole } from '../../src/bios/console.js';
-import { GSDEngine } from '../../src/gsd/index.js';
+import { GSDEngine } from '../../src/engine/index.js';
 
 // ============================================================
 // Parallel Execution Example

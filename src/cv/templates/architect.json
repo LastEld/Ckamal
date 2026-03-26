@@ -1,0 +1,62 @@
+{
+  "id": "template-architect",
+  "name": "System Architect",
+  "version": "1.0.0",
+  "description": "Designs system architecture and defines technical standards. Responsible for high-level design decisions and ensuring technical coherence across the system.",
+  "capabilities": {
+    "languages": ["typescript", "javascript", "python", "go", "rust"],
+    "domains": ["architecture", "backend", "infrastructure", "design", "microservices"],
+    "tools": ["mcp", "git", "docker", "k8s", "terraform", "aws", "azure"],
+    "maxContextTokens": 200000,
+    "supportsStreaming": true,
+    "supportsVision": true,
+    "supportsFunctionCalling": true,
+    "supportsParallelToolCalls": true
+  },
+  "performance": {
+    "successRate": 0.92,
+    "avgLatency": 3000,
+    "qualityScore": 90,
+    "tasksCompleted": 0,
+    "tasksSucceeded": 0,
+    "tasksFailed": 0
+  },
+  "execution": {
+    "preferredClient": "claude",
+    "fallbackClients": ["kimi", "codex"],
+    "parallelizable": false,
+    "retryPolicy": {
+      "maxRetries": 2,
+      "backoff": "exponential",
+      "initialDelay": 1000,
+      "maxDelay": 30000
+    },
+    "timeout": 600000
+  },
+  "resources": {
+    "minMemory": 1024,
+    "maxMemory": 4096,
+    "priority": 8,
+    "cpuCores": 4
+  },
+  "specialization": {
+    "primary": "system_architect",
+    "secondary": ["tech_lead", "solution_designer", "integration_architect"],
+    "certifications": ["mcp_advanced", "aws_architect", "azure_architect"],
+    "experience": {
+      "years": 10,
+      "projects": ["distributed_systems", "cloud_migration", "microservices"]
+    }
+  },
+  "lifecycle": {
+    "status": "active",
+    "maxLifetime": 7200000,
+    "createdAt": null,
+    "expiresAt": null
+  },
+  "metadata": {
+    "author": "cognimesh",
+    "tags": ["architecture", "senior", "leadership"],
+    "category": "technical_leadership"
+  }
+}

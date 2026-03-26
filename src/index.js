@@ -8,6 +8,7 @@
 
 import { CogniMeshServer } from './server.js';
 import { logger } from './utils/logger.js';
+import { renderWelcome } from './bios/welcome.js';
 
 /**
  * Main application entry point
@@ -37,6 +38,21 @@ async function main() {
       initTime,
       status: server.status,
       pid: process.pid
+    });
+
+    // Render welcome banner to console
+    renderWelcome({
+      initTime,
+      httpPort: server._config?.server?.port || 3000,
+      dashboardPort: server._config?.dashboard?.port || 3001,
+      wsPath: '/ws',
+      toolCount: server._tools?.getToolCount?.() || server._tools?.size || 0,
+      providers: {
+        claude: true,
+        codex: true,
+        kimi: true
+      },
+      biosState: server._bios?.state || 'OPERATIONAL'
     });
 
     // Graceful shutdown handlers

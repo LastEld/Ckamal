@@ -24,8 +24,8 @@ import {
   diffCVs 
 } from '../../src/bios/cv-schema.js';
 import { OperatorConsole } from '../../src/bios/console.js';
-import { AgentPool } from '../../src/gsd/agent-pool.js';
-import { WORKER, SPECIALIST } from '../../src/gsd/agent-types.js';
+import { AgentPool } from '../../src/engine/agent-pool.js';
+import { WORKER, SPECIALIST } from '../../src/engine/agent-types.js';
 
 // ============================================================
 // Custom CV Example

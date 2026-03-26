@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { Agent, AgentStatus } from '../gsd/agent.js';
+import { Agent, AgentStatus } from '../engine/agent.js';
 import { resolveModelRuntime } from '../clients/catalog.js';
 
 /**

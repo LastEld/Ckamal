@@ -336,7 +336,7 @@ export class HealthChecker {
     try {
       // Check if there's a global agent pool or it's managed elsewhere
       // For now, we check if the server has access to agent pool via gsd module
-      const gsdModule = await import('../gsd/index.js').catch(() => null);
+      const gsdModule = await import('../engine/index.js').catch(() => null);
       
       if (!gsdModule || !gsdModule.agentPool) {
         return {

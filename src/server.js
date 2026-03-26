@@ -431,7 +431,10 @@ export class CogniMeshServer extends EventEmitter {
     logger.info('[Domains] Initializing...');
     this._taskDomain = new TaskDomain({ repositories: this._repositories });
     this._roadmapDomain = new RoadmapDomain({ repositories: this._repositories });
-    logger.info('[Domains] Task and Roadmap domains initialized');
+    // Hydrate domain caches from SQLite
+    await this._taskDomain.loadFromRepository();
+    await this._roadmapDomain.loadFromRepository();
+    logger.info('[Domains] Task and Roadmap domains initialized (persisted)');
   }
 
   async _initializeTools() {

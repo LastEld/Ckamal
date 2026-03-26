@@ -1,0 +1,109 @@
+{
+  "id": "template-gpt54-specialist",
+  "name": "GPT 5.4 Codex Specialist",
+  "version": "1.0.0",
+  "description": "Advanced AI specialist with GPT 5.4 Codex capabilities for complex reasoning, system design, and algorithm optimization",
+  "capabilities": {
+    "languages": [
+      "javascript",
+      "typescript",
+      "python",
+      "go",
+      "rust",
+      "java",
+      "c++",
+      "c#"
+    ],
+    "domains": [
+      "architecture",
+      "system_design",
+      "algorithm_design",
+      "performance_optimization",
+      "security_analysis",
+      "complex_refactoring",
+      "code_generation",
+      "reasoning"
+    ],
+    "tools": [
+      "gpt54_codex",
+      "advanced_reasoning",
+      "multimodal_analysis",
+      "performance_profiler",
+      "security_scanner",
+      "architecture_visualizer"
+    ],
+    "maxContextTokens": 256000,
+    "supportsStreaming": true,
+    "supportsVision": true,
+    "supportsMultimodal": true
+  },
+  "performance": {
+    "successRate": 0.94,
+    "avgLatency": 3500,
+    "qualityScore": 92,
+    "tasksCompleted": 0,
+    "reasoningDepth": 5,
+    "correctionRate": 0.08
+  },
+  "execution": {
+    "preferredClient": "codex",
+    "preferredMode": "app",
+    "fallbackClients": [
+      "claude"
+    ],
+    "fallbackModes": [
+      "desktop",
+      "cli"
+    ],
+    "parallelizable": false,
+    "retryPolicy": {
+      "maxRetries": 2,
+      "backoff": "exponential"
+    },
+    "timeout": 600000
+  },
+  "resources": {
+    "minMemory": 2048,
+    "maxMemory": 8192,
+    "priority": 9
+  },
+  "specialization": {
+    "primary": "advanced_ai_specialist",
+    "secondary": [
+      "system_architect",
+      "algorithm_designer",
+      "performance_engineer",
+      "security_analyst"
+    ],
+    "certifications": [
+      "gpt54_advanced",
+      "system_design_expert",
+      "algorithm_optimization"
+    ]
+  },
+  "lifecycle": {
+    "status": "active",
+    "maxLifetime": 7200000,
+    "autoRestart": true
+  },
+  "gpt54Config": {
+    "reasoning": {
+      "chainOfThought": true,
+      "selfCorrection": true,
+      "maxDepth": 5,
+      "confidenceThreshold": 0.85
+    },
+    "multimodal": {
+      "visionEnabled": true,
+      "audioEnabled": true,
+      "maxImageSize": 20971520
+    },
+    "features": {
+      "systemDesign": true,
+      "algorithmOptimization": true,
+      "performanceTuning": true,
+      "securityAnalysis": true,
+      "complexRefactoring": true
+    }
+  }
+}

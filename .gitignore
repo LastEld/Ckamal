@@ -99,3 +99,11 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# ============================================================
+# AI-generated planning artifacts (not runtime code)
+# ============================================================
+.planning/
+.research/
+.spec/
+.agents/

@@ -65,12 +65,45 @@ export class RoadmapDomain {
    */
   #enrollments = new Map();
 
+  /** @type {Object|null} RoadmapRepository instance */
+  #repo = null;
+
   /**
    * Creates a new RoadmapDomain
+   * @param {Object} [options]
+   * @param {Object} [options.repositories] - RepositoryFactory instance
    */
-  constructor() {
+  constructor(options = {}) {
     this.#roadmaps = new Map();
     this.#enrollments = new Map();
+    this.#repo = options.repositories?.roadmaps ?? null;
+  }
+
+  /**
+   * Load all roadmaps from the repository into the cache
+   */
+  async loadFromRepository() {
+    if (!this.#repo) return;
+    try {
+      const rows = await this.#repo.findAll({ limit: 10000 });
+      for (const row of rows) {
+        this.#roadmaps.set(String(row.id), {
+          id: String(row.id),
+          title: row.title || '',
+          description: row.description || '',
+          category: row.category || 'general',
+          nodes: row.nodes ? (typeof row.nodes === 'string' ? JSON.parse(row.nodes) : row.nodes) : [],
+          createdAt: row.created_at || new Date().toISOString(),
+          updatedAt: row.updated_at || new Date().toISOString(),
+          createdBy: 'system',
+          difficulty: row.difficulty || 'intermediate',
+          tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
+          status: row.status || 'active'
+        });
+      }
+    } catch {
+      // Repository not ready — continue in-memory
+    }
   }
 
   /**
