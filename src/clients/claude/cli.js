@@ -164,8 +164,10 @@ export class ClaudeCliClient extends BaseClient {
       // Add the message content
       args.push(message.content);
 
+      const needsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(this.cliPath);
       const child = spawn(this.cliPath, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
+        shell: needsShell,
         cwd: options.cwd || process.cwd(),
         env: (() => {
           const env = { ...process.env };

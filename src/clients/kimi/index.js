@@ -94,7 +94,7 @@ export function createKimiClient(config = {}, useCase = 'default') {
     },
     
     long_context: {
-      model: KIMI_MODELS.LONG,
+      model: KIMI_MODELS.LONG_CONTEXT,
       features: {
         thinkingMode: true,
         multimodal: false,

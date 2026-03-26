@@ -50,6 +50,6 @@ await client.disconnect();
 ## Release Truth
 
 - The file is `vscode.js`, not `ide.js`.
-- `ClaudeIdeClient` is not part of the canonical public surface anymore.
+- The legacy `Ide` client class is not part of the canonical public surface anymore.
 - BIOS routing should target `claude:vscode`.
 - Cross-provider fallback is handled by `src/bios/client-gateway.js` and `src/router/subscription-runtime.js`.

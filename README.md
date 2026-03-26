@@ -229,7 +229,7 @@ All models are accessed through your subscription clients. No API keys or billin
 </table>
 
 <details>
-<summary><b>Compatibility aliases</b></summary>
+<summary><b>Model aliases</b></summary>
 
 <br/>
 

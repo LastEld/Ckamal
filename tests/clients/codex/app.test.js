@@ -3,13 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GPT53CodexAppClient } from '../../../src/clients/codex/app.js';
+import { GPT54CodexAppClient } from '../../../src/clients/codex/app.js';
 
-describe('GPT53CodexAppClient', () => {
+describe('GPT54CodexAppClient', () => {
   let client;
 
   beforeEach(() => {
-    client = new GPT53CodexAppClient({
+    client = new GPT54CodexAppClient({
       apiKey: 'test-api-key',
       costEffective: true
     });
@@ -25,7 +25,7 @@ describe('GPT53CodexAppClient', () => {
     });
 
     it('should accept custom configuration', () => {
-      const customClient = new GPT53CodexAppClient({
+      const customClient = new GPT54CodexAppClient({
         apiKey: 'custom-key',
         model: 'gpt-5.3-codex-custom',
         timeout: 60000,
@@ -127,7 +127,7 @@ describe('GPT53CodexAppClient', () => {
   });
 });
 
-describe('GPT53CodexAppClient Integration', () => {
+describe('GPT54CodexAppClient Integration', () => {
   it('should be instantiable via ClientFactory', async () => {
     const { ClientFactory } = await import('../../../src/clients/index.js');
     
@@ -136,16 +136,16 @@ describe('GPT53CodexAppClient Integration', () => {
     });
 
     expect(client).toBeDefined();
-    expect(client.constructor.name).toBe('GPT53CodexAppClient');
+    expect(client.constructor.name).toBe('GPT54CodexAppClient');
   });
 
-  it('should export GPT53CodexAppClient from codex index', async () => {
-    const { GPT53CodexAppClient } = await import('../../../src/clients/codex/index.js');
-    expect(GPT53CodexAppClient).toBeDefined();
+  it('should export GPT54CodexAppClient from codex index', async () => {
+    const { GPT54CodexAppClient } = await import('../../../src/clients/codex/index.js');
+    expect(GPT54CodexAppClient).toBeDefined();
   });
 
-  it('should export GPT53CodexAppClient from main clients index', async () => {
-    const { GPT53CodexAppClient } = await import('../../../src/clients/index.js');
-    expect(GPT53CodexAppClient).toBeDefined();
+  it('should export GPT54CodexAppClient from main clients index', async () => {
+    const { GPT54CodexAppClient } = await import('../../../src/clients/index.js');
+    expect(GPT54CodexAppClient).toBeDefined();
   });
 });

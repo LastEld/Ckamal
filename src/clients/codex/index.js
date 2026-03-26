@@ -4,6 +4,8 @@
  */
 
 export { CodexCliClient, MODEL_CONFIGS, TaskComplexityAnalyzer } from './cli.js';
+export { GPT54CodexAppClient } from './app.js';
+export { GPT54CodexVSCodeClient } from './vscode.js';
 
 // Default export with all clients
 export default {
