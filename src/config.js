@@ -174,7 +174,7 @@ export class Config {
       enabled: options.dashboardEnabled !== undefined ? options.dashboardEnabled : process.env.DASHBOARD_ENABLED !== 'false',
       port: options.dashboardPort || parseInt(process.env.DASHBOARD_PORT, 10) || 3001,
       host: options.dashboardHost || process.env.DASHBOARD_HOST || '0.0.0.0',
-      authEnabled: process.env.DASHBOARD_AUTH_ENABLED !== 'false',
+      authEnabled: process.env.DASHBOARD_AUTH_ENABLED === 'true' || (process.env.NODE_ENV === 'production' && process.env.DASHBOARD_AUTH_ENABLED !== 'false'),
       jwtSecret: process.env.JWT_SECRET || 'cognimesh-secret-change-in-production'
     };
 

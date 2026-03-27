@@ -306,19 +306,21 @@ export class SystemMonitor extends EventEmitter {
    * @async
    */
   async _checkCpu() {
-    // Simplified CPU check - in production, use proper CPU monitoring
+    const intervalMs = 500;
     const startUsage = process.cpuUsage();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const startTime = Date.now();
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
     const endUsage = process.cpuUsage(startUsage);
-    
-    const userTime = endUsage.user / 1000; // Convert to ms
-    const systemTime = endUsage.system / 1000;
-    const totalTime = userTime + systemTime;
-    const percentage = Math.min((totalTime / 100) * 100, 100);
-    
+    const elapsed = Date.now() - startTime;
+
+    const userMs = endUsage.user / 1000;
+    const systemMs = endUsage.system / 1000;
+    const cpuCount = (await import('os')).cpus().length;
+    const percentage = Math.min(((userMs + systemMs) / (elapsed * cpuCount)) * 100, 100);
+
     this.recordMetric('cpu.usage', percentage, {
-      user: userTime,
-      system: systemTime
+      user: userMs,
+      system: systemMs
     });
   }
 

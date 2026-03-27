@@ -726,7 +726,7 @@ export class CogniMeshServer extends EventEmitter {
       port: this._config.dashboard?.port || 3000,
       host: this._config.dashboard?.host || '0.0.0.0',
       jwtSecret: this._config.security?.jwtSecret,
-      authEnabled: this._config.dashboard?.authEnabled !== false,
+      authEnabled: this._config.dashboard?.authEnabled ?? (process.env.NODE_ENV === 'production'),
       apiBaseUrl: `http://${this._config.server.host}:${this._config.server.port}`,
       taskDomain: this._taskDomain,
       roadmapDomain: this._roadmapDomain,

@@ -6,6 +6,7 @@
  */
 
 import { EventEmitter } from 'events';
+import os from 'os';
 
 /**
  * Health status levels
@@ -411,21 +412,25 @@ export class HealthMonitor extends EventEmitter {
    * @returns {Promise<Object>}
    */
   async _collectCPUMetrics() {
-    // CPU usage estimation based on event loop
+    const intervalMs = 500;
     const startUsage = process.cpuUsage();
-    
+    const startTime = Date.now();
+
     return new Promise((resolve) => {
       setTimeout(() => {
         const endUsage = process.cpuUsage(startUsage);
-        const userPercent = (endUsage.user / 1000000) * 10; // Convert to approximate %
-        const systemPercent = (endUsage.system / 1000000) * 10;
-        
+        const elapsed = Date.now() - startTime;
+        const cpuCount = os.cpus().length;
+        const userMs = endUsage.user / 1000;
+        const systemMs = endUsage.system / 1000;
+        const totalPercent = Math.min(((userMs + systemMs) / (elapsed * cpuCount)) * 100, 100);
+
         resolve({
-          'cpu.user': Math.round(userPercent),
-          'cpu.system': Math.round(systemPercent),
-          'cpu.usage': Math.round(userPercent + systemPercent)
+          'cpu.user': Math.round((userMs / (elapsed * cpuCount)) * 100),
+          'cpu.system': Math.round((systemMs / (elapsed * cpuCount)) * 100),
+          'cpu.usage': Math.round(totalPercent)
         });
-      }, 100);
+      }, intervalMs);
     });
   }
 
