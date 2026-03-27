@@ -107,3 +107,4 @@ Thumbs.db
 .research/
 .spec/
 .agents/
+.claude/worktrees/
