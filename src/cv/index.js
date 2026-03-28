@@ -8,22 +8,22 @@
  */
 
 import { CVRegistry } from './registry.js';
-import { RightsEngine, TimeBasedPolicy, RateLimitPolicy } from './engine.js';
+import { RightsEngine, TimeBasedPolicy as _TimeBasedPolicy, RateLimitPolicy as _RateLimitPolicy } from './engine.js';
 import { ObligationsMonitor } from './obligations.js';
-import { CVFactory, createAgentCV } from './factory.js';
+import { CVFactory, createAgentCV as _createAgentCV } from './factory.js';
 import { CVManager } from './manager.js';
 import {
-  CVSchema,
-  RightsSchema,
-  ObligationsSchema,
-  validateCV,
-  validatePartialCV,
-  validateRights,
-  validateObligations,
-  createDefaultCV,
-  sanitizeCV,
-  diffCVs,
-  mergeCVs
+  CVSchema as _CVSchema,
+  RightsSchema as _RightsSchema,
+  ObligationsSchema as _ObligationsSchema,
+  validateCV as _validateCV,
+  validatePartialCV as _validatePartialCV,
+  validateRights as _validateRights,
+  validateObligations as _validateObligations,
+  createDefaultCV as _createDefaultCV,
+  sanitizeCV as _sanitizeCV,
+  diffCVs as _diffCVs,
+  mergeCVs as _mergeCVs
 } from './schema.js';
 
 // Core Components
@@ -61,25 +61,25 @@ export { createAgentCV } from './factory.js';
  */
 export function createCVSystem(options = {}) {
   // Create components
-  const registry = options.registry || new CVRegistry(options.registryOptions);
-  const factory = options.factory || new CVFactory(registry, options.factoryOptions);
-  const rightsEngine = options.rightsEngine || new RightsEngine(options.rightsOptions);
-  const obligationsMonitor = options.obligationsMonitor || new ObligationsMonitor(options.obligationsOptions);
+  const _registry = options.registry || new CVRegistry(options.registryOptions);
+  const _factory = options.factory || new CVFactory(_registry, options.factoryOptions);
+  const _rightsEngine = options.rightsEngine || new RightsEngine(options.rightsOptions);
+  const _obligationsMonitor = options.obligationsMonitor || new ObligationsMonitor(options.obligationsOptions);
   
   // Create manager
   const manager = new CVManager({
-    registry,
-    factory,
-    rightsEngine,
-    obligationsMonitor,
+    registry: _registry,
+    factory: _factory,
+    rightsEngine: _rightsEngine,
+    obligationsMonitor: _obligationsMonitor,
     ...options.managerOptions
   });
   
   return {
-    registry,
-    factory,
-    rightsEngine,
-    obligationsMonitor,
+    registry: _registry,
+    factory: _factory,
+    rightsEngine: _rightsEngine,
+    obligationsMonitor: _obligationsMonitor,
     manager,
     
     /**
@@ -97,7 +97,7 @@ export function createCVSystem(options = {}) {
       
       for (const templateName of templates) {
         try {
-          factory.loadTemplate(templateName, 'yaml');
+          _factory.loadTemplate(templateName, 'yaml');
         } catch (error) {
           console.warn(`Failed to load template '${templateName}': ${error.message}`);
         }
@@ -114,7 +114,7 @@ export function createCVSystem(options = {}) {
      */
     async createAgent(templateName, overrides = {}) {
       // Create CV from template
-      const cv = factory.createFromTemplate(templateName, overrides, {
+      const cv = _factory.createFromTemplate(templateName, overrides, {
         autoRegister: true
       });
       
@@ -122,7 +122,7 @@ export function createCVSystem(options = {}) {
       await manager.activate(cv.identity.id);
       
       // Register with obligations monitor
-      obligationsMonitor.register(cv.identity.id, cv);
+      _obligationsMonitor.register(cv.identity.id, cv);
       
       return cv;
     },
@@ -134,7 +134,7 @@ export function createCVSystem(options = {}) {
      * @returns {Object} - Agent instance
      */
     async spawnAgent(cvId, context = {}) {
-      const cv = registry.get(cvId);
+      const cv = _registry.get(cvId);
       if (!cv) {
         throw new Error(`CV '${cvId}' not found`);
       }
@@ -145,7 +145,7 @@ export function createCVSystem(options = {}) {
       }
       
       // Validate rights
-      const rightsCheck = rightsEngine.validate(cv.rights || {});
+      const rightsCheck = _rightsEngine.validate(cv.rights || {});
       if (!rightsCheck.valid) {
         throw new Error(`Invalid rights configuration: ${rightsCheck.errors.join(', ')}`);
       }
@@ -162,7 +162,7 @@ export function createCVSystem(options = {}) {
          * Check if agent has permission for action
          */
         async hasPermission(action, resource, ctx = {}) {
-          return rightsEngine.check({
+          return _rightsEngine.check({
             cv,
             action,
             resource,
@@ -174,7 +174,7 @@ export function createCVSystem(options = {}) {
          * Execute with permission check
          */
         async execute(action, resource, fn, ctx = {}) {
-          await rightsEngine.require({
+          await _rightsEngine.require({
             cv,
             action,
             resource,
@@ -182,14 +182,14 @@ export function createCVSystem(options = {}) {
           });
           
           // Track execution
-          obligationsMonitor.recordTaskStart(this.id, { id: action });
+          _obligationsMonitor.recordTaskStart(this.id, { id: action });
           
           try {
             const result = await fn();
-            obligationsMonitor.recordTaskComplete(this.id, { success: true });
+            _obligationsMonitor.recordTaskComplete(this.id, { success: true });
             return result;
           } catch (error) {
-            obligationsMonitor.recordTaskFailure(this.id, error);
+            _obligationsMonitor.recordTaskFailure(this.id, error);
             throw error;
           }
         },
@@ -198,7 +198,7 @@ export function createCVSystem(options = {}) {
          * Get compliance status
          */
         getCompliance() {
-          return obligationsMonitor.checkCompliance(cvId);
+          return _obligationsMonitor.checkCompliance(cvId);
         },
         
         /**
@@ -206,10 +206,10 @@ export function createCVSystem(options = {}) {
          */
         terminate() {
           // Final compliance check
-          const compliance = obligationsMonitor.checkCompliance(cvId);
+          const compliance = _obligationsMonitor.checkCompliance(cvId);
           
           // Unregister
-          obligationsMonitor.unregister(this.id);
+          _obligationsMonitor.unregister(this.id);
           
           return { terminated: true, compliance };
         }
@@ -223,9 +223,9 @@ export function createCVSystem(options = {}) {
      * @returns {Object} - Health status
      */
     getHealth() {
-      const registryStats = registry.getStats();
-      const rightsStats = rightsEngine.getStats();
-      const obligationsStats = obligationsMonitor.getStats();
+      const registryStats = _registry.getStats();
+      const rightsStats = _rightsEngine.getStats();
+      const obligationsStats = _obligationsMonitor.getStats();
       
       return {
         status: 'healthy',
@@ -256,9 +256,9 @@ export function createCVSystem(options = {}) {
      * Dispose the system
      */
     async dispose() {
-      obligationsMonitor.stop();
+      _obligationsMonitor.stop();
       // Clear caches
-      rightsEngine.clearCache();
+      _rightsEngine.clearCache();
     }
   };
 }

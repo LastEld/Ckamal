@@ -15,7 +15,7 @@ module.exports = {
     'linebreak-style': 'off',
     'quotes': 'off',
     'semi': ['error', 'always'],
-    'no-unused-vars': 'warn',
+    'no-unused-vars': ['warn', { 'varsIgnorePattern': '^_', 'argsIgnorePattern': '^_' }],
     'no-console': 'off',
     'no-case-declarations': 'off',
     'no-useless-escape': 'off',

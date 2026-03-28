@@ -4,8 +4,8 @@
  */
 
 import * as f from './utils/formatters.js';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, readFileSync as _readFileSync, existsSync as _existsSync } from 'fs';
+import { join as _join } from 'path';
 
 // Roadmap storage
 const roadmapsStore = new Map();
@@ -70,7 +70,7 @@ export async function createRoadmap(name, options = {}) {
   output += '\n\n';
   output += f.colorize('Phases:', 'bright') + '\n';
   
-  roadmap.phases.forEach((phase, idx) => {
+  roadmap.phases.forEach((phase) => {
     const statusIcon = phase.status === 'completed' ? f.colorize('✓', 'green') : 
                        phase.status === 'in-progress' ? f.colorize('▶', 'blue') : 
                        f.colorize('○', 'dim');
@@ -87,7 +87,7 @@ export async function createRoadmap(name, options = {}) {
 /**
  * List all roadmaps
  */
-export async function listRoadmaps(options = {}) {
+export async function listRoadmaps(_options = {}) {
   const spinner = f.createSpinner('Fetching roadmaps');
   spinner.start();
 
@@ -156,7 +156,7 @@ export async function listRoadmaps(options = {}) {
 /**
  * Get roadmap details
  */
-export async function getRoadmap(roadmapId, options = {}) {
+export async function getRoadmap(roadmapId, _options = {}) {
   const roadmap = roadmapsStore.get(roadmapId);
   
   if (!roadmap) {
@@ -178,7 +178,7 @@ export async function getRoadmap(roadmapId, options = {}) {
 /**
  * Update roadmap
  */
-export async function updateRoadmap(roadmapId, updates, options = {}) {
+export async function updateRoadmap(roadmapId, updates, _options = {}) {
   const roadmap = roadmapsStore.get(roadmapId);
   
   if (!roadmap) {
@@ -206,7 +206,7 @@ export async function updateRoadmap(roadmapId, updates, options = {}) {
 /**
  * Delete roadmap
  */
-export async function deleteRoadmap(roadmapId, options = {}) {
+export async function deleteRoadmap(roadmapId, _options = {}) {
   if (!roadmapsStore.has(roadmapId)) {
     return {
       success: false,
@@ -251,7 +251,7 @@ function formatRoadmapDetails(roadmap) {
   output += '\n\n';
   output += f.colorize('Phases:', 'bright') + '\n\n';
 
-  roadmap.phases.forEach((phase, idx) => {
+  roadmap.phases.forEach((phase) => {
     const statusIcon = phase.status === 'completed' ? f.colorize('✓', 'green') : 
                        phase.status === 'in-progress' ? f.colorize('▶', 'blue') : 
                        f.colorize('○', 'dim');

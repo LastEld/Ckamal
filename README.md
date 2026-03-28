@@ -121,11 +121,28 @@ CI/CD pipelines, provider matrix verification, release packaging, and GitHub Act
 
 ## Quick Start
 
+### Option 1: Interactive Setup (Recommended)
+
+The interactive setup wizard configures your environment in under 5 minutes:
+
 ```bash
 git clone https://github.com/LastEld/Ckamal.git
 cd Ckamal
 npm install
-npm run verify:release    # lint + unit + integration + e2e + provider-matrix
+npm run setup              # Interactive configuration wizard
+npm start
+```
+
+### Option 2: Manual Setup
+
+For advanced users who prefer manual configuration:
+
+```bash
+git clone https://github.com/LastEld/Ckamal.git
+cd Ckamal
+npm install
+cp .env.example .env       # Edit .env with your settings
+npm run verify:release     # lint + unit + integration + e2e + provider-matrix
 npm start
 ```
 
@@ -153,6 +170,28 @@ GITHUB_TOKEN=ghp_...
 All models are accessed through your subscription clients. No API keys or billing setup required.
 
 </details>
+
+<br/>
+
+**[back to top](#cognimesh)**
+
+<br/>
+
+---
+
+<br/>
+
+## Deploy
+
+Deploy to your preferred platform with one click:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/LastEld/Ckamal)
+[![Deploy to Railway](https://railway.app/button.svg)](https://railway.app/template/Ckamal)
+
+**Manual Deploy:**
+- **Heroku**: See [`app.json`](app.json) for configuration
+- **Railway**: See [`railway.toml`](railway.toml) for configuration
+- **Self-hosted**: See [DEPLOYMENT.md](DEPLOYMENT.md)
 
 <br/>
 

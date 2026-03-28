@@ -200,6 +200,75 @@ function checkDataDirectory() {
   return allGood;
 }
 
+// Check 5b: Database Connectivity
+function checkDatabaseConnectivity() {
+  const envPath = join(PROJECT_ROOT, '.env');
+  
+  if (!existsSync(envPath)) {
+    printCheck('Database Connectivity', 'warn', 'Cannot check - .env missing');
+    return false;
+  }
+  
+  try {
+    const envContent = readFileSync(envPath, 'utf8');
+    
+    // Extract DATABASE_PATH from .env
+    const dbPathMatch = envContent.match(/DATABASE_PATH=(.+)/);
+    const dbPath = dbPathMatch ? dbPathMatch[1].trim() : './data/cognimesh.db';
+    
+    // Resolve relative paths
+    const resolvedPath = dbPath.startsWith('./') || dbPath.startsWith('.\\') 
+      ? join(PROJECT_ROOT, dbPath.slice(2)) 
+      : dbPath;
+    
+    // Check if database file exists
+    if (!existsSync(resolvedPath)) {
+      // Check if parent directory exists and is writable
+      const parentDir = dirname(resolvedPath);
+      if (existsSync(parentDir)) {
+        try {
+          accessSync(parentDir, constants.W_OK);
+          printCheck('Database Connectivity', 'pass', 
+            `Directory writable (DB will be created on first run)`);
+          return true;
+        } catch {
+          printCheck('Database Connectivity', 'fail', 
+            `Parent directory not writable: ${parentDir}`, 
+            `Fix permissions: chmod 755 ${parentDir}`);
+          return false;
+        }
+      } else {
+        printCheck('Database Connectivity', 'fail', 
+          `Parent directory does not exist: ${parentDir}`, 
+          `Create directory: mkdir -p ${parentDir}`);
+        return false;
+      }
+    }
+    
+    // Check if database file is readable/writable
+    try {
+      accessSync(resolvedPath, constants.R_OK | constants.W_OK);
+      
+      // Try to get file stats
+      const stats = statSync(resolvedPath);
+      const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+      
+      printCheck('Database Connectivity', 'pass', 
+        `Connected (${sizeMB} MB)`);
+      return true;
+    } catch (error) {
+      printCheck('Database Connectivity', 'fail', 
+        `Database file not accessible: ${error.message}`, 
+        `Fix permissions: chmod 644 ${resolvedPath}`);
+      return false;
+    }
+  } catch (error) {
+    printCheck('Database Connectivity', 'warn', 
+      `Cannot verify: ${error.message}`);
+    return false;
+  }
+}
+
 // Check 6: GitHub Token
 function checkGitHubToken() {
   const envPath = join(PROJECT_ROOT, '.env');
@@ -419,6 +488,7 @@ async function runDoctor() {
   
   printSection('💾 Storage & Resources');
   checkDataDirectory();
+  checkDatabaseConnectivity();
   checkDiskSpace();
   checkPortAvailability();
   

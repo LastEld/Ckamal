@@ -12,6 +12,33 @@
 
 ---
 
+## Table of Contents
+
+- [Quick Diagnose](#quick-diagnose)
+- [Common Errors and Solutions](#common-errors-and-solutions)
+  - [Installation Issues](#-installation-issues)
+  - [Startup Issues](#-startup-issues)
+  - [Runtime Issues](#-runtime-issues)
+  - [AI Client Issues](#-ai-client-issues)
+- [Diagnostic Commands](#diagnostic-commands)
+  - [System Health](#system-health)
+  - [BIOS Diagnostics](#bios-diagnostics)
+  - [Log Analysis](#log-analysis)
+  - [Database Diagnostics](#database-diagnostics)
+  - [Network Diagnostics](#network-diagnostics)
+- [FAQ](#faq)
+  - [General Questions](#general-questions)
+  - [Installation Questions](#installation-questions)
+  - [Runtime Questions](#runtime-questions)
+  - [AI Integration Questions](#ai-integration-questions)
+  - [Performance Questions](#performance-questions)
+- [Debug Mode](#debug-mode)
+- [Log Locations](#log-locations)
+- [Support Channels](#support-channels)
+- [Reporting Bugs](#reporting-bugs)
+
+---
+
 ## Quick Diagnose
 
 Run these commands in order to quickly identify issues:
@@ -61,6 +88,8 @@ rm -rf node_modules
 npm install
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 #### Error: `EACCES: permission denied` on npm install
@@ -80,6 +109,8 @@ npx <package-name>
 # Windows - Run PowerShell as Administrator
 # Then retry: npm install
 ```
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -114,6 +145,8 @@ taskkill /PID <PID> /F
 echo "COGNIMESH_PORT=3001" >> .env
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 #### Error: `BIOS boot sequence failed`
@@ -144,6 +177,8 @@ set BIOS_MODE=SAFE_MODE && npm start
 rm -rf cache/*
 npm start
 ```
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -179,6 +214,8 @@ sqlite3 data/cognimesh.db "PRAGMA journal_mode;"
 # Should return: wal
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 ### 🟠 Runtime Issues
@@ -205,6 +242,8 @@ npm start
 # Monitor connections
 sqlite3 data/cognimesh.db "PRAGMA database_list;"
 ```
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -235,6 +274,8 @@ sudo ufw status
 sudo iptables -L | grep 8080
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 #### Error: `Rate limit exceeded`
@@ -259,6 +300,8 @@ npm start
 
 # For production, implement client-side rate limiting
 ```
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -292,6 +335,8 @@ which claude
 echo "CLAUDE_CLI_PATH=$(which claude)" >> .env
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 #### Error: `Kimi client not found`
@@ -309,6 +354,8 @@ kimi login
 kimi --version
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 #### Error: `Codex client not found`
@@ -325,6 +372,8 @@ codex login
 # 3. Verify
 codex --version
 ```
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -370,7 +419,7 @@ grep -i "database" logs/app.log
 
 # Windows PowerShell
 type logs\app.log | findstr /i "error"
-Get-Content logs\app.log -Wait
+Get-Content logs/app.log -Wait
 ```
 
 ### Database Diagnostics
@@ -415,6 +464,8 @@ curl -i -N \
   http://localhost:8080/ws
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 ## FAQ
@@ -435,6 +486,8 @@ No! CogniMesh uses your existing subscription clients (Claude Pro, ChatGPT Plus,
 **Q: Can I run CogniMesh on Windows?**
 
 Yes! Use WSL2 (recommended) or PowerShell. All commands work on Windows with minor syntax adjustments.
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -457,6 +510,8 @@ npm install --no-optional
 **Q: Can I use a different database?**
 
 CogniMesh uses SQLite by default. Other databases are not officially supported, but you can modify `src/db/connection/index.js` for other adapters.
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -503,6 +558,8 @@ npm run db:migrate
 npm start
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 ### AI Integration Questions
@@ -526,6 +583,8 @@ KIMI_CLI_PATH=/usr/local/bin/kimi
 **Q: Can I use multiple AI providers at once?**
 
 Yes! CogniMesh routes tasks to the best available model. You can have all three providers (Claude, Codex, Kimi) configured simultaneously.
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -559,6 +618,8 @@ sqlite3 data/cognimesh.db "ANALYZE;"
 LOG_LEVEL=debug
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 ## Debug Mode
@@ -579,6 +640,8 @@ DEBUG=cognimesh:router npm start
 DEBUG=cognimesh:websocket npm start
 ```
 
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
+
 ---
 
 ## Log Locations
@@ -591,6 +654,8 @@ DEBUG=cognimesh:websocket npm start
 | Docker | `docker logs cognimesh` |
 | Nginx | `/var/log/nginx/cognimesh-*.log` |
 | Database | `./data/cognimesh.db-journal` |
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -612,6 +677,8 @@ DEBUG=cognimesh:websocket npm start
 ### Enterprise Support
 
 For priority support with SLAs, contact: support@cognimesh.io
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 
@@ -635,6 +702,8 @@ npm run bios:diagnose -- --format=json
 4. **Expected behavior:** What should have happened
 
 5. **Logs:** Relevant excerpts from `./logs/app.log`
+
+**[⬆ Back to Top](#cognimesh-troubleshooting-guide)**
 
 ---
 

@@ -211,10 +211,10 @@ Record the following for each deployment:
 
 ## 📚 Related Documents
 
-- [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md)
-- [DEPLOYMENT.md](./DEPLOYMENT.md)
-- [ARCHITECTURE.md](./ARCHITECTURE.md)
-- [API_REFERENCE.md](./API_REFERENCE.md)
+- [PRODUCTION_READINESS.md](../PRODUCTION_READINESS.md)
+- [DEPLOYMENT.md](../../DEPLOYMENT.md)
+- [ARCHITECTURE.md](../../ARCHITECTURE.md)
+- [API_REFERENCE.md](../../API_REFERENCE.md)
 
 ---
 

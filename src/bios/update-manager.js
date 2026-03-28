@@ -1,17 +1,17 @@
 import { EventEmitter } from 'events';
 import { createHash } from 'crypto';
-import { createReadStream, createWriteStream } from 'fs';
+import { createReadStream, createWriteStream as _createWriteStream } from 'fs';
 import { mkdir, readdir, readFile, writeFile, stat, rm, copyFile } from 'fs/promises';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, resolve as _resolve } from 'path';
 import { pipeline } from 'stream/promises';
 import { extract } from 'tar';
-import { unzip } from 'zlib';
-import { promisify } from 'util';
+
+import { promisify as _promisify } from 'util';
 import cron from 'node-cron';
 const { schedule: scheduleJob } = cron;
 import { compare, valid, gt, coerce } from 'semver';
 
-const gunzip = promisify(unzip);
+
 
 /**
  * Update states
@@ -308,7 +308,7 @@ export class UpdateManager extends EventEmitter {
 
       const timeout = setTimeout(async () => {
         try {
-          const download = await this.downloadUpdate(version);
+          await this.downloadUpdate(version);
           await this.applyUpdate(version);
         } catch (error) {
           this.emit('update:failed', { phase: 'scheduled', error: error.message, version });
@@ -323,7 +323,7 @@ export class UpdateManager extends EventEmitter {
         try {
           const check = await this.checkForUpdates();
           if (check.available) {
-            const download = await this.downloadUpdate(check.latestVersion);
+            await this.downloadUpdate(check.latestVersion);
             await this.applyUpdate(check.latestVersion);
           }
         } catch (error) {
@@ -384,7 +384,7 @@ export class UpdateManager extends EventEmitter {
         const check = await this.checkForUpdates();
         
         if (check.available && config.autoDownload) {
-          const download = await this.downloadUpdate(check.latestVersion);
+          await this.downloadUpdate(check.latestVersion);
           
           if (config.autoApply) {
             if (config.allowRestart) {

@@ -1,0 +1,111 @@
+{
+  "name": "cognimesh",
+  "description": "Multi-model AI orchestration platform - subscription-first",
+  "website": "https://github.com/LastEld/Ckamal",
+  "repository": "https://github.com/LastEld/Ckamal",
+  "logo": "https://raw.githubusercontent.com/LastEld/Ckamal/main/docs/assets/brand/proposallogo2-transparent.png",
+  "keywords": [
+    "ai",
+    "orchestration",
+    "multi-agent",
+    "claude",
+    "openai",
+    "kimi",
+    "bios",
+    "mcp"
+  ],
+  "stack": "heroku-22",
+  "addons": [
+    {
+      "plan": "heroku-postgresql:mini",
+      "as": "DATABASE"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Node.js environment mode",
+      "value": "production"
+    },
+    "COGNIMESH_PORT": {
+      "description": "Main server port (Heroku sets PORT automatically)",
+      "value": "$PORT"
+    },
+    "DASHBOARD_PORT": {
+      "description": "Dashboard port",
+      "value": "3001"
+    },
+    "WS_PORT": {
+      "description": "WebSocket server port",
+      "value": "8080"
+    },
+    "JWT_SECRET": {
+      "description": "JWT secret for authentication (auto-generated)",
+      "generator": "secret"
+    },
+    "SESSION_SECRET": {
+      "description": "Session secret for cookies (auto-generated)",
+      "generator": "secret"
+    },
+    "SECURITY_PEPPER": {
+      "description": "Security pepper for hashing (auto-generated)",
+      "generator": "secret"
+    },
+    "ADMIN_PASSWORD": {
+      "description": "Admin dashboard password (change after deploy)",
+      "value": "admin"
+    },
+    "GITHUB_TOKEN": {
+      "description": "GitHub Personal Access Token (optional)",
+      "value": "",
+      "required": false
+    },
+    "GITHUB_REPO": {
+      "description": "Default GitHub repository (owner/repo format)",
+      "value": "LastEld/Ckamal",
+      "required": false
+    },
+    "BIOS_MODE": {
+      "description": "BIOS boot mode",
+      "value": "OPERATIONAL"
+    },
+    "AUTO_UPDATE": {
+      "description": "Enable automatic subsystem updates",
+      "value": "true"
+    },
+    "LOG_LEVEL": {
+      "description": "Logging level",
+      "value": "INFO"
+    },
+    "DASHBOARD_ENABLED": {
+      "description": "Enable web dashboard",
+      "value": "true"
+    },
+    "FEATURE_CLAUDE": {
+      "description": "Enable Claude client routing",
+      "value": "false"
+    },
+    "FEATURE_CODEX": {
+      "description": "Enable Codex client routing",
+      "value": "false"
+    },
+    "FEATURE_KIMI": {
+      "description": "Enable Kimi client routing",
+      "value": "false"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "scripts": {
+    "postdeploy": "npm run db:migrate && npm run doctor"
+  },
+  "success_url": "/dashboard"
+}

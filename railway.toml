@@ -1,0 +1,52 @@
+# Railway.app deployment configuration for CogniMesh
+# https://railway.app
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments]
+  [environments.production]
+  numReplicas = 1
+  
+  [environments.production.deploy]
+  startCommand = "npm start"
+
+[nixpacks]
+# Node.js version (matches package.json engines)
+nodejs_version = "18"
+
+# Environment variables for Railway
+[variables]
+NODE_ENV = "production"
+COGNIMESH_PORT = "${{PORT}}"
+DASHBOARD_PORT = "3001"
+WS_PORT = "8080"
+DATABASE_PATH = "./data/cognimesh.db"
+DATABASE_URL = "${{DATABASE_URL}}"
+BIOS_MODE = "OPERATIONAL"
+AUTO_UPDATE = "true"
+LOG_LEVEL = "INFO"
+DASHBOARD_ENABLED = "true"
+FEATURE_CLAUDE = "false"
+FEATURE_CODEX = "false"
+FEATURE_KIMI = "false"
+
+# Security (these will be auto-generated or set via Railway dashboard)
+JWT_SECRET = "${{secret.JWT_SECRET}}"
+SESSION_SECRET = "${{secret.SESSION_SECRET}}"
+SECURITY_PEPPER = "${{secret.SECURITY_PEPPER}}"
+
+# Admin password (should be changed in production)
+ADMIN_PASSWORD = "${{secret.ADMIN_PASSWORD}}"
+
+# GitHub integration (optional)
+GITHUB_TOKEN = "${{secret.GITHUB_TOKEN}}"
+GITHUB_REPO = "LastEld/Ckamal"

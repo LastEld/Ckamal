@@ -411,8 +411,6 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" \
   http://localhost:3000/api/user/data
 ```
 
-**[⬆ Back to Top](#cognimesh-security-documentation)**
-
 ### SOC 2 Considerations
 
 CogniMesh supports SOC 2 compliance with:
@@ -514,7 +512,7 @@ If you suspect a security breach:
 
 <div align="center">
 
-**[Back to Documentation Hub](README.md)** · **[Troubleshooting](TROUBLESHOOTING.md)** · **[Deployment Guide](../DEPLOYMENT.md)**
+**[Back to Documentation Hub](docs/README.md)** · **[Troubleshooting](docs/TROUBLESHOOTING.md)** · **[Deployment Guide](DEPLOYMENT.md)**
 
 <sub>Last updated: 2026-03-28</sub>
 
