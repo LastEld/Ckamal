@@ -409,6 +409,88 @@ class ApiClient {
   async getPresence() {
     return this.get('/presence');
   }
+
+  // ==================== Agent Orchestration API ====================
+
+  async spawnAgent(cv, client, context, options = {}) {
+    return this.post('/bios/agents/spawn', { cv, client, context, options });
+  }
+
+  async delegateTask(task, client, options = {}) {
+    return this.post('/bios/tasks/delegate', { task, client, options });
+  }
+
+  async executeParallel(tasks, clients, options = {}) {
+    return this.post('/bios/execute/parallel', { tasks, clients, options });
+  }
+
+  async getOrchestratorStatus() {
+    return this.get('/bios/status');
+  }
+
+  // ==================== Agent Pool API ====================
+
+  async getAgentPoolStats() {
+    return this.get('/agents/pool/stats');
+  }
+
+  async getAgentPool() {
+    return this.get('/agents/pool');
+  }
+
+  async scaleUpPool(count = 1) {
+    return this.post('/agents/pool/scale-up', { count });
+  }
+
+  async scaleDownPool(count = 1) {
+    return this.post('/agents/pool/scale-down', { count });
+  }
+
+  // ==================== Task Queue API ====================
+
+  async getQueueTasks(filters = {}) {
+    return this.get('/queue/tasks', filters);
+  }
+
+  async enqueueTask(task, priority = 'NORMAL', data, metadata, tag) {
+    return this.post('/queue/tasks', { task, priority, data, metadata, tag });
+  }
+
+  async reprioritizeTask(id, priority) {
+    return this.patch(`/queue/tasks/${id}/priority`, { priority });
+  }
+
+  async getQueueStats() {
+    return this.get('/queue/stats');
+  }
+
+  // ==================== Dead Letter Queue API ====================
+
+  async getDLQTasks(filters = {}) {
+    return this.get('/dlq/tasks', filters);
+  }
+
+  async retryDLQTask(id) {
+    return this.post(`/dlq/tasks/${id}/retry`);
+  }
+
+  // ==================== Health API ====================
+
+  async getHealthComponents() {
+    return this.get('/health/components');
+  }
+
+  async getHealthComponent(id) {
+    return this.get(`/health/components/${id}`);
+  }
+
+  async getHealthReady() {
+    return this.get('/health/ready');
+  }
+
+  async getHealthLive() {
+    return this.get('/health/live');
+  }
 }
 
 // Export for module systems if available

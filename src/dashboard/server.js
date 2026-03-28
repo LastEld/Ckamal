@@ -18,6 +18,13 @@ import { ContextSnapshotManager } from '../domains/context/index.js';
 import { GSDDomain } from '../domains/gsd/index.js';
 import { createCVSystem } from '../cv/index.js';
 
+// New backend integrations for missing API endpoints
+import { AgentOrchestrator, ExecutionStrategy, TaskPriority } from '../bios/orchestrator.js';
+import { AgentPool } from '../agents/pool.js';
+import { TaskQueue, Priority as QueuePriority } from '../queue/task-queue.js';
+import { DeadLetterQueue } from '../queue/dead-letter.js';
+import { HealthChecker } from '../health/health-checker.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const noopMiddlewareFactory = () => (_req, _res, next) => next();
@@ -48,6 +55,20 @@ export class DashboardServer {
     this.analytics = options.analytics || null;
     this.contextManager = options.contextManager || new ContextSnapshotManager();
     this.cvSystem = options.cvSystem || createCVSystem();
+    
+    // Initialize new backend modules for expanded API
+    this.orchestrator = options.orchestrator || new AgentOrchestrator({
+      defaultTimeout: 60000,
+      maxConcurrentTasks: 10,
+    });
+    this.agentPool = options.agentPool || new AgentPool({
+      minPoolSize: 2,
+      maxPoolSize: 10,
+      autoScale: true,
+    });
+    this.taskQueue = options.taskQueue || new TaskQueue({ maxSize: 1000 });
+    this.deadLetterQueue = options.deadLetterQueue || new DeadLetterQueue({ maxSize: 10000 });
+    this.healthChecker = options.healthChecker || new HealthChecker({ server: this });
     
     this.app = express();
     this.server = null;
@@ -221,6 +242,10 @@ export class DashboardServer {
     this.setupAlertRoutes();
     this.setupSystemRoutes();
     this.setupContextRoutes();
+    this.setupOrchestrationRoutes();
+    this.setupAgentPoolRoutes();
+    this.setupQueueRoutes();
+    this.setupHealthRoutes();
 
     // Static file serving
     this.app.use(express.static(path.join(__dirname, 'public')));
@@ -1259,6 +1284,384 @@ export class DashboardServer {
           resolve(this.server);
         }).catch(reject);
       });
+    });
+  }
+
+  /**
+   * Sets up agent orchestration routes
+   * BIOS agent spawning and task execution
+   */
+  setupOrchestrationRoutes() {
+    const auth = this.authMiddleware.bind(this);
+    
+    // Spawn new agent from CV
+    this.app.post('/api/bios/agents/spawn', auth, async (req, res) => {
+      try {
+        const { cv, client, context, options = {} } = req.body;
+        
+        if (!cv) {
+          return res.status(400).json({ error: 'CV configuration is required' });
+        }
+        
+        const agent = await this.orchestrator.spawnAgent(cv, { 
+          client, 
+          context,
+          ...options 
+        });
+        
+        // WebSocket notification
+        if (this.wsServer) {
+          this.wsServer.broadcast({
+            type: 'orchestrator.agentSpawned',
+            data: { agentId: agent.id, type: cv.type || 'unknown' },
+            timestamp: new Date().toISOString(),
+          });
+        }
+        
+        res.status(201).json(agent);
+      } catch (err) {
+        console.error('Error spawning agent:', err);
+        res.status(500).json({ error: 'Failed to spawn agent', message: err.message });
+      }
+    });
+    
+    // Delegate single task to client
+    this.app.post('/api/bios/tasks/delegate', auth, async (req, res) => {
+      try {
+        const { task, client, options = {} } = req.body;
+        
+        if (!task) {
+          return res.status(400).json({ error: 'Task is required' });
+        }
+        
+        const result = await this.orchestrator.delegate(task, client, options);
+        res.json(result);
+      } catch (err) {
+        console.error('Error delegating task:', err);
+        res.status(500).json({ error: 'Failed to delegate task', message: err.message });
+      }
+    });
+    
+    // Execute tasks in parallel across multiple clients
+    this.app.post('/api/bios/execute/parallel', auth, async (req, res) => {
+      try {
+        const { tasks, clients, options = {} } = req.body;
+        
+        if (!Array.isArray(tasks) || tasks.length === 0) {
+          return res.status(400).json({ error: 'Tasks array is required' });
+        }
+        
+        const result = await this.orchestrator.executeParallel(tasks, clients, options);
+        res.json(result);
+      } catch (err) {
+        console.error('Error executing parallel tasks:', err);
+        res.status(500).json({ error: 'Failed to execute parallel tasks', message: err.message });
+      }
+    });
+    
+    // Get orchestrator status
+    this.app.get('/api/bios/status', auth, (req, res) => {
+      try {
+        const status = this.orchestrator.getStatus();
+        res.json(status);
+      } catch (err) {
+        console.error('Error getting orchestrator status:', err);
+        res.status(500).json({ error: 'Failed to get status', message: err.message });
+      }
+    });
+  }
+
+  /**
+   * Sets up agent pool management routes
+   */
+  setupAgentPoolRoutes() {
+    const auth = this.authMiddleware.bind(this);
+    
+    // Get pool statistics
+    this.app.get('/api/agents/pool/stats', auth, (req, res) => {
+      try {
+        const stats = this.agentPool.getStats();
+        res.json(stats);
+      } catch (err) {
+        console.error('Error getting pool stats:', err);
+        res.status(500).json({ error: 'Failed to get pool stats', message: err.message });
+      }
+    });
+    
+    // Scale up pool (add agents)
+    this.app.post('/api/agents/pool/scale-up', auth, async (req, res) => {
+      try {
+        const { count = 1 } = req.body;
+        const results = [];
+        
+        for (let i = 0; i < count; i++) {
+          const agent = await this.agentPool.scaleUp();
+          results.push(agent);
+        }
+        
+        res.json({ 
+          scaled: results.length, 
+          agents: results,
+          newStats: this.agentPool.getStats()
+        });
+      } catch (err) {
+        console.error('Error scaling up pool:', err);
+        res.status(500).json({ error: 'Failed to scale up pool', message: err.message });
+      }
+    });
+    
+    // Scale down pool (remove agents)
+    this.app.post('/api/agents/pool/scale-down', auth, async (req, res) => {
+      try {
+        const { count = 1 } = req.body;
+        const results = [];
+        
+        for (let i = 0; i < count; i++) {
+          const agent = await this.agentPool.scaleDown();
+          if (agent) results.push(agent);
+        }
+        
+        res.json({ 
+          scaled: results.length, 
+          agents: results,
+          newStats: this.agentPool.getStats()
+        });
+      } catch (err) {
+        console.error('Error scaling down pool:', err);
+        res.status(500).json({ error: 'Failed to scale down pool', message: err.message });
+      }
+    });
+    
+    // List all agents in pool
+    this.app.get('/api/agents/pool', auth, (req, res) => {
+      try {
+        const stats = this.agentPool.getStats();
+        res.json({
+          agents: stats.agents || [],
+          stats: {
+            poolSize: stats.poolSize,
+            availableCount: stats.availableCount,
+            activeCount: stats.activeCount,
+            utilization: stats.utilization,
+          }
+        });
+      } catch (err) {
+        console.error('Error listing pool agents:', err);
+        res.status(500).json({ error: 'Failed to list pool agents', message: err.message });
+      }
+    });
+  }
+
+  /**
+   * Sets up task queue and dead letter queue routes
+   */
+  setupQueueRoutes() {
+    const auth = this.authMiddleware.bind(this);
+    
+    // List all queued tasks
+    this.app.get('/api/queue/tasks', auth, (req, res) => {
+      try {
+        const { status, tag, limit = 50 } = req.query;
+        let tasks = this.taskQueue.toArray();
+        
+        // Apply filters
+        if (status) {
+          tasks = tasks.filter(t => t.status === status);
+        }
+        if (tag) {
+          tasks = tasks.filter(t => t.tag === tag);
+        }
+        
+        // Apply limit
+        tasks = tasks.slice(0, parseInt(limit));
+        
+        res.json({
+          tasks,
+          total: this.taskQueue.size(),
+          stats: this.taskQueue.getStats(),
+          filters: { status, tag, limit: parseInt(limit) }
+        });
+      } catch (err) {
+        console.error('Error listing queue tasks:', err);
+        res.status(500).json({ error: 'Failed to list queue tasks', message: err.message });
+      }
+    });
+    
+    // Enqueue new task
+    this.app.post('/api/queue/tasks', auth, (req, res) => {
+      try {
+        const { task, priority = 'NORMAL', data, metadata, tag } = req.body;
+        
+        if (!task) {
+          return res.status(400).json({ error: 'Task is required' });
+        }
+        
+        // Map priority string to number
+        const priorityMap = {
+          'CRITICAL': QueuePriority.CRITICAL,
+          'HIGH': QueuePriority.HIGH,
+          'NORMAL': QueuePriority.NORMAL,
+          'LOW': QueuePriority.LOW,
+          'BACKGROUND': QueuePriority.BACKGROUND,
+        };
+        
+        const taskId = this.taskQueue.enqueue(
+          task,
+          priorityMap[priority] ?? QueuePriority.NORMAL,
+          data,
+          metadata,
+          tag
+        );
+        
+        res.status(201).json({ 
+          id: taskId, 
+          priority,
+          status: 'pending',
+          queueStats: this.taskQueue.getStats()
+        });
+      } catch (err) {
+        console.error('Error enqueueing task:', err);
+        res.status(500).json({ error: 'Failed to enqueue task', message: err.message });
+      }
+    });
+    
+    // Reprioritize task
+    this.app.patch('/api/queue/tasks/:id/priority', auth, (req, res) => {
+      try {
+        const { priority } = req.body;
+        
+        if (priority === undefined) {
+          return res.status(400).json({ error: 'Priority is required' });
+        }
+        
+        const success = this.taskQueue.reprioritize(req.params.id, priority);
+        
+        if (!success) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
+        
+        res.json({ id: req.params.id, priority, reprioritized: true });
+      } catch (err) {
+        console.error('Error reprioritizing task:', err);
+        res.status(500).json({ error: 'Failed to reprioritize task', message: err.message });
+      }
+    });
+    
+    // Get dead letter queue tasks
+    this.app.get('/api/dlq/tasks', auth, (req, res) => {
+      try {
+        const { status, limit = 50 } = req.query;
+        let tasks = Array.from(this.deadLetterQueue.failedTasks.values());
+        
+        if (status) {
+          tasks = tasks.filter(t => t.status === status);
+        }
+        
+        tasks = tasks.slice(0, parseInt(limit));
+        
+        res.json({
+          tasks,
+          total: this.deadLetterQueue.failedTasks.size,
+          stats: this.deadLetterQueue.stats,
+        });
+      } catch (err) {
+        console.error('Error listing DLQ tasks:', err);
+        res.status(500).json({ error: 'Failed to list DLQ tasks', message: err.message });
+      }
+    });
+    
+    // Retry a failed task from DLQ
+    this.app.post('/api/dlq/tasks/:id/retry', auth, async (req, res) => {
+      try {
+        const result = await this.deadLetterQueue.retryTask(req.params.id);
+        
+        if (!result) {
+          return res.status(404).json({ error: 'Task not found in DLQ' });
+        }
+        
+        res.json({ 
+          id: req.params.id, 
+          retried: true,
+          result
+        });
+      } catch (err) {
+        console.error('Error retrying DLQ task:', err);
+        res.status(500).json({ error: 'Failed to retry task', message: err.message });
+      }
+    });
+    
+    // Get queue statistics
+    this.app.get('/api/queue/stats', auth, (req, res) => {
+      try {
+        res.json({
+          taskQueue: this.taskQueue.getStats(),
+          deadLetterQueue: this.deadLetterQueue.stats,
+        });
+      } catch (err) {
+        console.error('Error getting queue stats:', err);
+        res.status(500).json({ error: 'Failed to get queue stats', message: err.message });
+      }
+    });
+  }
+
+  /**
+   * Sets up health monitoring routes
+   */
+  setupHealthRoutes() {
+    const auth = this.authMiddleware.bind(this);
+    
+    // Get all component health statuses
+    this.app.get('/api/health/components', auth, async (req, res) => {
+      try {
+        const health = await this.healthChecker.checkHealth();
+        res.json(health);
+      } catch (err) {
+        console.error('Error checking health:', err);
+        res.status(500).json({ error: 'Failed to check health', message: err.message });
+      }
+    });
+    
+    // Get specific component health
+    this.app.get('/api/health/components/:id', auth, async (req, res) => {
+      try {
+        const { id } = req.params;
+        const health = await this.healthChecker.checkHealth();
+        
+        const componentHealth = health.details?.[id];
+        if (!componentHealth) {
+          return res.status(404).json({ error: 'Component not found' });
+        }
+        
+        res.json({
+          component: id,
+          ...componentHealth
+        });
+      } catch (err) {
+        console.error('Error checking component health:', err);
+        res.status(500).json({ error: 'Failed to check component health', message: err.message });
+      }
+    });
+    
+    // Get readiness status (for K8s)
+    this.app.get('/api/health/ready', async (req, res) => {
+      try {
+        const readiness = await this.healthChecker.checkReadiness();
+        const statusCode = readiness.ready ? 200 : 503;
+        res.status(statusCode).json(readiness);
+      } catch (err) {
+        res.status(503).json({ ready: false, error: err.message });
+      }
+    });
+    
+    // Get liveness status (for K8s)
+    this.app.get('/api/health/live', (req, res) => {
+      try {
+        const liveness = this.healthChecker.checkLiveness();
+        const statusCode = liveness.live ? 200 : 503;
+        res.status(statusCode).json(liveness);
+      } catch (err) {
+        res.status(503).json({ live: false, error: err.message });
+      }
     });
   }
 

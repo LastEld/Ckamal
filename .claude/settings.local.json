@@ -182,7 +182,9 @@
       "Bash(grep -n \"createWorkflowBtn\" /e/Ckamal/src/dashboard/public/components/*.js)",
       "Bash(grep -n \"\\\\.innerHTML\\\\s*=\" /e/Ckamal/src/dashboard/public/components/*.js)",
       "Bash(grep -n \"\\\\.api\\\\.create\\\\|\\\\.api\\\\.delete\\\\|\\\\.api\\\\.update\\\\|\\\\.api\\\\.execute\\\\|\\\\.api\\\\.activate\\\\|\\\\.api\\\\.suspend\" /e/Ckamal/src/dashboard/public/components/*.js)",
-      "Bash(grep -n \"innerHTML.*=.*$\" /e/Ckamal/src/dashboard/public/components/dashboard-app.js)"
+      "Bash(grep -n \"innerHTML.*=.*$\" /e/Ckamal/src/dashboard/public/components/dashboard-app.js)",
+      "Bash(find e:/Ckamal -name *.test.* -o -name *.spec.*)",
+      "Bash(ls e:/Ckamal/src/dashboard/public/components/*.js)"
     ]
   },
   "prefersReducedMotion": true
