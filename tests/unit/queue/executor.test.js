@@ -2,7 +2,7 @@
  * @fileoverview Unit tests for Executor
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Executor, ExecutionMode } from '../../../src/queue/executor.js';
 
@@ -11,6 +11,10 @@ describe('Executor', () => {
 
   beforeEach(() => {
     executor = new Executor();
+  });
+
+  afterEach(() => {
+    executor.removeAllListeners();
   });
 
   describe('run', () => {

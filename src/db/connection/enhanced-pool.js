@@ -123,9 +123,10 @@ export class EnhancedConnectionPool extends ConnectionPool {
    */
   #startCleanupInterval() {
     // Cleanup expired query cache entries every minute
-    setInterval(() => {
+    const interval = setInterval(() => {
       this.#queryCache.cleanup();
     }, 60000);
+    interval.unref?.();
   }
 
   /**

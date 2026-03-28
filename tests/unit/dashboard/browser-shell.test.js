@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { describe, it } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 
 const dashboardRoot = path.resolve('src/dashboard/public');
 
@@ -181,6 +181,9 @@ describe('dashboard browser shell', () => {
     assert.ok(app.api);
     assert.ok(app.ws);
     assert.equal(app.currentView, 'dashboard');
+
+    // Clean up to prevent hanging timers
+    app.dispose?.();
   });
 
   it('boots the browser entrypoint with guarded globals', async () => {

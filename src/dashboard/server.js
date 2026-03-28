@@ -1688,6 +1688,15 @@ export class DashboardServer {
         console.error('Error closing analytics:', err);
       }
     }
+
+    // Stop agent pool to prevent hanging timers
+    if (this.agentPool) {
+      try {
+        await this.agentPool.shutdown();
+      } catch (err) {
+        console.error('Error shutting down agent pool:', err);
+      }
+    }
     
     return new Promise((resolve) => {
       // Stop WebSocket first

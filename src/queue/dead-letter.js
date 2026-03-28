@@ -97,6 +97,7 @@ export class DeadLetterQueue extends EventEmitter {
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, 60 * 60 * 1000);
+    this.cleanupInterval.unref?.();
   }
 
   /**

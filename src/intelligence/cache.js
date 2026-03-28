@@ -64,6 +64,7 @@ export class IntelligentCache {
     
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
+    this.cleanupInterval.unref?.();
   }
 
   /**
