@@ -121,6 +121,12 @@ describe('BIOS Console E2E Tests', () => {
 
       // Act - Send commands
       await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          cli.kill('SIGTERM');
+          setTimeout(() => cli.kill('SIGKILL'), 1000);
+          reject(new Error('Interactive test timed out after 5000ms'));
+        }, 5000);
+
         setTimeout(() => {
           cli.stdin.write('status\n');
         }, 500);
@@ -134,11 +140,15 @@ describe('BIOS Console E2E Tests', () => {
         }, 1500);
 
         cli.on('close', (code) => {
+          clearTimeout(timeoutId);
           if (code === 0) resolve();
           else reject(new Error(`Exit code: ${code}`));
         });
 
-        setTimeout(reject, 5000);
+        cli.on('error', (err) => {
+          clearTimeout(timeoutId);
+          reject(new Error(`Failed to spawn CLI: ${err.message}`));
+        });
       });
 
       // Assert

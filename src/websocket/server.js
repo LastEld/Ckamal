@@ -1713,6 +1713,14 @@ export class WebSocketServer extends EventEmitter {
       this.#presenceCleanupTimer = null;
     }
 
+    // Clear all socket heartbeat timers
+    for (const socket of this.#clients.values()) {
+      if (socket.heartbeatTimer) {
+        clearInterval(socket.heartbeatTimer);
+        socket.heartbeatTimer = undefined;
+      }
+    }
+
     return new Promise((resolve) => {
       this.disconnectAll(1001, 'Server shutting down');
 
