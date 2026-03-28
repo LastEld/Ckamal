@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-03-28T15:05:15.058Z",
+  "checks": [
+    {
+      "name": "Node.js Version",
+      "status": "pass",
+      "message": "v22.20.0 (excellent)",
+      "fix": null
+    },
+    {
+      "name": "npm Version",
+      "status": "pass",
+      "message": "v11.6.2",
+      "fix": null
+    },
+    {
+      "name": "AI Clients",
+      "status": "pass",
+      "message": "3 client(s) available",
+      "fix": null
+    },
+    {
+      "name": "Dependencies",
+      "status": "pass",
+      "message": "All required packages installed",
+      "fix": null
+    },
+    {
+      "name": "Environment File",
+      "status": "pass",
+      "message": ".env configured",
+      "fix": null
+    },
+    {
+      "name": "GitHub Token",
+      "status": "warn",
+      "message": "Not configured",
+      "fix": "Add GITHUB_TOKEN to .env (get at: https://github.com/settings/tokens)"
+    },
+    {
+      "name": "Security Keys",
+      "status": "warn",
+      "message": "Weak values: ADMIN_PASSWORD",
+      "fix": "Update .env with strong, unique values"
+    },
+    {
+      "name": "Data Directory",
+      "status": "pass",
+      "message": "Writable",
+      "fix": null
+    },
+    {
+      "name": "Cache Directory",
+      "status": "pass",
+      "message": "Writable",
+      "fix": null
+    },
+    {
+      "name": "Logs Directory",
+      "status": "pass",
+      "message": "Writable",
+      "fix": null
+    },
+    {
+      "name": "Disk Space",
+      "status": "pass",
+      "message": "Writable",
+      "fix": null
+    },
+    {
+      "name": "Port Availability",
+      "status": "pass",
+      "message": "Default ports available",
+      "fix": null
+    }
+  ],
+  "issues": 0,
+  "warnings": 2,
+  "healthy": true
+}

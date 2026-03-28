@@ -1,0 +1,58 @@
+name: 📚 Documentation
+ description: Report documentation issues or suggest improvements
+ title: "[Docs]: "
+ labels: ["documentation", "triage"]
+ 
+ body:
+   - type: markdown
+     attributes:
+       value: |
+         Help us improve CogniMesh documentation!
+ 
+   - type: dropdown
+     id: type
+     attributes:
+       label: Documentation Type
+       description: What kind of documentation issue is this?
+       options:
+         - Missing documentation
+         - Incorrect information
+         - Unclear explanation
+         - Typo/grammar error
+         - Improvement suggestion
+         - New guide/tutorial request
+     validations:
+       required: true
+ 
+   - type: input
+     id: location
+     attributes:
+       label: Location
+       description: Where is the documentation issue? (URL or file path)
+       placeholder: e.g., README.md, API_REFERENCE.md, or https://lasteld.github.io/Ckamal/...
+ 
+   - type: textarea
+     id: description
+     attributes:
+       label: Description
+       description: Describe the issue or suggestion
+       placeholder: The documentation says... but it should say...
+     validations:
+       required: true
+ 
+   - type: textarea
+     id: suggestion
+     attributes:
+       label: Suggested Improvement
+       description: How would you improve this?
+       placeholder: I suggest changing it to...
+ 
+   - type: checkboxes
+     id: checklist
+     attributes:
+       label: Checklist
+       options:
+         - label: I have checked that this issue hasn't been reported before
+           required: true
+         - label: I am willing to contribute a fix (optional)
+           required: false

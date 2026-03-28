@@ -1,40 +1,75 @@
+# =============================================================================
+# CODEOWNERS File - Defines who is responsible for reviewing code changes
+# =============================================================================
+# This file uses GitHub's CODEOWNERS feature to automatically request reviews
+# from the appropriate teams when changes are made to specific files/directories.
+# Format: <pattern> <owner1> <owner2> ...
+# =============================================================================
+
+# -----------------------------------------------------------------------------
 # Global fallback - maintainers own everything by default
+# This ensures all changes have at least one required reviewer
+# -----------------------------------------------------------------------------
 * @cognimesh/maintainers
 
+# -----------------------------------------------------------------------------
 # Core system files - require core team review
+# These are critical system components that need careful review
+# -----------------------------------------------------------------------------
 /src/core/ @cognimesh/core-team @cognimesh/maintainers
 /src/bios/ @cognimesh/core-team @cognimesh/maintainers
 /src/security/ @cognimesh/security-team @cognimesh/maintainers
 
-# GitHub workflows and CI/CD
+# -----------------------------------------------------------------------------
+# GitHub workflows and CI/CD configuration
+# Changes to workflows can affect the entire build/deploy pipeline
+# -----------------------------------------------------------------------------
 /.github/workflows/ @cognimesh/core-team @cognimesh/maintainers
 /.github/CODEOWNERS @cognimesh/maintainers
 
+# -----------------------------------------------------------------------------
 # Configuration files
+# Project-wide configuration changes need core team approval
+# -----------------------------------------------------------------------------
 /config/ @cognimesh/core-team
 *.config.js @cognimesh/core-team
 *.config.json @cognimesh/core-team
 
+# -----------------------------------------------------------------------------
 # Documentation
+# Documentation team owns content, maintainers ensure consistency
+# -----------------------------------------------------------------------------
 *.md @cognimesh/docs-team @cognimesh/maintainers
 /docs/ @cognimesh/docs-team
 
+# -----------------------------------------------------------------------------
 # Tests
+# QA team ensures test quality, core team reviews test logic
+# -----------------------------------------------------------------------------
 /tests/ @cognimesh/qa-team @cognimesh/core-team
 *.test.js @cognimesh/qa-team
 *.spec.js @cognimesh/qa-team
 
+# -----------------------------------------------------------------------------
 # Package management
+# Dependency changes need core team and maintainer review
+# -----------------------------------------------------------------------------
 package.json @cognimesh/core-team @cognimesh/maintainers
 package-lock.json @cognimesh/core-team
 yarn.lock @cognimesh/core-team
 
+# -----------------------------------------------------------------------------
 # Environment and secrets
+# Security-sensitive files - restricted to security team
+# -----------------------------------------------------------------------------
 .env* @cognimesh/security-team @cognimesh/maintainers
 *.key @cognimesh/security-team
 *.pem @cognimesh/security-team
 
+# -----------------------------------------------------------------------------
 # Deployment and infrastructure
+# DevOps team manages deployment configurations
+# -----------------------------------------------------------------------------
 /deploy/ @cognimesh/devops-team
 /docker/ @cognimesh/devops-team
 Dockerfile @cognimesh/devops-team

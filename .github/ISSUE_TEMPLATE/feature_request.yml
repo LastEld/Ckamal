@@ -1,5 +1,5 @@
 name: 💡 Feature Request
-description: Предложите идею для CogniMesh
+description: Suggest an idea for CogniMesh
 title: "[Feature]: "
 labels: ["enhancement", "triage"]
 assignees: []
@@ -8,60 +8,63 @@ body:
   - type: markdown
     attributes:
       value: |
-        Спасибо за то, что нашли время предложить новую функцию!
+        Thanks for taking the time to suggest a new feature!
 
   - type: textarea
     id: problem
     attributes:
-      label: Связанная проблема
-      description: Ясное и краткое описание проблемы. Например, я всегда расстраиваюсь, когда [...]
-      placeholder: Опишите проблему, которую решает эта функция...
+      label: Related Problem
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when...
 
   - type: textarea
     id: solution
     attributes:
-      label: Предлагаемое решение
-      description: Ясное и краткое описание того, что вы хотите, чтобы произошло
-      placeholder: Опишите желаемое решение...
+      label: Proposed Solution
+      description: A clear description of what you want to happen
+      placeholder: It would be great if...
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Альтернативы
-      description: Ясное и краткое описание любых альтернативных решений или функций, которые вы рассмотрели
-      placeholder: Опишите альтернативы...
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered
+      placeholder: I also thought about...
 
   - type: textarea
     id: implementation
     attributes:
-      label: Возможная реализация
-      description: Если у вас есть идеи о том, как это можно реализовать, опишите их здесь
-      placeholder: Опишите возможную реализацию...
+      label: Possible Implementation
+      description: If you have ideas on how to implement this, share them here
+      placeholder: This could be implemented by...
 
   - type: dropdown
     id: priority
     attributes:
-      label: Приоритет
-      description: Насколько важна эта функция для вас?
+      label: Priority
+      description: How important is this feature to you?
       options:
-        - Critical - блокирует работу
-        - High - существенно улучшит опыт
-        - Medium - желательно иметь
-        - Low - приятно иметь
+        - Critical - blocks my work
+        - High - significantly improves experience
+        - Medium - nice to have
+        - Low - would be convenient
       default: 2
 
   - type: dropdown
     id: component
     attributes:
-      label: Компонент
-      description: К какому компоненту относится эта функция?
+      label: Component
+      description: Which component would this feature affect?
       options:
         - BIOS (github-client, update-manager, patch-verifier)
         - Core Engine
         - MCP Integration
         - Task System
+        - Router/Routing
+        - Dashboard
+        - WebSocket Server
         - Security Module
         - Documentation
         - Other
@@ -69,19 +72,19 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: Дополнительный контекст
-      description: Любой дополнительный контекст, скриншоты или примеры
-      placeholder: Добавьте любую дополнительную информацию...
+      label: Additional Context
+      description: Any other context, screenshots, or examples
+      placeholder: More details...
 
   - type: checkboxes
     id: checklist
     attributes:
-      label: Чеклист
-      description: Перед отправкой запроса
+      label: Checklist
+      description: Before submitting this request
       options:
-        - label: Я проверил, что подобная функция еще не была запрошена
+        - label: I have searched existing issues to ensure this feature hasn't been requested
           required: true
-        - label: Я предоставил четкое описание желаемой функции
+        - label: I have provided a clear description of the feature
           required: true
-        - label: Я объяснил, почему эта функция была бы полезна
+        - label: I have explained why this feature would be useful
           required: true

@@ -1,66 +1,80 @@
 # Pull Request
 
-## 📋 Описание
+## 📋 Description
 
-<!-- Опишите изменения в этом PR -->
+<!-- Briefly describe the changes in this PR -->
 
-## 🔄 Тип изменения
+Fixes # (issue number)
 
-- [ ] 🐛 Bug fix (исправление ошибки)
-- [ ] ✨ New feature (новая функция)
-- [ ] 📝 Documentation update (обновление документации)
-- [ ] 🔧 Refactoring (рефакторинг)
-- [ ] ⚡ Performance improvement (улучшение производительности)
-- [ ] 🔒 Security fix (исправление безопасности)
+## 🔄 Type of Change
 
-## 🧪 Тестирование
+- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
+- [ ] ✨ New feature (non-breaking change that adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 📝 Documentation update
+- [ ] 🔧 Refactoring (code changes that neither fix a bug nor add a feature)
+- [ ] ⚡ Performance improvement
+- [ ] 🔒 Security fix
 
-- [ ] Я добавил тесты для новых функций
-- [ ] Я обновил существующие тесты
-- [ ] Все тесты проходят локально
-- [ ] Я проверил edge cases
+## 🧪 Testing
 
-## 🔗 Связанные Issues
+- [ ] I have added tests for new functionality
+- [ ] I have updated existing tests
+- [ ] All tests pass locally (`npm test`)
+- [ ] I have tested edge cases
 
-<!-- Перечислите связанные issues (Fixes #123, Closes #456) -->
+### Test Commands Run
 
-## 📝 Чеклист
+```bash
+# List the test commands you ran
+npm run verify:release
+```
 
-### Общие требования
-- [ ] Код следует style guide проекта
-- [ ] Комментарии добавлены для сложной логики
-- [ ] Документация обновлена (если требуется)
-- [ ] CHANGELOG обновлен (если требуется)
+## 📊 Code Quality
 
-### BIOS интеграция
-- [ ] Изменения не ломают github-client.js
-- [ ] Изменения не ломают update-manager.js
-- [ ] Изменения не ломают patch-verifier.js
-- [ ] Проверена совместимость с существующими workflow
+- [ ] My code follows the project's style guidelines
+- [ ] I have performed a self-review of my code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have removed any `console.log` statements (except for debugging)
 
-### Качество кода
-- [ ] Нет console.log / console.error (кроме отладочных)
-- [ ] Нет hardcoded значений (используются константы/config)
-- [ ] Обработка ошибок реализована
-- [ ] Нет утечек памяти
+## 🔗 Related Issues
 
-### Безопасность
-- [ ] Нет использования eval()
-- [ ] Нет использования new Function()
-- [ ] Все внешние входы валидируются
-- [ ] Нет hardcoded секретов
+<!-- List any related issues or PRs -->
+- Closes #
+- Related to #
 
-## 📸 Скриншоты (если применимо)
+## 📸 Screenshots (if applicable)
 
-<!-- Добавьте скриншоты для UI изменений -->
+<!-- Add screenshots for UI changes -->
 
-## 🎯 Особые замечания для ревьюеров
+## 📝 Additional Notes
 
-<!-- Укажите, на что нужно обратить особое внимание -->
+<!-- Any additional information for reviewers -->
+
+## ✅ Pre-Submission Checklist
+
+### General
+- [ ] PR title follows convention: `[type]: Brief description`
+- [ ] Branch is up to date with `main`/`develop`
+- [ ] Commits are squashed (if required by project guidelines)
+
+### BIOS Integration (if applicable)
+- [ ] Changes don't break `github-client.js`
+- [ ] Changes don't break `update-manager.js`
+- [ ] Changes don't break `patch-verifier.js`
+- [ ] Compatibility verified with existing workflows
+
+### Security
+- [ ] No hardcoded secrets or credentials
+- [ ] Input validation implemented where needed
+- [ ] No `eval()` or `new Function()` usage
+- [ ] Security implications considered
 
 ---
 
 **By submitting this PR, I confirm that:**
-- [ ] Я прочитал [CONTRIBUTING.md](../CONTRIBUTING.md)
-- [ ] Мой код соответствует требованиям проекта
-- [ ] Я имею право предоставить этот код под лицензией проекта
+- [ ] I have read and followed the [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
+- [ ] My code is my own original work, or I have permission to use it
+- [ ] I license this contribution under the project's MIT license

@@ -1,0 +1,565 @@
+openapi: 3.0.3
+info:
+  title: CogniMesh API
+  description: |
+    Multi-model AI orchestration platform API.
+    
+    CogniMesh routes work across GPT, Claude, and Kimi through flat-rate subscriptions.
+    No API keys. No metered billing. No surprises.
+    
+    ## Features
+    
+    - **Multi-Model Routing**: Intelligent routing across 7 AI models
+    - **Zero API Billing**: Uses existing subscription clients
+    - **5 Operator Surfaces**: CLI, Desktop, VS Code, Copilot, Cursor
+    - **58 MCP Tools**: Task management, roadmaps, Claude integration
+    
+    ## Authentication
+    
+    Most endpoints require authentication via:
+    - **JWT Token**: `Authorization: Bearer <token>` header
+    - **API Key**: `X-API-Key: <key>` header (for service-to-service)
+  
+  version: 5.0.0
+  contact:
+    name: CogniMesh Support
+    url: https://github.com/LastEld/Ckamal/issues
+  license:
+    name: MIT
+    url: https://github.com/LastEld/Ckamal/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.cognimesh.io/api/v1
+    description: Production server (example)
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Tasks
+    description: Task management operations
+  - name: Roadmaps
+    description: Roadmap creation and management
+  - name: Agents
+    description: AI agent orchestration
+  - name: MCP
+    description: Model Context Protocol tool execution
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Returns the current health status of the CogniMesh server
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                version: 5.0.0
+                uptime: 3600
+                timestamp: "2026-03-28T12:00:00Z"
+
+  /status:
+    get:
+      tags:
+        - System
+      summary: System status
+      description: Returns detailed system status information
+      operationId: getStatus
+      responses:
+        '200':
+          description: System status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List tasks
+      description: Retrieve a list of tasks with optional filtering
+      operationId: listTasks
+      parameters:
+        - name: status
+          in: query
+          description: Filter by task status
+          schema:
+            type: string
+            enum: [pending, in_progress, completed, cancelled, blocked]
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create task
+      description: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+            examples:
+              simple:
+                summary: Simple task
+                value:
+                  title: Review PR #456
+                  priority: medium
+              detailed:
+                summary: Detailed task
+                value:
+                  title: Implement authentication
+                  description: Add JWT-based authentication to API endpoints
+                  priority: high
+                  assignee: developer-1
+                  tags: [backend, security]
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{taskId}:
+    get:
+      tags:
+        - Tasks
+      summary: Get task
+      description: Retrieve a specific task by ID
+      operationId: getTask
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Unique task identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update an existing task
+      operationId: updateTask
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Delete a task by ID
+      operationId: deleteTask
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cascade
+          in: query
+          description: Delete child tasks as well
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Task deleted
+        '404':
+          description: Task not found
+
+  /mcp/execute:
+    post:
+      tags:
+        - MCP
+      summary: Execute MCP tool
+      description: Execute a Model Context Protocol tool
+      operationId: executeMCPTool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPExecuteRequest'
+            examples:
+              task_create:
+                summary: Create a task using MCP
+                value:
+                  tool: task_create
+                  params:
+                    title: Review code
+                    priority: high
+              claude_chat:
+                summary: Send message to Claude
+                value:
+                  tool: claude_chat
+                  params:
+                    message: Explain this code
+                    model: claude-3-sonnet
+      responses:
+        '200':
+          description: Tool executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPExecuteResponse'
+
+  /roadmaps:
+    get:
+      tags:
+        - Roadmaps
+      summary: List roadmaps
+      description: Retrieve all roadmaps
+      operationId: listRoadmaps
+      responses:
+        '200':
+          description: List of roadmaps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapList'
+
+    post:
+      tags:
+        - Roadmaps
+      summary: Create roadmap
+      description: Create a new roadmap
+      operationId: createRoadmap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoadmapRequest'
+      responses:
+        '201':
+          description: Roadmap created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roadmap'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        version:
+          type: string
+        uptime:
+          type: number
+          description: Uptime in seconds
+        timestamp:
+          type: string
+          format: date-time
+
+    SystemStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        version:
+          type: string
+        bios:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [BOOT, OPERATIONAL, MAINTENANCE, SAFE_MODE]
+            components:
+              type: array
+              items:
+                type: string
+        models:
+          type: object
+          properties:
+            available:
+              type: integer
+            loaded:
+              type: array
+              items:
+                type: string
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, cancelled, blocked]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        parentId:
+          type: string
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, cancelled, blocked]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+
+    TaskList:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    Roadmap:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, completed, archived]
+        owner:
+          type: string
+        nodes:
+          type: array
+          items:
+            type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateRoadmapRequest:
+      type: object
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        owner:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        initialNodes:
+          type: array
+          items:
+            type: object
+
+    RoadmapList:
+      type: object
+      properties:
+        roadmaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Roadmap'
+        total:
+          type: integer
+
+    MCPExecuteRequest:
+      type: object
+      required:
+        - tool
+        - params
+      properties:
+        tool:
+          type: string
+          description: Name of the MCP tool to execute
+        params:
+          type: object
+          description: Tool-specific parameters
+
+    MCPExecuteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            type: string
+        executionTime:
+          type: number
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        errors:
+          type: array
+          items:
+            type: string
+        code:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - bearerAuth: []
