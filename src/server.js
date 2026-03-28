@@ -220,8 +220,31 @@ export class CogniMeshServer extends EventEmitter {
 
     // Start main HTTP server
     await new Promise((resolve, reject) => {
-      this._httpServer.listen(this._config.server.port, this._config.server.host, (err) => {
-        if (err) return reject(err);
+      const port = this._config.server.port;
+      const host = this._config.server.host;
+
+      // Node's http.Server does NOT pass an error to the listen callback —
+      // errors (e.g. EADDRINUSE) are emitted as 'error' events instead.
+      // We must handle both the 'error' event and the success callback.
+      const onError = (err) => {
+        clearTimeout(listenTimeout);
+        this._httpServer.removeListener('error', onError);
+        logger.error(`[HTTP] Failed to bind to ${host}:${port} — ${err.message}`);
+        reject(err);
+      };
+
+      const listenTimeout = setTimeout(() => {
+        this._httpServer.removeListener('error', onError);
+        const err = new Error(`HTTP server listen timed out after 10s on ${host}:${port}`);
+        logger.error(`[HTTP] ${err.message}`);
+        reject(err);
+      }, 10000);
+
+      this._httpServer.once('error', onError);
+
+      this._httpServer.listen(port, host, () => {
+        clearTimeout(listenTimeout);
+        this._httpServer.removeListener('error', onError);
         resolve();
       });
     });
