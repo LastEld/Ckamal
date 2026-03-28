@@ -21,10 +21,23 @@ function createClassList() {
 
 function createElementStub(tagName = 'div') {
   const listeners = [];
-  return {
+  const element = {
     tagName,
     innerHTML: '',
-    textContent: '',
+    _textContent: '',
+    get textContent() {
+      return this._textContent;
+    },
+    set textContent(value) {
+      this._textContent = String(value);
+      // Simulate browser behavior: textContent updates innerHTML with escaped entities
+      // Note: In real browsers, only <, >, and & are escaped in innerHTML from textContent
+      // Quotes are NOT escaped since they don't need to be in text content
+      this.innerHTML = this._textContent
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    },
     value: '',
     checked: false,
     style: {},
@@ -48,6 +61,7 @@ function createElementStub(tagName = 'div') {
       return {};
     }
   };
+  return element;
 }
 
 function createBaseContext() {
@@ -68,7 +82,14 @@ function createBaseContext() {
       return [];
     },
     getElementById(id) {
-      return elements.get(`#${id}`) || createElementStub();
+      const selector = `#${id}`;
+      if (elements.has(selector)) {
+        return elements.get(selector);
+      }
+      // Always return a proper element stub with innerHTML for cvGrid
+      const stub = createElementStub();
+      stub.innerHTML = '';
+      return stub;
     }
   };
 
@@ -86,7 +107,8 @@ function createBaseContext() {
     Toast: {
       success() {},
       error() {}
-    }
+    },
+    confirm: () => true
   };
 
   window.window = window;
@@ -136,7 +158,7 @@ describe('CVComponent', () => {
     const component = new context.window.CVComponent({ api: mockApi });
 
     assert.equal(component.api, mockApi);
-    assert.deepStrictEqual(component.cvs, []);
+    assert.strictEqual(component.cvs.length, 0);
     assert.deepStrictEqual(component.templates, ['system-admin', 'developer', 'analyst', 'code-reviewer', 'test-agent']);
     assert.equal(component.loading, false);
   });
@@ -211,7 +233,7 @@ describe('CVComponent', () => {
     const component = new context.window.CVComponent({ api: mockApi });
     await component.loadCVs();
 
-    assert.deepStrictEqual(component.cvs, []);
+    assert.strictEqual(component.cvs.length, 0);
     assert.ok(cvGrid.innerHTML.includes('No CVs found'));
     assert.ok(cvGrid.innerHTML.includes('Create First CV'));
   });
@@ -229,7 +251,7 @@ describe('CVComponent', () => {
     const component = new context.window.CVComponent({ api: mockApi });
     await component.loadCVs();
 
-    assert.deepStrictEqual(component.cvs, []);
+    assert.strictEqual(component.cvs.length, 0);
     assert.equal(component.loading, false);
   });
 
