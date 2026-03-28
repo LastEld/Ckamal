@@ -160,7 +160,12 @@ describe('CVComponent', () => {
 
     assert.equal(component.api, mockApi);
     assert.strictEqual(component.cvs.length, 0);
-    assert.deepEqual(component.templates, ['system-admin', 'developer', 'analyst', 'code-reviewer', 'test-agent']);
+    assert.strictEqual(component.templates.length, 5);
+    assert.strictEqual(component.templates[0], 'system-admin');
+    assert.strictEqual(component.templates[1], 'developer');
+    assert.strictEqual(component.templates[2], 'analyst');
+    assert.strictEqual(component.templates[3], 'code-reviewer');
+    assert.strictEqual(component.templates[4], 'test-agent');
     assert.equal(component.loading, false);
   });
 
@@ -459,7 +464,7 @@ describe('CVComponent', () => {
     let deleteCalled = false;
 
     // Mock confirm to return true
-    context.window.confirm = () => {
+    context.confirm = () => {
       confirmCalled = true;
       return true;
     };
@@ -489,7 +494,7 @@ describe('CVComponent', () => {
     let deleteCalled = false;
 
     // Mock confirm to return false
-    context.window.confirm = () => false;
+    context.confirm = () => false;
 
     const mockApi = {
       deleteCV: async () => {
