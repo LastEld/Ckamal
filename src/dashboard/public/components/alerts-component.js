@@ -40,7 +40,7 @@ class AlertsComponent {
       this.applyFilters();
       this.onAlertCountChange(this.getActiveCount());
     } catch (error) {
-      console.error('Failed to load alerts:', error);
+      Toast.error('Failed to load alerts');
     }
   }
 
@@ -121,39 +121,42 @@ class AlertsComponent {
     `;
   }
 
-  // Attach event listeners
+  // Attach event listeners to rendered alert cards (safe to call on each render)
   attachEventListeners() {
-    // Acknowledge buttons
+    // Acknowledge buttons (on rendered cards — destroyed by innerHTML each render)
     document.querySelectorAll('.acknowledge-alert').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const alertId = e.currentTarget.dataset.id;
         this.acknowledgeAlert(alertId);
       });
     });
-    
-    // Dismiss buttons
+
+    // Dismiss buttons (on rendered cards — destroyed by innerHTML each render)
     document.querySelectorAll('.dismiss-alert').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const alertId = e.currentTarget.dataset.id;
         this.dismissAlert(alertId);
       });
     });
-    
-    // Filter controls
-    document.getElementById('alertFilterLevel')?.addEventListener('change', (e) => {
-      this.currentFilters.level = e.target.value;
-      this.loadAlerts();
-    });
-    
-    document.getElementById('alertFilterStatus')?.addEventListener('change', (e) => {
-      this.currentFilters.status = e.target.value;
-      this.applyFilters();
-    });
-    
-    // Acknowledge all
-    document.getElementById('acknowledgeAllBtn')?.addEventListener('click', () => {
-      this.acknowledgeAll();
-    });
+
+    // Persistent controls — bind once only
+    if (!this._persistentListenersBound) {
+      this._persistentListenersBound = true;
+
+      document.getElementById('alertFilterLevel')?.addEventListener('change', (e) => {
+        this.currentFilters.level = e.target.value;
+        this.loadAlerts();
+      });
+
+      document.getElementById('alertFilterStatus')?.addEventListener('change', (e) => {
+        this.currentFilters.status = e.target.value;
+        this.applyFilters();
+      });
+
+      document.getElementById('acknowledgeAllBtn')?.addEventListener('click', () => {
+        this.acknowledgeAll();
+      });
+    }
   }
 
   // Add new alert (from WebSocket)
@@ -191,7 +194,7 @@ class AlertsComponent {
       this.applyFilters();
       this.onAlertCountChange(this.getActiveCount());
     } catch (error) {
-      console.error('Failed to acknowledge alert:', error);
+      Toast.error('Failed to acknowledge alert');
     }
   }
 
@@ -216,7 +219,7 @@ class AlertsComponent {
       this.applyFilters();
       this.onAlertCountChange(0);
     } catch (error) {
-      console.error('Failed to acknowledge all alerts:', error);
+      Toast.error('Failed to acknowledge alerts');
     }
   }
 
@@ -236,7 +239,7 @@ class AlertsComponent {
       this.applyFilters();
       this.onAlertCountChange(this.getActiveCount());
     } catch (error) {
-      console.error('Failed to dismiss alert:', error);
+      Toast.error('Failed to dismiss alert');
     }
   }
 

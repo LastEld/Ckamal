@@ -31,8 +31,76 @@ export class DashboardWebSocket extends UnifiedWebSocketServer {
     this.jwtSecret = options.jwtSecret || process.env.JWT_SECRET || 'cognimesh-secret';
     this.authEnabled = options.authEnabled !== false;
 
+    // Presence tracking
+    this.connectedClients = new Set();
+    this.clientUserMap = new Map(); // socketId -> userId
+
     // Setup authentication handler
     this.on('authenticate', this.#handleAuthenticate.bind(this));
+    this.on('connection', this.#handleConnection.bind(this));
+  }
+
+  /**
+   * Handles new WebSocket connections for presence tracking
+   * @param {import('../websocket/server.js').AuthenticatedSocket} socket - Client socket
+   * @param {import('http').IncomingMessage} req - HTTP request
+   * @private
+   */
+  #handleConnection(socket, req) {
+    // Track connection
+    this.connectedClients.add(socket.id);
+    
+    // Extract user from token if available
+    const token = this.extractToken(req);
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, this.jwtSecret);
+        this.clientUserMap.set(socket.id, decoded.id || decoded.userId || 'anonymous');
+      } catch {
+        this.clientUserMap.set(socket.id, 'anonymous');
+      }
+    } else {
+      this.clientUserMap.set(socket.id, 'anonymous');
+    }
+    
+    // Broadcast updated count
+    this.broadcastPresence();
+    
+    // Listen for socket close to clean up
+    socket.on('close', () => {
+      this.connectedClients.delete(socket.id);
+      this.clientUserMap.delete(socket.id);
+      this.broadcastPresence();
+    });
+  }
+
+  /**
+   * Broadcasts presence update to all connected clients
+   */
+  broadcastPresence() {
+    const uniqueUsers = new Set(this.clientUserMap.values());
+    const presence = {
+      type: 'presence.update',
+      data: {
+        totalConnections: this.connectedClients.size,
+        uniqueUsers: uniqueUsers.size,
+        timestamp: new Date().toISOString(),
+      },
+    };
+    
+    this.broadcast(presence);
+  }
+
+  /**
+   * Gets current presence statistics
+   * @returns {Object} Presence data
+   */
+  getPresence() {
+    const uniqueUsers = new Set(this.clientUserMap.values());
+    return {
+      totalConnections: this.connectedClients.size,
+      uniqueUsers: uniqueUsers.size,
+    };
   }
 
   /**

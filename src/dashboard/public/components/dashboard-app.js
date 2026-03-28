@@ -10,6 +10,12 @@ const TasksComponentCtor = typeof dashboardWindow.TasksComponent === 'function' 
 const RoadmapsComponentCtor = typeof dashboardWindow.RoadmapsComponent === 'function' ? dashboardWindow.RoadmapsComponent : null;
 const AnalyticsComponentCtor = typeof dashboardWindow.AnalyticsComponent === 'function' ? dashboardWindow.AnalyticsComponent : null;
 const AlertsComponentCtor = typeof dashboardWindow.AlertsComponent === 'function' ? dashboardWindow.AlertsComponent : null;
+const AgentsComponentCtor = typeof dashboardWindow.AgentsComponent === 'function' ? dashboardWindow.AgentsComponent : null;
+const ToolsComponentCtor = typeof dashboardWindow.ToolsComponent === 'function' ? dashboardWindow.ToolsComponent : null;
+const ProvidersComponentCtor = typeof dashboardWindow.ProvidersComponent === 'function' ? dashboardWindow.ProvidersComponent : null;
+const WorkflowsComponentCtor = typeof dashboardWindow.WorkflowsComponent === 'function' ? dashboardWindow.WorkflowsComponent : null;
+const CVComponentCtor = typeof dashboardWindow.CVComponent === 'function' ? dashboardWindow.CVComponent : null;
+const ContextComponentCtor = typeof dashboardWindow.ContextComponent === 'function' ? dashboardWindow.ContextComponent : null;
 
 class DashboardApp {
   constructor(options = {}) {
@@ -22,7 +28,13 @@ class DashboardApp {
     this.roadmapsComponent = null;
     this.analyticsComponent = null;
     this.alertsComponent = null;
-    
+    this.agentsComponent = null;
+    this.toolsComponent = null;
+    this.providersComponent = null;
+    this.workflowsComponent = null;
+    this.cvComponent = null;
+    this.contextComponent = null;
+
     // State
     this.currentView = 'dashboard';
     this.sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -56,37 +68,104 @@ class DashboardApp {
     this.cacheElements();
     this.setupEventListeners();
     this.setupWebSocketListeners();
-    
+
     // Initialize theme
     this.applyTheme();
-    
+
     // Initialize sidebar state
     if (this.sidebarCollapsed && this.elements.sidebar) {
       this.elements.sidebar.classList.add('collapsed');
     }
-    
-    // Check authentication
+
+    // Restore compact mode
+    if (localStorage.getItem('compactMode') === 'true') {
+      document.body.classList.add('compact-mode');
+      if (this.elements.compactMode) this.elements.compactMode.checked = true;
+    }
+
+    // Check authentication — show login if needed
+    const authed = await this.checkAuth();
+    if (!authed) return; // Login screen is shown; initialization continues after login
+
+    this.startApp();
+  }
+
+  // Check if user is authenticated; returns true if ready to proceed
+  async checkAuth() {
     if (this.api?.isAuthenticated?.()) {
       try {
         await this.api.verifyToken();
+        this.hideLogin();
+        return true;
       } catch {
         this.api?.setToken?.(null);
-        // Optionally redirect to login
       }
     }
-    
+    this.showLogin();
+    return false;
+  }
+
+  // Show login screen, hide dashboard chrome
+  showLogin() {
+    const loginScreen = document.getElementById('loginScreen');
+    const sidebar = this.elements.sidebar;
+    const mainContent = document.querySelector('.main-content');
+    if (loginScreen) loginScreen.style.display = 'flex';
+    if (sidebar) sidebar.style.display = 'none';
+    if (mainContent) mainContent.style.display = 'none';
+  }
+
+  // Hide login screen, show dashboard chrome
+  hideLogin() {
+    const loginScreen = document.getElementById('loginScreen');
+    const sidebar = this.elements.sidebar;
+    const mainContent = document.querySelector('.main-content');
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (sidebar) sidebar.style.display = '';
+    if (mainContent) mainContent.style.display = '';
+  }
+
+  // Handle login form submission
+  async handleLoginSubmit(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername')?.value.trim();
+    const password = document.getElementById('loginPassword')?.value;
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    if (!username || !password) {
+      if (errorEl) { errorEl.textContent = 'Username and password are required'; errorEl.style.display = 'block'; }
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in...'; }
+    if (errorEl) errorEl.style.display = 'none';
+
+    try {
+      await this.api.login(username, password);
+      this.hideLogin();
+      this.startApp();
+    } catch (err) {
+      if (errorEl) { errorEl.textContent = err.message || 'Login failed'; errorEl.style.display = 'block'; }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+    }
+  }
+
+  // Start dashboard after successful auth
+  startApp() {
     // Initialize components
     this.initializeComponents();
-    
+
     // Connect WebSocket
     this.connectWebSocket();
-    
+
     // Load initial data
-    await this.loadDashboardData();
-    
+    this.loadDashboardData();
+
     // Setup auto-refresh
     this.setupAutoRefresh();
-    
+
     // Update UI
     this.updateConnectionStatus('connecting');
   }
@@ -128,6 +207,13 @@ class DashboardApp {
       // User
       userName: document.getElementById('userName'),
       logoutBtn: document.getElementById('logoutBtn'),
+
+      // Settings
+      themeSelect: document.getElementById('themeSelect'),
+      compactMode: document.getElementById('compactMode'),
+      enableNotifications: document.getElementById('enableNotifications'),
+      soundAlerts: document.getElementById('soundAlerts'),
+      refreshIntervalSelect: document.getElementById('refreshInterval'),
     };
   }
 
@@ -189,6 +275,17 @@ class DashboardApp {
       this.closeAllModals();
     });
     
+    // Login form
+    document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+      this.handleLoginSubmit(e);
+    });
+
+    // Listen for 401 unauthorized events from API client
+    window.addEventListener('api:unauthorized', () => {
+      this.showLogin();
+      Toast.warning('Session expired. Please sign in again.');
+    });
+
     // Close sidebar on mobile when clicking outside
     document.addEventListener('click', (e) => {
       if (window.innerWidth <= 768) {
@@ -198,6 +295,53 @@ class DashboardApp {
           this.elements.sidebar?.classList.remove('mobile-open');
         }
       }
+    });
+
+    // Settings: Theme select
+    document.getElementById('themeSelect')?.addEventListener('change', (e) => {
+      const value = e.target.value;
+      if (value === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.darkMode = prefersDark;
+      } else {
+        this.darkMode = value === 'dark';
+      }
+      localStorage.setItem('darkMode', this.darkMode);
+      localStorage.setItem('themePreference', value);
+      this.applyTheme();
+    });
+
+    // Settings: Compact mode
+    document.getElementById('compactMode')?.addEventListener('change', (e) => {
+      const compact = e.target.checked;
+      localStorage.setItem('compactMode', compact);
+      document.body.classList.toggle('compact-mode', compact);
+    });
+
+    // Settings: Notifications permission
+    document.getElementById('enableNotifications')?.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      localStorage.setItem('notificationsEnabled', enabled);
+      if (enabled && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    });
+
+    // Settings: Sound alerts
+    document.getElementById('soundAlerts')?.addEventListener('change', (e) => {
+      localStorage.setItem('soundAlerts', e.target.checked);
+    });
+
+    // Settings: Auto-refresh interval
+    document.getElementById('refreshInterval')?.addEventListener('change', (e) => {
+      const interval = parseInt(e.target.value) || 0;
+      localStorage.setItem('refreshInterval', interval);
+      // Restart the refresh timer immediately
+      if (this.refreshInterval) {
+        clearInterval(this.refreshInterval);
+        this.refreshInterval = null;
+      }
+      this.setupAutoRefresh();
     });
   }
 
@@ -229,6 +373,46 @@ class DashboardApp {
     this.ws.addEventListener('message:system.status', (e) => {
       this.updateSystemStatus(e?.detail || {});
     });
+    
+    // Presence updates
+    this.ws.addEventListener('message:presence.update', (e) => {
+      this.updatePresenceIndicator(e?.detail);
+    });
+
+    // Also fetch initial presence
+    this.loadPresence();
+  }
+
+  /**
+   * Loads initial presence data from API
+   */
+  async loadPresence() {
+    try {
+      if (!this.hasApi()) {
+        return;
+      }
+      const presence = await this.api.getPresence();
+      this.updatePresenceIndicator(presence);
+    } catch (error) {
+      console.error('Failed to load presence:', error);
+    }
+  }
+
+  /**
+   * Updates the presence indicator in the UI
+   * @param {Object} presence - Presence data
+   */
+  updatePresenceIndicator(presence) {
+    if (!presence) return;
+    
+    const indicator = document.getElementById('presenceIndicator');
+    if (indicator) {
+      const countSpan = indicator.querySelector('.presence-count');
+      if (countSpan) {
+        countSpan.textContent = `${presence.uniqueUsers} online`;
+      }
+      indicator.title = `${presence.totalConnections} connections`;
+    }
   }
 
   // Initialize sub-components
@@ -252,6 +436,25 @@ class DashboardApp {
       api: this.api,
       ws: this.ws,
       onAlertCountChange: (count) => this.updateAlertBadge(count),
+    }) : null;
+
+    this.agentsComponent = AgentsComponentCtor ? new AgentsComponentCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
+    this.toolsComponent = ToolsComponentCtor ? new ToolsComponentCtor({
+      api: this.api,
+    }) : null;
+
+    this.providersComponent = ProvidersComponentCtor ? new ProvidersComponentCtor({
+      api: this.api,
+    }) : null;
+
+    this.workflowsComponent = WorkflowsComponentCtor ? new WorkflowsComponentCtor({ api: this.api, ws: this.ws }) : null;
+    this.cvComponent = CVComponentCtor ? new CVComponentCtor({ api: this.api }) : null;
+    this.contextComponent = ContextComponentCtor ? new ContextComponentCtor({
+      api: this.api,
     }) : null;
   }
 
@@ -303,7 +506,12 @@ class DashboardApp {
       roadmaps: 'Roadmaps',
       analytics: 'Analytics',
       agents: 'Agents',
+      tools: 'Tools',
+      gsd: 'GSD Workflows',
+      cv: 'Agent CVs',
+      providers: 'Providers',
       alerts: 'Alerts',
+      context: 'Context Snapshots',
       settings: 'Settings',
     };
     if (this.elements.pageTitle) {
@@ -331,8 +539,26 @@ class DashboardApp {
       case 'analytics':
         this.analyticsComponent?.initialize();
         break;
+      case 'agents':
+        this.agentsComponent?.loadAgents();
+        break;
+      case 'tools':
+        this.toolsComponent?.loadTools();
+        break;
+      case 'providers':
+        this.providersComponent?.loadProviders();
+        break;
       case 'alerts':
         this.alertsComponent?.loadAlerts();
+        break;
+      case 'gsd':
+        this.workflowsComponent?.loadWorkflows();
+        break;
+      case 'cv':
+        this.cvComponent?.loadCVs();
+        break;
+      case 'context':
+        this.contextComponent?.initialize();
         break;
     }
   }
@@ -452,8 +678,8 @@ class DashboardApp {
             <i data-lucide="${this.getAlertIcon(alert.level)}"></i>
           </div>
           <div class="alert-content">
-            <div class="alert-title">${alert.title}</div>
-            <div class="alert-message">${alert.message}</div>
+            <div class="alert-title">${this.escapeHtml(alert.title)}</div>
+            <div class="alert-message">${this.escapeHtml(alert.message)}</div>
             <div class="alert-time">${this.formatTime(alert.timestamp)}</div>
           </div>
         </div>
@@ -538,8 +764,8 @@ class DashboardApp {
     
     list.innerHTML = this.notifications.slice().reverse().map(n => `
       <div class="notification-item ${n.type}">
-        <div class="notification-title">${n.title}</div>
-        <div class="notification-message">${n.message}</div>
+        <div class="notification-title">${this.escapeHtml(n.title)}</div>
+        <div class="notification-message">${this.escapeHtml(n.message)}</div>
         <div class="notification-time">${this.formatTime(n.timestamp)}</div>
       </div>
     `).join('');
@@ -665,6 +891,14 @@ class DashboardApp {
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
     return date.toLocaleDateString();
+  }
+
+  // Utility: Escape HTML to prevent XSS
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   // Utility: Get alert icon

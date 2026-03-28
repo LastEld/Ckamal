@@ -1926,6 +1926,489 @@ Apply available updates.
 
 ---
 
+### Workflows API
+
+#### `GET /api/workflows`
+
+List all GSD workflows with optional filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| status | string | Filter by status (active, paused, completed, failed) |
+| page | number | Page number (default: 1) |
+| pageSize | number | Items per page (default: 20) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "workflows": [
+      {
+        "id": "wf_123",
+        "name": "Daily Sync",
+        "description": "Automated daily synchronization",
+        "status": "active",
+        "createdAt": "2026-03-27T10:00:00Z",
+        "lastRun": "2026-03-27T08:00:00Z",
+        "nextRun": "2026-03-28T08:00:00Z"
+      }
+    ],
+    "total": 15,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+---
+
+#### `GET /api/workflows/:id`
+
+Get workflow details by ID.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "wf_123",
+    "name": "Daily Sync",
+    "description": "Automated daily synchronization",
+    "status": "active",
+    "config": { /* workflow configuration */ },
+    "executionLog": [ /* recent executions */ ],
+    "createdAt": "2026-03-27T10:00:00Z",
+    "updatedAt": "2026-03-27T10:00:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/workflows`
+
+Create a new workflow.
+
+**Request:**
+```json
+{
+  "name": "Weekly Report",
+  "description": "Generate weekly analytics report",
+  "template": "scheduled-task",
+  "config": {
+    "schedule": "0 9 * * MON",
+    "actions": ["collect-metrics", "generate-report", "send-email"]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "wf_124",
+    "name": "Weekly Report",
+    "status": "paused",
+    "createdAt": "2026-03-27T12:00:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/workflows/:id/execute`
+
+Execute a workflow immediately.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "executionId": "exec_456",
+    "workflowId": "wf_123",
+    "status": "running",
+    "startedAt": "2026-03-27T12:30:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/workflows/:id/cancel`
+
+Cancel a running workflow.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "executionId": "exec_456",
+    "status": "cancelled",
+    "cancelledAt": "2026-03-27T12:31:00Z"
+  }
+}
+```
+
+---
+
+#### `DELETE /api/workflows/:id`
+
+Delete a workflow.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "deleted": true }
+}
+```
+
+---
+
+### CV Management API
+
+#### `GET /api/cv`
+
+List all agent CVs.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| status | string | Filter by status (active, suspended, draft) |
+| capability | string | Filter by capability |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "cvs": [
+      {
+        "id": "cv_analyst_01",
+        "name": "Code Analyst",
+        "status": "active",
+        "capabilities": ["analysis", "review", "security"],
+        "template": "analyst",
+        "createdAt": "2026-03-20T10:00:00Z"
+      }
+    ],
+    "total": 8
+  }
+}
+```
+
+---
+
+#### `GET /api/cv/:id`
+
+Get CV details.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cv_analyst_01",
+    "name": "Code Analyst",
+    "description": "Specialized in code analysis",
+    "status": "active",
+    "capabilities": ["analysis", "review", "security"],
+    "config": {
+      "model": "claude-3-sonnet",
+      "temperature": 0.3,
+      "systemPrompt": "You are a code analyst..."
+    },
+    "usage": {
+      "tasksCompleted": 42,
+      "lastUsed": "2026-03-27T11:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+#### `POST /api/cv`
+
+Create a new CV.
+
+**Request:**
+```json
+{
+  "name": "Security Reviewer",
+  "template": "security",
+  "capabilities": ["security", "audit"],
+  "config": {
+    "model": "claude-3-opus",
+    "temperature": 0.2
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cv_security_02",
+    "name": "Security Reviewer",
+    "status": "draft",
+    "createdAt": "2026-03-27T13:00:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/cv/:id/activate`
+
+Activate a CV for use.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cv_security_02",
+    "status": "active",
+    "activatedAt": "2026-03-27T13:05:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/cv/:id/suspend`
+
+Suspend an active CV.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cv_security_02",
+    "status": "suspended",
+    "suspendedAt": "2026-03-27T13:10:00Z"
+  }
+}
+```
+
+---
+
+#### `DELETE /api/cv/:id`
+
+Delete a CV.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "deleted": true }
+}
+```
+
+---
+
+### Context Snapshots API
+
+#### `GET /api/context/snapshots`
+
+List all context snapshots.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| tag | string | Filter by tag |
+| from | string | From date (ISO) |
+| to | string | To date (ISO) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "snapshots": [
+      {
+        "id": "snap_123",
+        "name": "Pre-Release Backup",
+        "description": "Before v5.0.0 deployment",
+        "tags": ["release", "backup"],
+        "fileCount": 156,
+        "size": 1048576,
+        "createdAt": "2026-03-27T00:00:00Z"
+      }
+    ],
+    "total": 12
+  }
+}
+```
+
+---
+
+#### `GET /api/context/snapshots/:id`
+
+Get snapshot details.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "snap_123",
+    "name": "Pre-Release Backup",
+    "description": "Before v5.0.0 deployment",
+    "tags": ["release", "backup"],
+    "files": [ /* file list */ ],
+    "metadata": {
+      "totalFiles": 156,
+      "totalSize": 1048576,
+      "checksum": "sha256:abc..."
+    },
+    "createdAt": "2026-03-27T00:00:00Z"
+  }
+}
+```
+
+---
+
+#### `POST /api/context/snapshots`
+
+Create a new snapshot.
+
+**Request:**
+```json
+{
+  "name": "Development Snapshot",
+  "description": "Current development state",
+  "tags": ["dev", "checkpoint"],
+  "include": ["src/**", "config/**"],
+  "exclude": ["node_modules/**", "*.log"]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "snap_124",
+    "name": "Development Snapshot",
+    "status": "creating",
+    "createdAt": "2026-03-27T14:00:00Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/context/snapshots/:id/files`
+
+Get snapshot file list.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "snapshotId": "snap_123",
+    "files": [
+      {
+        "path": "src/index.js",
+        "size": 1024,
+        "hash": "sha256:def...",
+        "modifiedAt": "2026-03-27T00:00:00Z"
+      }
+    ],
+    "total": 156
+  }
+}
+```
+
+---
+
+#### `POST /api/context/snapshots/:id/restore`
+
+Restore context from snapshot.
+
+**Request:**
+```json
+{
+  "confirm": true,
+  "options": {
+    "backupCurrent": true,
+    "overwrite": true
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "snapshotId": "snap_123",
+    "restoredFiles": 156,
+    "backupCreated": "snap_125",
+    "completedAt": "2026-03-27T14:05:00Z"
+  }
+}
+```
+
+---
+
+#### `DELETE /api/context/snapshots/:id`
+
+Delete a snapshot.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "deleted": true }
+}
+```
+
+---
+
+#### `GET /api/context/compare`
+
+Compare two snapshots.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| base | string | Base snapshot ID |
+| target | string | Target snapshot ID |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "base": "snap_123",
+    "target": "snap_124",
+    "diff": {
+      "added": [{ "path": "src/new.js", "size": 512 }],
+      "removed": [{ "path": "src/old.js", "size": 256 }],
+      "modified": [{ "path": "src/changed.js", "sizeBefore": 1024, "sizeAfter": 1200 }],
+      "unchanged": 154
+    },
+    "statistics": {
+      "totalChanges": 3,
+      "sizeDelta": 432
+    }
+  }
+}
+```
+
+---
+
 ## WebSocket API
 
 ### Connection

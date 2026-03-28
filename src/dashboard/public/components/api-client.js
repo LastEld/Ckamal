@@ -217,6 +217,10 @@ class ApiClient {
     return this.put(`/roadmaps/${id}`, updates);
   }
 
+  async createRoadmap(data) {
+    return this.post('/roadmaps', data);
+  }
+
   async createPhase(roadmapId, phase) {
     return this.post(`/roadmaps/${roadmapId}/phases`, phase);
   }
@@ -272,6 +276,26 @@ class ApiClient {
     return response.json();
   }
 
+  // ==================== Providers API ====================
+
+  async getProviders() {
+    return this.get('/providers');
+  }
+
+  // ==================== Tools API ====================
+
+  async getTools() {
+    return this.get('/tools');
+  }
+
+  async getTool(name) {
+    return this.get(`/tools/${encodeURIComponent(name)}`);
+  }
+
+  async executeTool(name, params = {}) {
+    return this.post(`/tools/${encodeURIComponent(name)}/execute`, { params });
+  }
+
   // ==================== Agents API ====================
 
   async getAgents() {
@@ -284,6 +308,106 @@ class ApiClient {
 
   async executeAgentTask(agentId, task) {
     return this.post(`/agents/${agentId}/execute`, task);
+  }
+
+  // ==================== Workflows API ====================
+
+  async getWorkflows(filters = {}) {
+    return this.get('/workflows', filters);
+  }
+
+  async getWorkflow(id) {
+    return this.get(`/workflows/${id}`);
+  }
+
+  async createWorkflow(data) {
+    return this.post('/workflows', data);
+  }
+
+  async executeWorkflow(id) {
+    return this.post(`/workflows/${id}/execute`);
+  }
+
+  async pauseWorkflow(id) {
+    return this.post(`/workflows/${id}/pause`);
+  }
+
+  async resumeWorkflow(id) {
+    return this.post(`/workflows/${id}/resume`);
+  }
+
+  async cancelWorkflow(id) {
+    return this.post(`/workflows/${id}/cancel`);
+  }
+
+  // ==================== CV API ====================
+
+  async getCVs(filters = {}) {
+    return this.get('/cv', filters);
+  }
+
+  async getCV(id) {
+    return this.get(`/cv/${id}`);
+  }
+
+  async createCV(data) {
+    return this.post('/cv', data);
+  }
+
+  async updateCV(id, data) {
+    return this.put(`/cv/${id}`, data);
+  }
+
+  async deleteCV(id) {
+    return this.delete(`/cv/${id}`);
+  }
+
+  async activateCV(id) {
+    return this.post(`/cv/${id}/activate`);
+  }
+
+  async suspendCV(id) {
+    return this.post(`/cv/${id}/suspend`);
+  }
+
+  async getCVTemplates() {
+    return this.get('/cv/templates');
+  }
+
+  // ==================== Context Snapshots API ====================
+
+  async getSnapshots() {
+    return this.get('/context/snapshots');
+  }
+
+  async getSnapshot(id) {
+    return this.get(`/context/snapshots/${id}`);
+  }
+
+  async createSnapshot(data) {
+    return this.post('/context/snapshots', data);
+  }
+
+  async getSnapshotFiles(id) {
+    return this.get(`/context/snapshots/${id}/files`);
+  }
+
+  async restoreSnapshot(id, options = {}) {
+    return this.post(`/context/snapshots/${id}/restore`, options);
+  }
+
+  async deleteSnapshot(id) {
+    return this.delete(`/context/snapshots/${id}`);
+  }
+
+  async compareSnapshots(id1, id2) {
+    return this.get('/context/compare', { id1, id2 });
+  }
+
+  // ==================== Presence API ====================
+
+  async getPresence() {
+    return this.get('/presence');
   }
 }
 

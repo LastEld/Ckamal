@@ -443,6 +443,7 @@ class TasksComponent {
       window.dashboardApp?.closeAllModals();
       this.loadTasks();
       this.onTaskChange();
+      Toast.success('Task saved successfully');
     } catch (error) {
       console.error('Failed to save task:', error);
       this.showError('Failed to save task');
@@ -478,8 +479,9 @@ class TasksComponent {
 
   // Utility: Show error
   showError(message) {
-    // Simple alert for now, could be a toast notification
-    console.error(message);
+    if (typeof window.Toast?.error === 'function') {
+      window.Toast.error(message);
+    }
   }
 }
 

@@ -59,7 +59,7 @@ class AnalyticsComponent {
       };
       this.renderCharts();
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      Toast.error('Failed to load analytics data');
     }
   }
 
@@ -71,6 +71,7 @@ class AnalyticsComponent {
       return;
     }
 
+    this.renderAnalyticsSummary();
     this.renderTrendChart();
     this.renderQuadrantChart();
     this.renderCompletionChart();
@@ -313,25 +314,196 @@ class AnalyticsComponent {
     });
   }
 
-  // Render agent performance chart
+  // Render summary metric cards above charts
+  renderAnalyticsSummary() {
+    const container = document.getElementById('analyticsSummary');
+    if (!container) return;
+
+    const trends = this.data.trends || {};
+    const agents = this.data.agents || {};
+
+    const createdArr = Array.isArray(trends.created) ? trends.created : [];
+    const completedArr = Array.isArray(trends.completed) ? trends.completed : [];
+    const totalCreated = createdArr.reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const totalCompleted = completedArr.reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const activeAgents = Number(agents.activeAgents) || 0;
+    const avgSuccess = Number(agents.successRate) || 0;
+
+    const metrics = [
+      {
+        icon: 'file-plus',
+        color: 'blue',
+        value: totalCreated,
+        label: 'Total Tasks Created',
+      },
+      {
+        icon: 'check-circle',
+        color: 'green',
+        value: totalCompleted,
+        label: 'Tasks Completed',
+      },
+      {
+        icon: 'bot',
+        color: 'purple',
+        value: activeAgents,
+        label: 'Active Agents',
+      },
+      {
+        icon: 'percent',
+        color: 'amber',
+        value: `${avgSuccess}%`,
+        label: 'Avg Success Rate',
+      },
+    ];
+
+    container.innerHTML = metrics
+      .map(
+        m => `<div class="analytics-metric-card">
+          <div class="metric-icon ${m.color}">
+            <i data-lucide="${m.icon}"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-value">${m.value}</span>
+            <span class="metric-label">${m.label}</span>
+          </div>
+        </div>`
+      )
+      .join('');
+
+    // Re-render Lucide icons for the newly injected markup
+    if (typeof window !== 'undefined' && window.lucide?.createIcons) {
+      window.lucide.createIcons();
+    }
+  }
+
+  // Render agent performance chart — per-provider breakdown
   renderAgentChart() {
     const canvas = document.getElementById('agentChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     const ChartCtor = this.getChartCtor();
     if (!ctx || !ChartCtor) return;
-    
+
     this.destroyChart('agent');
 
     const agentMetrics = this.data.agents || {};
+    const byProvider = agentMetrics.byProvider || null;
+
+    // If per-provider data is available, render grouped bar chart with dual Y axes
+    if (byProvider && typeof byProvider === 'object') {
+      const providerKeys = ['claude', 'codex', 'kimi'];
+      const providerLabels = ['Claude', 'Codex', 'Kimi'];
+      const providerColors = {
+        claude: '#d97706',
+        codex: '#10b981',
+        kimi: '#8b5cf6',
+      };
+
+      const tasksData = providerKeys.map(
+        key => Number(byProvider[key]?.tasksExecuted) || 0
+      );
+      const successData = providerKeys.map(
+        key => Number(byProvider[key]?.successRate) || 0
+      );
+
+      this.charts.agent = new ChartCtor(ctx, {
+        type: 'bar',
+        data: {
+          labels: providerLabels,
+          datasets: [
+            {
+              label: 'Tasks Executed',
+              data: tasksData,
+              backgroundColor: providerKeys.map(k => providerColors[k]),
+              borderRadius: 4,
+              yAxisID: 'yTasks',
+              order: 2,
+            },
+            {
+              label: 'Success Rate (%)',
+              data: successData,
+              type: 'line',
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.15)',
+              pointBackgroundColor: '#22c55e',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              fill: true,
+              tension: 0.3,
+              yAxisID: 'yRate',
+              order: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+            },
+            tooltip: {
+              callbacks: {
+                label(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.parsed.y;
+                  if (label.includes('Rate')) return `${label}: ${value}%`;
+                  return `${label}: ${value}`;
+                },
+              },
+            },
+          },
+          scales: {
+            yTasks: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Tasks Executed',
+              },
+              grid: {
+                drawOnChartArea: true,
+              },
+            },
+            yRate: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Success Rate (%)',
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+            },
+          },
+        },
+      });
+      return;
+    }
+
+    // Fallback: aggregate-only data (no byProvider breakdown)
     const labels = ['Active Agents', 'Tasks Executed', 'Success Rate'];
     const values = [
       Number(agentMetrics.activeAgents) || 0,
       Number(agentMetrics.tasksExecuted) || 0,
       Number(agentMetrics.successRate) || 0,
     ];
-    
+
     this.charts.agent = new ChartCtor(ctx, {
       type: 'bar',
       data: {
@@ -341,6 +513,7 @@ class AnalyticsComponent {
             label: 'Metrics',
             data: values,
             backgroundColor: '#3b82f6',
+            borderRadius: 4,
           },
         ],
       },
@@ -350,7 +523,6 @@ class AnalyticsComponent {
         plugins: {
           legend: {
             display: false,
-            position: 'bottom',
           },
         },
         scales: {

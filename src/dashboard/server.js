@@ -14,6 +14,9 @@ import { DashboardWebSocket } from './websocket.js';
 import { TaskDomain } from '../domains/tasks/index.js';
 import { RoadmapDomain } from '../domains/roadmaps/index.js';
 import { AlertManager } from '../alerts/manager.js';
+import { ContextSnapshotManager } from '../domains/context/index.js';
+import { GSDDomain } from '../domains/gsd/index.js';
+import { createCVSystem } from '../cv/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,7 +44,10 @@ export class DashboardServer {
     this.taskDomain = options.taskDomain || new TaskDomain();
     this.roadmapDomain = options.roadmapDomain || new RoadmapDomain();
     this.alertManager = options.alertManager || new AlertManager();
+    this.gsdDomain = options.gsdDomain || new GSDDomain();
     this.analytics = options.analytics || null;
+    this.contextManager = options.contextManager || new ContextSnapshotManager();
+    this.cvSystem = options.cvSystem || createCVSystem();
     
     this.app = express();
     this.server = null;
@@ -98,7 +104,7 @@ export class DashboardServer {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "cdnjs.cloudflare.com"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "cdnjs.cloudflare.com", "unpkg.com"],
           styleSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "fonts.googleapis.com"],
           fontSrc: ["'self'", "fonts.gstatic.com", "cdn.jsdelivr.net"],
           imgSrc: ["'self'", "data:", "blob:"],
@@ -214,6 +220,7 @@ export class DashboardServer {
     this.setupAnalyticsRoutes();
     this.setupAlertRoutes();
     this.setupSystemRoutes();
+    this.setupContextRoutes();
 
     // Static file serving
     this.app.use(express.static(path.join(__dirname, 'public')));
@@ -863,6 +870,264 @@ export class DashboardServer {
     this.app.get('/api/agents', auth, async (req, res) => {
       await this.forwardCoreApi(req, res, '/api/agents');
     });
+
+    // Provider catalog endpoint
+    this.app.get('/api/providers', auth, (req, res) => {
+      const providers = [
+        { id: 'claude', name: 'Claude', vendor: 'Anthropic', subscription: '$20/month', modes: ['CLI', 'Desktop', 'VS Code'] },
+        { id: 'codex', name: 'Codex', vendor: 'OpenAI', subscription: '$20/month', modes: ['VS Code', 'App', 'CLI'] },
+        { id: 'kimi', name: 'Kimi', vendor: 'Moonshot', subscription: '$18/month', modes: ['VS Code', 'CLI'] },
+      ];
+
+      const models = [
+        { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'claude', qualityScore: 0.99, maxTokens: 200000, features: ['analysis', 'code', 'extended_thinking', 'reasoning', 'vision'] },
+        { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', provider: 'claude', qualityScore: 0.97, maxTokens: 200000, features: ['analysis', 'code', 'extended_thinking', 'reasoning', 'vision'] },
+        { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'claude', qualityScore: 0.96, maxTokens: 200000, features: ['code', 'computer_use', 'extended_thinking', 'reasoning', 'vision'] },
+        { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'claude', qualityScore: 0.93, maxTokens: 200000, features: ['code', 'extended_thinking', 'reasoning', 'vision'] },
+        { id: 'gpt-5.4-codex', name: 'GPT-5.4 Codex', provider: 'codex', qualityScore: 0.97, maxTokens: 200000, features: ['architecture', 'code', 'multifile', 'reasoning', 'vision'] },
+        { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex', provider: 'codex', qualityScore: 0.90, maxTokens: 128000, features: ['code', 'edit', 'quick_tasks', 'reasoning'] },
+        { id: 'kimi-k2-5', name: 'Kimi K2.5', provider: 'kimi', qualityScore: 0.91, maxTokens: 256000, features: ['code', 'long_context', 'multimodal', 'reasoning', 'thinking_mode'] },
+      ];
+
+      res.json({ providers, models, billingModel: 'subscription', total: models.length });
+    });
+
+    // Tools API (proxy to core)
+    this.app.get('/api/tools', auth, async (req, res) => {
+      await this.forwardCoreApi(req, res, '/api/tools');
+    });
+
+    this.app.get('/api/tools/:name', auth, async (req, res) => {
+      await this.forwardCoreApi(req, res, `/api/tools/${encodeURIComponent(req.params.name)}`);
+    });
+
+    this.app.post('/api/tools/:name/execute', auth, async (req, res) => {
+      await this.forwardCoreApiWithBody(req, res, `/api/tools/${encodeURIComponent(req.params.name)}/execute`);
+    });
+
+    // Workflows API (GSD Domain)
+    this.app.get('/api/workflows', auth, async (req, res) => {
+      try {
+        const workflows = this.gsdDomain.listWorkflows?.() || [];
+        res.json({ workflows, total: workflows.length });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch workflows', message: err.message });
+      }
+    });
+
+    this.app.post('/api/workflows', auth, async (req, res) => {
+      try {
+        const { type, tasks, options, name, description } = req.body;
+        const workflow = this.gsdDomain.createWorkflow(type, tasks, { name, description, ...options });
+        res.status(201).json(workflow);
+      } catch (err) {
+        res.status(400).json({ error: 'Failed to create workflow', message: err.message });
+      }
+    });
+
+    this.app.get('/api/workflows/:id', auth, async (req, res) => {
+      try {
+        const workflow = this.gsdDomain.getStatus?.(req.params.id);
+        if (!workflow) return res.status(404).json({ error: 'Workflow not found' });
+        res.json(workflow);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch workflow', message: err.message });
+      }
+    });
+
+    this.app.post('/api/workflows/:id/execute', auth, async (req, res) => {
+      try {
+        const result = await this.gsdDomain.executeWorkflow?.(req.params.id, req.body);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to execute workflow', message: err.message });
+      }
+    });
+
+    this.app.post('/api/workflows/:id/pause', auth, async (req, res) => {
+      try {
+        const result = await this.gsdDomain.pauseWorkflow?.(req.params.id);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to pause workflow', message: err.message });
+      }
+    });
+
+    this.app.post('/api/workflows/:id/resume', auth, async (req, res) => {
+      try {
+        const result = await this.gsdDomain.resumeWorkflow?.(req.params.id);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to resume workflow', message: err.message });
+      }
+    });
+
+    this.app.post('/api/workflows/:id/cancel', auth, async (req, res) => {
+      try {
+        const result = await this.gsdDomain.cancelWorkflow(req.params.id, req.body.reason);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to cancel workflow', message: err.message });
+      }
+    });
+
+    this.app.delete('/api/workflows/:id', auth, async (req, res) => {
+      try {
+        this.gsdDomain.deleteWorkflow?.(req.params.id);
+        res.json({ id: req.params.id, deleted: true });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to delete workflow', message: err.message });
+      }
+    });
+
+    // Presence endpoint
+    this.app.get('/api/presence', auth, (req, res) => {
+      if (!this.wsServer) {
+        return res.json({ totalConnections: 0, uniqueUsers: 0 });
+      }
+      res.json(this.wsServer.getPresence());
+    });
+
+    // CV Management API
+    this.app.get('/api/cv', auth, async (req, res) => {
+      try {
+        const cvs = this.cvSystem.registry.list();
+        res.json({ cvs, total: cvs.length });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch CVs', message: err.message });
+      }
+    });
+
+    this.app.get('/api/cv/:id', auth, async (req, res) => {
+      try {
+        const cv = this.cvSystem.registry.get(req.params.id);
+        if (!cv) return res.status(404).json({ error: 'CV not found' });
+        res.json(cv);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch CV', message: err.message });
+      }
+    });
+
+    this.app.post('/api/cv', auth, async (req, res) => {
+      try {
+        const { templateName, overrides } = req.body;
+        const cv = await this.cvSystem.factory.createFromTemplate(templateName, overrides);
+        res.status(201).json(cv);
+      } catch (err) {
+        res.status(400).json({ error: 'Failed to create CV', message: err.message });
+      }
+    });
+
+    this.app.post('/api/cv/:id/activate', auth, async (req, res) => {
+      try {
+        const cv = await this.cvSystem.manager.activate(req.params.id);
+        res.json(cv);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to activate CV', message: err.message });
+      }
+    });
+
+    this.app.post('/api/cv/:id/suspend', auth, async (req, res) => {
+      try {
+        const cv = await this.cvSystem.manager.suspend(req.params.id);
+        res.json(cv);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to suspend CV', message: err.message });
+      }
+    });
+
+    this.app.delete('/api/cv/:id', auth, async (req, res) => {
+      try {
+        this.cvSystem.registry.delete(req.params.id);
+        res.json({ id: req.params.id, deleted: true });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to delete CV', message: err.message });
+      }
+    });
+  }
+
+  /**
+   * Sets up context snapshot routes
+   */
+  setupContextRoutes() {
+    const auth = this.authMiddleware.bind(this);
+
+    // List all snapshots
+    this.app.get('/api/context/snapshots', auth, async (req, res) => {
+      try {
+        const snapshots = await this.contextManager.listSnapshots();
+        res.json({ snapshots, total: snapshots.length });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch snapshots', message: err.message });
+      }
+    });
+
+    // Create new snapshot
+    this.app.post('/api/context/snapshots', auth, async (req, res) => {
+      try {
+        const { projectPath, options } = req.body;
+        const snapshot = await this.contextManager.capture(projectPath, options);
+        res.status(201).json(snapshot);
+      } catch (err) {
+        res.status(400).json({ error: 'Failed to create snapshot', message: err.message });
+      }
+    });
+
+    // Get snapshot by ID
+    this.app.get('/api/context/snapshots/:id', auth, async (req, res) => {
+      try {
+        const snapshot = await this.contextManager.getSnapshot(req.params.id);
+        if (!snapshot) return res.status(404).json({ error: 'Snapshot not found' });
+        res.json(snapshot);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch snapshot', message: err.message });
+      }
+    });
+
+    // Get snapshot files
+    this.app.get('/api/context/snapshots/:id/files', auth, async (req, res) => {
+      try {
+        const snapshot = await this.contextManager.getSnapshot(req.params.id);
+        if (!snapshot) return res.status(404).json({ error: 'Snapshot not found' });
+        res.json({ files: snapshot.files || [] });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch snapshot files', message: err.message });
+      }
+    });
+
+    // Restore snapshot
+    this.app.post('/api/context/snapshots/:id/restore', auth, async (req, res) => {
+      try {
+        const result = await this.contextManager.restore(req.params.id, req.body);
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to restore snapshot', message: err.message });
+      }
+    });
+
+    // Delete snapshot
+    this.app.delete('/api/context/snapshots/:id', auth, async (req, res) => {
+      try {
+        await this.contextManager.deleteSnapshot(req.params.id);
+        res.json({ id: req.params.id, deleted: true });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to delete snapshot', message: err.message });
+      }
+    });
+
+    // Compare snapshots
+    this.app.get('/api/context/compare', auth, async (req, res) => {
+      try {
+        const { id1, id2 } = req.query;
+        if (!id1 || !id2) {
+          return res.status(400).json({ error: 'Missing snapshot IDs (id1, id2)' });
+        }
+        const comparison = await this.contextManager.compare(id1, id2);
+        res.json(comparison);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to compare snapshots', message: err.message });
+      }
+    });
   }
 
   /**
@@ -901,6 +1166,42 @@ export class DashboardServer {
         message: error.message,
         backendPath,
       });
+    }
+  }
+
+  /**
+   * Forwards a dashboard request (with body) to the core API.
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   * @param {string} backendPath
+   */
+  async forwardCoreApiWithBody(req, res, backendPath) {
+    try {
+      const target = new URL(backendPath, this.apiBaseUrl);
+      const headers = { 'Content-Type': 'application/json' };
+      if (req.headers.authorization) {
+        headers.authorization = req.headers.authorization;
+      }
+
+      // Read request body
+      const chunks = [];
+      for await (const chunk of req) { chunks.push(chunk); }
+      const body = Buffer.concat(chunks).toString();
+
+      const response = await fetch(target, {
+        method: req.method,
+        headers,
+        body: body || undefined,
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      const responseBody = await response.text();
+      if (contentType.includes('application/json')) {
+        return res.status(response.status).json(responseBody ? JSON.parse(responseBody) : null);
+      }
+      return res.status(response.status).send(responseBody);
+    } catch (error) {
+      return res.status(502).json({ error: 'Failed to reach core API', message: error.message });
     }
   }
 

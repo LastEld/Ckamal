@@ -29,7 +29,7 @@ class RoadmapsComponent {
       this.roadmaps = data.roadmaps || [];
       this.applyFilter();
     } catch (error) {
-      console.error('Failed to load roadmaps:', error);
+      Toast.error('Failed to load roadmaps');
     }
   }
 
@@ -125,23 +125,26 @@ class RoadmapsComponent {
 
   // Attach event listeners
   attachEventListeners() {
-    // View roadmap buttons
+    // View roadmap buttons (on rendered cards — destroyed by innerHTML each render)
     document.querySelectorAll('.view-roadmap').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const roadmapId = e.currentTarget.dataset.id;
         this.viewRoadmap(roadmapId);
       });
     });
-    
-    // Create roadmap button
-    document.getElementById('createRoadmapBtn')?.addEventListener('click', () => {
-      this.showCreateRoadmapModal();
-    });
-    
-    // Roadmap search
-    document.getElementById('roadmapSearch')?.addEventListener('input', (e) => {
-      this.filterRoadmaps(e.target.value);
-    });
+
+    // Persistent controls — bind once only
+    if (!this._persistentListenersBound) {
+      this._persistentListenersBound = true;
+
+      document.getElementById('createRoadmapBtn')?.addEventListener('click', () => {
+        this.showCreateRoadmapModal();
+      });
+
+      document.getElementById('roadmapSearch')?.addEventListener('input', (e) => {
+        this.filterRoadmaps(e.target.value);
+      });
+    }
   }
 
   // View roadmap details
@@ -158,19 +161,201 @@ class RoadmapsComponent {
       // Subscribe to real-time updates
       this.ws?.subscribeRoadmap(roadmapId);
     } catch (error) {
-      console.error('Failed to load roadmap details:', error);
+      Toast.error('Failed to load roadmap details');
     }
   }
 
   // Show roadmap details modal
   showRoadmapDetails(roadmap) {
-    // Implementation for showing roadmap details
-    console.log('Viewing roadmap:', roadmap);
+    // Remove any existing detail modal
+    document.querySelector('.roadmap-detail-modal')?.remove();
+
+    const phases = roadmap.phases || [];
+    const milestones = roadmap.milestones || [];
+    const progress = roadmap.progress || 0;
+
+    const phasesHtml = phases.length > 0
+      ? phases.map(phase => {
+          const taskCount = (phase.tasks || []).length;
+          const statusClass = phase.status === 'completed' ? 'phase-completed'
+            : phase.status === 'in-progress' ? 'phase-in-progress'
+            : 'phase-pending';
+          const statusLabel = phase.status === 'completed' ? 'Completed'
+            : phase.status === 'in-progress' ? 'In Progress'
+            : 'Pending';
+          const iconName = phase.status === 'completed' ? 'check-circle'
+            : phase.status === 'in-progress' ? 'loader'
+            : 'circle';
+          return `
+            <li class="phase-item ${statusClass}">
+              <div class="phase-icon"><i data-lucide="${iconName}"></i></div>
+              <div class="phase-info">
+                <span class="phase-name">${this.escapeHtml(phase.name)}</span>
+                <span class="phase-meta">${statusLabel} &middot; ${taskCount} task${taskCount !== 1 ? 's' : ''}</span>
+              </div>
+            </li>`;
+        }).join('')
+      : '<li class="phase-item phase-pending"><span class="phase-meta">No phases defined</span></li>';
+
+    const milestonesHtml = milestones.length > 0
+      ? milestones.map(ms => {
+          const completed = ms.completed;
+          const dueDate = ms.dueDate ? new Date(ms.dueDate).toLocaleDateString() : '';
+          const iconName = completed ? 'check-square' : 'square';
+          return `
+            <li class="milestone-item ${completed ? 'milestone-completed' : 'milestone-pending'}">
+              <div class="milestone-icon"><i data-lucide="${iconName}"></i></div>
+              <div class="milestone-info">
+                <span class="milestone-title">${this.escapeHtml(ms.title)}</span>
+                ${dueDate ? `<span class="milestone-due">Due: ${this.escapeHtml(dueDate)}</span>` : ''}
+              </div>
+            </li>`;
+        }).join('')
+      : '<li class="milestone-item milestone-pending"><span class="milestone-due">No milestones defined</span></li>';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal roadmap-detail-modal active';
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h3>${this.escapeHtml(roadmap.name)}</h3>
+        <button class="btn btn-icon modal-close roadmap-detail-close" title="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        ${roadmap.description ? `<p class="roadmap-detail-description">${this.escapeHtml(roadmap.description)}</p>` : ''}
+        <div class="roadmap-detail-progress">
+          <div class="progress-label">Overall Progress</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-text">
+            <span>${Math.round(progress)}% complete</span>
+          </div>
+        </div>
+        <div class="roadmap-detail-section">
+          <h4><i data-lucide="layers"></i> Phases</h4>
+          <ul class="phase-list">${phasesHtml}</ul>
+        </div>
+        <div class="roadmap-detail-section">
+          <h4><i data-lucide="flag"></i> Milestones</h4>
+          <ul class="milestone-list">${milestonesHtml}</ul>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show overlay
+    const overlay = document.getElementById('modalOverlay');
+    if (overlay) overlay.classList.add('active');
+
+    // Bind close button
+    modal.querySelector('.roadmap-detail-close')?.addEventListener('click', () => {
+      roadmapsWindow.dashboardApp?.closeAllModals();
+      modal.remove();
+    });
+
+    // Re-initialize lucide icons
+    if (typeof roadmapsWindow.lucide?.createIcons === 'function') {
+      roadmapsWindow.lucide.createIcons();
+    }
   }
 
   // Show create roadmap modal
   showCreateRoadmapModal() {
-    console.log('Create roadmap modal');
+    // Remove any existing create modal
+    document.querySelector('.roadmap-create-modal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'modal roadmap-create-modal active';
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h3>Create Roadmap</h3>
+        <button class="btn btn-icon modal-close roadmap-create-close" title="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createRoadmapForm">
+          <div class="form-group">
+            <label for="roadmapName">Name <span class="required">*</span></label>
+            <input type="text" id="roadmapName" name="name" required placeholder="Roadmap name" />
+          </div>
+          <div class="form-group">
+            <label for="roadmapDescription">Description</label>
+            <textarea id="roadmapDescription" name="description" rows="3" placeholder="Optional description"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary roadmap-create-cancel">Cancel</button>
+        <button class="btn btn-primary roadmap-create-save">
+          <i data-lucide="plus"></i> Create
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show overlay
+    const overlay = document.getElementById('modalOverlay');
+    if (overlay) overlay.classList.add('active');
+
+    // Re-initialize lucide icons
+    if (typeof roadmapsWindow.lucide?.createIcons === 'function') {
+      roadmapsWindow.lucide.createIcons();
+    }
+
+    const closeModal = () => {
+      roadmapsWindow.dashboardApp?.closeAllModals();
+      modal.remove();
+    };
+
+    // Cancel button
+    modal.querySelector('.roadmap-create-cancel')?.addEventListener('click', closeModal);
+
+    // Close button
+    modal.querySelector('.roadmap-create-close')?.addEventListener('click', closeModal);
+
+    // Save button
+    modal.querySelector('.roadmap-create-save')?.addEventListener('click', async () => {
+      const nameInput = document.getElementById('roadmapName');
+      const descInput = document.getElementById('roadmapDescription');
+      const name = nameInput?.value?.trim();
+      const description = descInput?.value?.trim();
+
+      if (!name) {
+        nameInput?.focus();
+        Toast.warning('Roadmap name is required');
+        return;
+      }
+
+      const saveBtn = modal.querySelector('.roadmap-create-save');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Creating...';
+      }
+
+      try {
+        await this.api.createRoadmap({ name, description });
+        Toast.success('Roadmap created successfully');
+        closeModal();
+        await this.loadRoadmaps();
+      } catch (error) {
+        Toast.error(error.message || 'Failed to create roadmap');
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i data-lucide="plus"></i> Create';
+          if (typeof roadmapsWindow.lucide?.createIcons === 'function') {
+            roadmapsWindow.lucide.createIcons();
+          }
+        }
+      }
+    });
+
+    // Focus the name input
+    setTimeout(() => document.getElementById('roadmapName')?.focus(), 100);
   }
 
   // Update roadmap progress (called from WebSocket)

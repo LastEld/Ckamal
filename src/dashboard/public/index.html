@@ -24,6 +24,31 @@
 </head>
 <body>
   <div id="app" class="dashboard">
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <i data-lucide="hexagon" class="login-logo"></i>
+          <h1>CogniMesh</h1>
+          <p>Multi-Agent Orchestration Platform</p>
+        </div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginUsername">Username</label>
+            <input type="text" id="loginUsername" placeholder="admin" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+          </div>
+          <div class="login-error" id="loginError" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -70,16 +95,47 @@
               <span class="status-indicator online" id="agentStatus"></span>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#tools" class="nav-link" data-view="tools">
+              <i data-lucide="wrench"></i>
+              <span>Tools</span>
+              <span class="nav-badge" id="toolsBadge">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#gsd" class="nav-link" data-view="gsd">
+              <i data-lucide="workflow"></i>
+              <span>GSD Workflows</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#cv" class="nav-link" data-view="cv">
+              <i data-lucide="file-badge"></i>
+              <span>Agent CVs</span>
+            </a>
+          </li>
         </ul>
         
         <div class="nav-section">
           <span class="nav-section-title">System</span>
           <ul class="nav-list">
             <li class="nav-item">
+              <a href="#providers" class="nav-link" data-view="providers">
+                <i data-lucide="cpu"></i>
+                <span>Providers</span>
+              </a>
+            </li>
+            <li class="nav-item">
               <a href="#alerts" class="nav-link" data-view="alerts">
                 <i data-lucide="bell"></i>
                 <span>Alerts</span>
                 <span class="nav-badge alert" id="alertBadge">0</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#context" class="nav-link" data-view="context">
+                <i data-lucide="database"></i>
+                <span>Context</span>
               </a>
             </li>
             <li class="nav-item">
@@ -93,6 +149,10 @@
       </nav>
       
       <div class="sidebar-footer">
+        <div class="presence-indicator" id="presenceIndicator">
+          <span class="presence-dot"></span>
+          <span class="presence-count">-</span>
+        </div>
         <div class="user-info">
           <div class="user-avatar">
             <i data-lucide="user"></i>
@@ -350,6 +410,7 @@
         <!-- Analytics View -->
         <div class="view" id="analyticsView">
           <div class="analytics-container">
+            <div class="analytics-summary" id="analyticsSummary"></div>
             <div class="analytics-grid">
               <div class="panel wide">
                 <div class="panel-header">
@@ -406,6 +467,26 @@
           </div>
         </div>
 
+        <!-- Tools View -->
+        <div class="view" id="toolsView">
+          <div class="tools-container">
+            <div class="view-toolbar">
+              <div class="search-group">
+                <i data-lucide="search"></i>
+                <input type="text" placeholder="Search tools..." id="toolSearch">
+              </div>
+              <div class="filter-group">
+                <select class="select" id="toolCategoryFilter">
+                  <option value="">All Categories</option>
+                </select>
+              </div>
+            </div>
+            <div class="tools-grid" id="toolsGrid">
+              <!-- Tool cards will be rendered here -->
+            </div>
+          </div>
+        </div>
+
         <!-- Alerts View -->
         <div class="view" id="alertsView">
           <div class="alerts-container">
@@ -432,6 +513,21 @@
             <div class="alerts-list" id="alertsList">
               <!-- Alerts will be rendered here -->
             </div>
+          </div>
+        </div>
+
+        <!-- Providers View -->
+        <div class="view" id="providersView">
+          <div class="providers-container">
+            <div class="subscription-banner">
+              <i data-lucide="shield-check"></i>
+              <div>
+                <strong>Subscription Model</strong>
+                <p>$18-20/month per provider. No API keys. No metered billing.</p>
+              </div>
+            </div>
+            <div class="providers-grid" id="providersGrid"></div>
+            <div class="model-matrix" id="modelMatrix"></div>
           </div>
         </div>
 
@@ -489,6 +585,63 @@
             </div>
           </div>
         </div>
+
+        <!-- GSD Workflows View -->
+        <section class="view" id="gsdView">
+          <div class="view-header">
+            <h2>GSD Workflows</h2>
+            <button class="btn btn-primary" id="createWorkflowBtn">
+              <i data-lucide="plus"></i>
+              <span>New Workflow</span>
+            </button>
+          </div>
+          <div class="filters">
+            <input type="text" id="workflowSearch" placeholder="Search workflows...">
+            <select id="workflowStatusFilter">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="running">Running</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="workflows-grid" id="workflowsGrid"></div>
+        </section>
+
+        <!-- Agent CVs View -->
+        <section class="view" id="cvView">
+          <div class="view-header">
+            <h2>Agent CVs</h2>
+            <button class="btn btn-primary" id="createCVBtn">
+              <i data-lucide="plus"></i>
+              <span>New CV</span>
+            </button>
+          </div>
+          <div class="filters">
+            <input type="text" id="cvSearch" placeholder="Search CVs...">
+            <select id="cvStatusFilter">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="retired">Retired</option>
+            </select>
+          </div>
+          <div class="cv-grid" id="cvGrid"></div>
+        </section>
+
+        <!-- Context Snapshots View -->
+        <section class="view" id="contextView">
+          <div class="view-header">
+            <h2>Context Snapshots</h2>
+            <button class="btn btn-primary" id="createSnapshotBtn">
+              <i data-lucide="plus"></i>
+              <span>New Snapshot</span>
+            </button>
+          </div>
+          <div class="snapshots-grid" id="snapshotsGrid"></div>
+        </section>
       </div>
     </main>
 
@@ -561,15 +714,125 @@
       </div>
       <div class="notification-list" id="notificationList"></div>
     </div>
+
+    <!-- Create Snapshot Modal -->
+    <div class="modal" id="createSnapshotModal">
+      <div class="modal-header">
+        <h3>Create New Snapshot</h3>
+        <button class="btn-icon modal-close" id="closeSnapshotModalBtn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createSnapshotForm">
+          <div class="form-group">
+            <label for="snapshotProjectPath">Project Path *</label>
+            <input type="text" id="snapshotProjectPath" placeholder="/path/to/project" required>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="snapshotIncludeContent">
+              Include file contents (for small files)
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelSnapshotBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveSnapshotBtn">Create Snapshot</button>
+      </div>
+    </div>
+
+    <!-- Snapshot Detail Modal -->
+    <div class="modal modal-lg" id="snapshotDetailModal">
+      <div class="modal-header">
+        <h3>Snapshot Details</h3>
+        <button class="btn-icon modal-close" id="closeDetailModal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="snapshot-details">
+          <div class="detail-row">
+            <span class="detail-label">ID:</span>
+            <span class="detail-value" id="detailSnapshotId"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Timestamp:</span>
+            <span class="detail-value" id="detailTimestamp"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Project Path:</span>
+            <span class="detail-value" id="detailProjectPath"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">File Count:</span>
+            <span class="detail-value" id="detailFileCount"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Total Size:</span>
+            <span class="detail-value" id="detailTotalSize"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Merkle Root:</span>
+            <span class="detail-value monospace" id="detailMerkleRoot"></span>
+          </div>
+        </div>
+        <div class="file-tree-container">
+          <h4>File Tree</h4>
+          <div id="snapshotFileTree" class="file-tree-wrapper"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare Snapshots Modal -->
+    <div class="modal modal-lg" id="compareModal">
+      <div class="modal-header">
+        <h3>Compare Snapshots</h3>
+        <button class="btn-icon modal-close" id="closeCompareModal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="compare-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="compareSnapshot1">First Snapshot</label>
+              <select id="compareSnapshot1" class="select">
+                <option value="">Select snapshot...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="compareSnapshot2">Second Snapshot</label>
+              <select id="compareSnapshot2" class="select">
+                <option value="">Select snapshot...</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="runCompareBtn">
+            <i data-lucide="git-compare"></i>
+            <span>Compare</span>
+          </button>
+        </div>
+        <div id="compareResults" class="compare-results"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Application Scripts -->
+  <script src="components/toast.js"></script>
   <script src="components/api-client.js"></script>
   <script src="components/websocket-client.js"></script>
   <script src="components/alerts-component.js"></script>
   <script src="components/tasks-component.js"></script>
   <script src="components/roadmaps-component.js"></script>
   <script src="components/analytics-component.js"></script>
+  <script src="components/agents-component.js"></script>
+  <script src="components/tools-component.js"></script>
+  <script src="components/providers-component.js"></script>
+  <script src="components/context-component.js"></script>
+  <script src="components/cv-component.js"></script>
+  <script src="components/workflows-component.js"></script>
   <script src="components/dashboard-app.js"></script>
   <script src="app.js"></script>
 </body>
