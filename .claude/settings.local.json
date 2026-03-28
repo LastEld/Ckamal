@@ -184,7 +184,13 @@
       "Bash(grep -n \"\\\\.api\\\\.create\\\\|\\\\.api\\\\.delete\\\\|\\\\.api\\\\.update\\\\|\\\\.api\\\\.execute\\\\|\\\\.api\\\\.activate\\\\|\\\\.api\\\\.suspend\" /e/Ckamal/src/dashboard/public/components/*.js)",
       "Bash(grep -n \"innerHTML.*=.*$\" /e/Ckamal/src/dashboard/public/components/dashboard-app.js)",
       "Bash(find e:/Ckamal -name *.test.* -o -name *.spec.*)",
-      "Bash(ls e:/Ckamal/src/dashboard/public/components/*.js)"
+      "Bash(ls e:/Ckamal/src/dashboard/public/components/*.js)",
+      "Bash(node --test --test-timeout=30000)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(p.scripts.test\\)\")",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(''unit:'', p.scripts[''test:unit'']\\); console.log\\(''int:'', p.scripts[''test:integration'']\\)\")",
+      "Bash(node scripts/run-node-tests.js tests/unit .test.js)",
+      "Bash(node --test tests/unit/queue/)",
+      "Bash(node --test tests/unit/queue/task-queue.test.js tests/unit/queue/dead-letter.test.js)"
     ]
   },
   "prefersReducedMotion": true

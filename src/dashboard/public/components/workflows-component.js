@@ -28,12 +28,12 @@ class WorkflowsComponent {
 
     // Bind create workflow button
     document.getElementById('createWorkflowBtn')?.addEventListener('click', () => {
-      this.showCreateModal();
+      this.showCreateWorkflowModal();
     });
   }
 
   // Show create workflow modal
-  showCreateModal() {
+  showCreateWorkflowModal() {
     // Close any existing modals
     this.closeWorkflowModals();
 
@@ -46,22 +46,24 @@ class WorkflowsComponent {
     modal.innerHTML = `
       <div class="modal-header">
         <h3>Create New Workflow</h3>
-        <button class="btn-icon modal-close" id="closeCreateWorkflowModal">
+        <button class="btn-icon modal-close" id="closeCreateWorkflowModal" title="Close">
           <i data-lucide="x"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="workflowType">Workflow Type</label>
-          <select id="workflowType">
-            <option value="sequential">Sequential</option>
-            <option value="parallel">Parallel</option>
-            <option value="conditional">Conditional</option>
-          </select>
+          <label for="workflowName">Workflow Name</label>
+          <input type="text" id="workflowName" placeholder="Enter workflow name">
         </div>
         <div class="form-group">
-          <label for="workflowName">Name</label>
-          <input type="text" id="workflowName" placeholder="My Workflow">
+          <label for="workflowType">Workflow Type</label>
+          <select id="workflowType">
+            <option value="single">Single</option>
+            <option value="parallel">Parallel</option>
+            <option value="chain">Chain</option>
+            <option value="swarm">Swarm</option>
+            <option value="plan">Plan</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Tasks</label>
@@ -123,6 +125,9 @@ class WorkflowsComponent {
         e.target.closest('.task-input-row')?.remove();
       });
     });
+
+    // Focus on name input
+    document.getElementById('workflowName')?.focus();
   }
 
   // Close workflow modals

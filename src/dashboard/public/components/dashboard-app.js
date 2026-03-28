@@ -16,6 +16,7 @@ const ProvidersComponentCtor = typeof dashboardWindow.ProvidersComponent === 'fu
 const WorkflowsComponentCtor = typeof dashboardWindow.WorkflowsComponent === 'function' ? dashboardWindow.WorkflowsComponent : null;
 const CVComponentCtor = typeof dashboardWindow.CVComponent === 'function' ? dashboardWindow.CVComponent : null;
 const ContextComponentCtor = typeof dashboardWindow.ContextComponent === 'function' ? dashboardWindow.ContextComponent : null;
+const PresenceComponentCtor = typeof dashboardWindow.PresenceComponent === 'function' ? dashboardWindow.PresenceComponent : null;
 
 class DashboardApp {
   constructor(options = {}) {
@@ -34,6 +35,7 @@ class DashboardApp {
     this.workflowsComponent = null;
     this.cvComponent = null;
     this.contextComponent = null;
+    this.presenceComponent = null;
 
     // State
     this.currentView = 'dashboard';
@@ -374,13 +376,15 @@ class DashboardApp {
       this.updateSystemStatus(e?.detail || {});
     });
     
-    // Presence updates
+    // Presence updates - real-time online user count
     this.ws.addEventListener('message:presence.update', (e) => {
       this.updatePresenceIndicator(e?.detail);
     });
 
-    // Also fetch initial presence
-    this.loadPresence();
+    // Also fetch initial presence on WebSocket connect
+    this.ws.addEventListener('connected', () => {
+      this.loadPresence();
+    });
   }
 
   /**
@@ -408,10 +412,14 @@ class DashboardApp {
     const indicator = document.getElementById('presenceIndicator');
     if (indicator) {
       const countSpan = indicator.querySelector('.presence-count');
+      const uniqueUsers = presence.uniqueUsers ?? 0;
+      const totalConnections = presence.totalConnections ?? 0;
+      
       if (countSpan) {
-        countSpan.textContent = `${presence.uniqueUsers} online`;
+        const userText = uniqueUsers === 1 ? '1 user online' : `${uniqueUsers} users online`;
+        countSpan.textContent = userText;
       }
-      indicator.title = `${presence.totalConnections} connections`;
+      indicator.title = `${totalConnections} total connection${totalConnections !== 1 ? 's' : ''}`;
     }
   }
 
@@ -455,6 +463,11 @@ class DashboardApp {
     this.cvComponent = CVComponentCtor ? new CVComponentCtor({ api: this.api }) : null;
     this.contextComponent = ContextComponentCtor ? new ContextComponentCtor({
       api: this.api,
+    }) : null;
+
+    this.presenceComponent = PresenceComponentCtor ? new PresenceComponentCtor({
+      api: this.api,
+      ws: this.ws,
     }) : null;
   }
 

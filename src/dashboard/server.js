@@ -629,16 +629,6 @@ export class DashboardServer {
         // Get alert stats from AlertManager
         const alertMetrics = this.alertManager?.getMetrics() || {};
         
-        // Get analytics from Analytics if available
-        let costStats = null;
-        if (this.analytics?._initialized) {
-          try {
-            costStats = await this.analytics.getCostStats();
-          } catch (e) {
-            // Analytics might not be fully initialized
-          }
-        }
-        
         res.json({
           taskStats: {
             total: taskStats.total,
@@ -654,7 +644,6 @@ export class DashboardServer {
             total: alertMetrics.total || 0,
             byState: alertMetrics.byState || {},
           },
-          costStats,
           timestamp: new Date().toISOString(),
         });
       } catch (err) {
@@ -1303,7 +1292,7 @@ export class DashboardServer {
           return res.status(400).json({ error: 'CV configuration is required' });
         }
         
-        const agent = await this.orchestrator.spawnAgent(cv, { 
+        const agent = await this.orchestrator?.spawnAgent(cv, { 
           client, 
           context,
           ...options 
@@ -1334,7 +1323,15 @@ export class DashboardServer {
           return res.status(400).json({ error: 'Task is required' });
         }
         
-        const result = await this.orchestrator.delegate(task, client, options);
+        if (!client) {
+          return res.status(400).json({ error: 'Client is required' });
+        }
+        
+        if (typeof client !== 'string' || client.trim().length === 0) {
+          return res.status(400).json({ error: 'Client must be a valid non-empty string' });
+        }
+        
+        const result = await this.orchestrator?.delegate(task, client, options);
         res.json(result);
       } catch (err) {
         console.error('Error delegating task:', err);
@@ -1351,7 +1348,15 @@ export class DashboardServer {
           return res.status(400).json({ error: 'Tasks array is required' });
         }
         
-        const result = await this.orchestrator.executeParallel(tasks, clients, options);
+        if (!Array.isArray(clients) || clients.length === 0) {
+          return res.status(400).json({ error: 'Clients array is required' });
+        }
+        
+        if (!clients.every(c => typeof c === 'string' && c.trim().length > 0)) {
+          return res.status(400).json({ error: 'All clients must be valid non-empty strings' });
+        }
+        
+        const result = await this.orchestrator?.executeParallel(tasks, clients, options);
         res.json(result);
       } catch (err) {
         console.error('Error executing parallel tasks:', err);
@@ -1362,7 +1367,7 @@ export class DashboardServer {
     // Get orchestrator status
     this.app.get('/api/bios/status', auth, (req, res) => {
       try {
-        const status = this.orchestrator.getStatus();
+        const status = this.orchestrator?.getStatus();
         res.json(status);
       } catch (err) {
         console.error('Error getting orchestrator status:', err);
@@ -1473,13 +1478,13 @@ export class DashboardServer {
         }
         
         // Apply limit
-        tasks = tasks.slice(0, parseInt(limit));
+        tasks = tasks.slice(0, parseInt(limit, 10));
         
         res.json({
           tasks,
           total: this.taskQueue.size(),
           stats: this.taskQueue.getStats(),
-          filters: { status, tag, limit: parseInt(limit) }
+          filters: { status, tag, limit: parseInt(limit, 10) }
         });
       } catch (err) {
         console.error('Error listing queue tasks:', err);
@@ -1534,6 +1539,10 @@ export class DashboardServer {
           return res.status(400).json({ error: 'Priority is required' });
         }
         
+        if (!Number.isInteger(priority)) {
+          return res.status(400).json({ error: 'Priority must be a valid integer' });
+        }
+        
         const success = this.taskQueue.reprioritize(req.params.id, priority);
         
         if (!success) {
@@ -1557,7 +1566,7 @@ export class DashboardServer {
           tasks = tasks.filter(t => t.status === status);
         }
         
-        tasks = tasks.slice(0, parseInt(limit));
+        tasks = tasks.slice(0, parseInt(limit, 10));
         
         res.json({
           tasks,
@@ -1643,7 +1652,7 @@ export class DashboardServer {
     });
     
     // Get readiness status (for K8s)
-    this.app.get('/api/health/ready', async (req, res) => {
+    this.app.get('/api/health/ready', auth, async (req, res) => {
       try {
         const readiness = await this.healthChecker.checkReadiness();
         const statusCode = readiness.ready ? 200 : 503;
@@ -1654,7 +1663,7 @@ export class DashboardServer {
     });
     
     // Get liveness status (for K8s)
-    this.app.get('/api/health/live', (req, res) => {
+    this.app.get('/api/health/live', auth, (req, res) => {
       try {
         const liveness = this.healthChecker.checkLiveness();
         const statusCode = liveness.live ? 200 : 503;
