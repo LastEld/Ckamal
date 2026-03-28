@@ -46,8 +46,7 @@
     "db:backup:restore": "node scripts/backup-restore.js",
     "db:backup:verify": "node scripts/backup-verify.js",
     "db:backup:schedule": "node src/db/backup-scheduler.js",
-    "docs:generate": "npx jsdoc -c jsdoc.json",
-    "mcp": "node src/mcp/server.js"
+    "docs:generate": "npx jsdoc -c jsdoc.json"
   },
   "keywords": [
     "bios",
