@@ -250,18 +250,36 @@ describe('WorkflowsComponent', () => {
 
     it('prevents concurrent loads', async () => {
       let callCount = 0;
+      let resolveApi;
+      const apiPromise = new Promise(resolve => { resolveApi = resolve; });
+
       mockApi.getWorkflows = async () => {
         callCount++;
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await apiPromise;
         return { workflows: [] };
       };
 
       const component = new WorkflowsComponent({ api: mockApi });
       const promise1 = component.loadWorkflows();
+
+      // Verify loading flag is set before second call
+      assert.equal(component.loading, true);
+
       const promise2 = component.loadWorkflows(); // Should be ignored
 
-      await Promise.all([promise1, promise2]);
+      // Verify second call was ignored (API not called again)
       assert.equal(callCount, 1);
+
+      // Resolve the API call
+      resolveApi();
+      await promise1;
+
+      // Verify state after completion
+      assert.equal(component.loading, false);
+      assert.equal(callCount, 1);
+
+      // Ensure promise2 doesn't break anything (it resolves immediately)
+      await promise2;
     });
 
     it('handles API errors gracefully', async () => {

@@ -23,8 +23,8 @@ describe('WebSocketServer', () => {
     });
   });
 
-  after(() => {
-    httpServer.close();
+  after(async () => {
+    await new Promise((resolve) => httpServer.close(resolve));
   });
 
   beforeEach(async () => {

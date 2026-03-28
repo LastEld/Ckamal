@@ -34,7 +34,7 @@ describe('WebSocketClient', () => {
 
   after(async () => {
     await wss.stop();
-    httpServer.close();
+    await new Promise((resolve) => httpServer.close(resolve));
   });
 
   describe('Connection', () => {

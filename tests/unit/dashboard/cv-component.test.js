@@ -265,21 +265,38 @@ describe('CVComponent', () => {
     loadScript(context, 'components/cv-component.js');
 
     let apiCallCount = 0;
+    let resolveApi;
+    const apiPromise = new Promise(resolve => { resolveApi = resolve; });
+
     const mockApi = {
       getCVs: async () => {
         apiCallCount++;
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await apiPromise;
         return { cvs: [{ id: 'cv1', identity: { name: 'Test' }, lifecycle: { status: 'active' } }] };
       }
     };
 
     const component = new context.window.CVComponent({ api: mockApi });
     const promise1 = component.loadCVs();
-    const promise2 = component.loadCVs(); // Should be ignored
 
-    await Promise.all([promise1, promise2]);
+    // Verify loading flag is set before second call
+    assert.equal(component.loading, true);
 
+    const promise2 = component.loadCVs(); // Should be ignored due to loading flag
+
+    // Verify second call was ignored (API not called again)
     assert.equal(apiCallCount, 1);
+
+    // Resolve the API call
+    resolveApi();
+    await promise1;
+
+    // Verify state after completion
+    assert.equal(component.loading, false);
+    assert.equal(apiCallCount, 1);
+
+    // Ensure promise2 doesn't break anything (it resolves immediately)
+    await promise2;
   });
 
   it('renderCVs() renders CV cards with correct structure', () => {
