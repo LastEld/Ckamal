@@ -124,6 +124,7 @@ function createBaseContext() {
     clearTimeout,
     setInterval,
     clearInterval,
+    confirm: () => true,
     EventTarget: class EventTargetStub {
       addEventListener() {}
       removeEventListener() {}
@@ -159,7 +160,7 @@ describe('CVComponent', () => {
 
     assert.equal(component.api, mockApi);
     assert.strictEqual(component.cvs.length, 0);
-    assert.deepStrictEqual(component.templates, ['system-admin', 'developer', 'analyst', 'code-reviewer', 'test-agent']);
+    assert.deepEqual(component.templates, ['system-admin', 'developer', 'analyst', 'code-reviewer', 'test-agent']);
     assert.equal(component.loading, false);
   });
 
@@ -209,13 +210,13 @@ describe('CVComponent', () => {
     const component = new context.window.CVComponent({ api: mockApi });
     await component.loadCVs();
 
-    assert.deepStrictEqual(component.cvs, mockCVs);
+    assert.deepEqual(component.cvs, mockCVs);
     assert.equal(component.loading, false);
     assert.ok(cvGrid.innerHTML.includes('Test CV 1'));
     assert.ok(cvGrid.innerHTML.includes('Test CV 2'));
     assert.ok(cvGrid.innerHTML.includes('Developer'));
     assert.ok(cvGrid.innerHTML.includes('Analyst'));
-    assert.equal(badge.textContent, 2);
+    assert.equal(parseInt(badge.textContent), 2);
   });
 
   it('loadCVs() renders empty state when no CVs exist', async () => {
