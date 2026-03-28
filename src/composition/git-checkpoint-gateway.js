@@ -138,7 +138,7 @@ export class GitCheckpointGateway extends EventEmitter {
           message: parts[1],
           author: parts[2],
           email: parts[3],
-          createdAt: new Date(parseInt(parts[4]) * 1000),
+          createdAt: new Date(parseInt(parts[4], 10) * 1000),
           parentId: parts[5] || null,
           tags: [],
           branches: [],
@@ -272,9 +272,9 @@ export class GitCheckpointGateway extends EventEmitter {
     const insertionsMatch = statsOutput.match(/(\d+) insertion/);
     const deletionsMatch = statsOutput.match(/(\d+) deletion/);
 
-    if (filesMatch) result.files = parseInt(filesMatch[1]);
-    if (insertionsMatch) result.insertions = parseInt(insertionsMatch[1]);
-    if (deletionsMatch) result.deletions = parseInt(deletionsMatch[1]);
+    if (filesMatch) result.files = parseInt(filesMatch[1], 10);
+    if (insertionsMatch) result.insertions = parseInt(insertionsMatch[1], 10);
+    if (deletionsMatch) result.deletions = parseInt(deletionsMatch[1], 10);
 
     return result;
   }
@@ -456,7 +456,7 @@ export class GitCheckpointGateway extends EventEmitter {
           `diff ${id1}..${id2} -- "${newPath || path}" | wc -l`
         );
         // This is a simplified approach; for accurate stats we'd parse the diff
-        additions = parseInt(fileDiff.trim()) || 0;
+        additions = parseInt(fileDiff.trim(), 10) || 0;
       } catch {
         // Ignore errors for stats
       }

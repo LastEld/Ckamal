@@ -336,7 +336,7 @@ class DashboardApp {
 
     // Settings: Auto-refresh interval
     document.getElementById('refreshInterval')?.addEventListener('change', (e) => {
-      const interval = parseInt(e.target.value) || 0;
+      const interval = parseInt(e.target.value, 10) || 0;
       localStorage.setItem('refreshInterval', interval);
       // Restart the refresh timer immediately
       if (this.refreshInterval) {
@@ -856,7 +856,7 @@ class DashboardApp {
 
   // Setup auto-refresh
   setupAutoRefresh() {
-    const interval = parseInt(localStorage.getItem('refreshInterval')) || 30;
+    const interval = parseInt(localStorage.getItem('refreshInterval'), 10) || 30;
     if (interval > 0) {
       this.refreshInterval = setInterval(() => {
         this.loadDashboardData();

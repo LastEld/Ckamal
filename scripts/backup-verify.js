@@ -98,8 +98,8 @@ async function verifyBackupFile(backupPath, metadata = null) {
         `sqlite3 "${backupPath}" "SELECT COUNT(*) FROM sqlite_master WHERE type='table';"`
       );
       result.checks.tableCount = {
-        passed: parseInt(stdout.trim()) > 0,
-        count: parseInt(stdout.trim())
+        passed: parseInt(stdout.trim(), 10) > 0,
+        count: parseInt(stdout.trim(), 10)
       };
     } catch (error) {
       result.checks.tableCount = {

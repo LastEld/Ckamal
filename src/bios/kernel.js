@@ -121,7 +121,7 @@ export class BIOSCore extends EventEmitter {
       mode: process.env.BIOS_MODE || 'OPERATIONAL',
       autoUpdate: process.env.AUTO_UPDATE === 'true',
       regressionThreshold: parseFloat(process.env.REGRESSION_THRESHOLD) || 5.0,
-      maxAgents: parseInt(process.env.MAX_AGENTS) || 50,
+      maxAgents: parseInt(process.env.MAX_AGENTS, 10) || 50,
       logLevel: process.env.LOG_LEVEL || 'info',
       ...options
     };
@@ -471,7 +471,7 @@ export class BIOSCore extends EventEmitter {
     switch (check) {
       case 'NODE_VERSION_CHECK':
         const nodeVersion = process.version;
-        const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+        const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
         return {
           passed: majorVersion >= 18,
           message: majorVersion >= 18 ? `Node.js ${nodeVersion}` : `Node.js 18+ required, found ${nodeVersion}`,
@@ -997,7 +997,7 @@ export class BIOSCore extends EventEmitter {
       mode: process.env.BIOS_MODE || 'OPERATIONAL',
       autoUpdate: process.env.AUTO_UPDATE === 'true',
       regressionThreshold: parseFloat(process.env.REGRESSION_THRESHOLD) || 5.0,
-      maxAgents: parseInt(process.env.MAX_AGENTS) || 50,
+      maxAgents: parseInt(process.env.MAX_AGENTS, 10) || 50,
       logLevel: process.env.LOG_LEVEL || 'info'
     };
     

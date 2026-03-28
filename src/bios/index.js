@@ -320,7 +320,7 @@ export class CogniMeshBIOS extends EventEmitter {
       autoUpdate: process.env.AUTO_UPDATE === 'true',
       regressionThreshold: parseFloat(process.env.REGRESSION_THRESHOLD) || 5.0,
       statePath: process.env.STATE_PATH || './state',
-      maxAgents: parseInt(process.env.MAX_AGENTS) || 50,
+      maxAgents: parseInt(process.env.MAX_AGENTS, 10) || 50,
       logLevel: process.env.LOG_LEVEL || 'info'
     };
     
@@ -840,7 +840,7 @@ export class CogniMeshBIOS extends EventEmitter {
       mode: process.env.BIOS_MODE || 'OPERATIONAL',
       autoUpdate: process.env.AUTO_UPDATE === 'true',
       regressionThreshold: parseFloat(process.env.REGRESSION_THRESHOLD) || 5.0,
-      maxAgents: parseInt(process.env.MAX_AGENTS) || 50,
+      maxAgents: parseInt(process.env.MAX_AGENTS, 10) || 50,
       logLevel: process.env.LOG_LEVEL || 'info'
     };
     

@@ -388,7 +388,7 @@ export class WorkflowValidator {
       status: 'pending',
       dependsOn: task.dependsOn || null,
       retryCount: 0,
-      maxRetries: Math.min(Math.max(0, parseInt(task.maxRetries) || 3), 10),
+      maxRetries: Math.min(Math.max(0, parseInt(task.maxRetries, 10) || 3), 10),
       startedAt: null,
       completedAt: null,
       result: null,

@@ -354,7 +354,7 @@ export class DiagnoseMode extends EventEmitter {
    */
   async _checkNodeVersion() {
     const nodeVersion = process.version;
-    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
     
     if (majorVersion < 18) {
       return {

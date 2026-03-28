@@ -68,7 +68,7 @@ async function verifyBackup(backupPath) {
     );
     restoreLogger.info(`Tables in backup: ${tableCount.trim()}`);
 
-    return { valid: true, size: stats.size, tables: parseInt(tableCount.trim()) };
+    return { valid: true, size: stats.size, tables: parseInt(tableCount.trim(), 10) };
   } catch (error) {
     return { valid: false, error: error.message };
   }

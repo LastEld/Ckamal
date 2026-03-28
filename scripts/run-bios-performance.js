@@ -31,19 +31,19 @@ const options = {
 // Parse --duration argument
 const durationIndex = args.indexOf('--duration');
 if (durationIndex !== -1 && args[durationIndex + 1]) {
-  options.duration = parseInt(args[durationIndex + 1]) * 1000; // Convert to ms
+  options.duration = parseInt(args[durationIndex + 1], 10) * 1000; // Convert to ms
 }
 
 // Parse --warmup argument
 const warmupIndex = args.indexOf('--warmup');
 if (warmupIndex !== -1 && args[warmupIndex + 1]) {
-  options.warmup = parseInt(args[warmupIndex + 1]) * 1000;
+  options.warmup = parseInt(args[warmupIndex + 1], 10) * 1000;
 }
 
 // Parse --concurrency argument
 const concurrencyIndex = args.indexOf('--concurrency');
 if (concurrencyIndex !== -1 && args[concurrencyIndex + 1]) {
-  options.concurrency = parseInt(args[concurrencyIndex + 1]);
+  options.concurrency = parseInt(args[concurrencyIndex + 1], 10);
 }
 
 // Parse --baseline argument

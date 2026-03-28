@@ -344,7 +344,7 @@ export class BootSequence extends EventEmitter {
     };
     
     const nodeVersion = process.version;
-    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
     const nodeCheck = {
       name: 'NODE_VERSION',
       passed: majorVersion >= this._options.minNodeVersion,
@@ -430,7 +430,7 @@ export class BootSequence extends EventEmitter {
       mode: process.env.BIOS_MODE || 'OPERATIONAL',
       autoUpdate: process.env.AUTO_UPDATE === 'true',
       regressionThreshold: parseFloat(process.env.REGRESSION_THRESHOLD) || 5.0,
-      maxAgents: parseInt(process.env.MAX_AGENTS) || 50,
+      maxAgents: parseInt(process.env.MAX_AGENTS, 10) || 50,
       logLevel: process.env.LOG_LEVEL || 'info',
       statePath: process.env.STATE_PATH || './state',
       ...this._options

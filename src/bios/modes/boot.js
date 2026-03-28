@@ -146,7 +146,7 @@ export class BootMode {
   async _runPOST() {
     // Check Node.js version compatibility
     const nodeVersion = process.version;
-    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
     
     if (majorVersion < 18) {
       throw new Error(`Node.js 18+ required, found ${nodeVersion}`);

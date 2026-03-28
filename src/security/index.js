@@ -521,8 +521,8 @@ export class SecurityManager {
         offset = 1; // Skip version part
       }
       
-      const N = parseInt(parts[2 + offset].split('=')[1]);
-      const p = parseInt(parts[4 + offset].split('=')[1]);
+      const N = parseInt(parts[2 + offset].split('=')[1], 10);
+      const p = parseInt(parts[4 + offset].split('=')[1], 10);
       const salt = Buffer.from(parts[5 + offset].split('$')[0], 'base64');
       const storedHash = parts[5 + offset].split('$')[1];
       

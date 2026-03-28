@@ -335,7 +335,7 @@ export class SecurityAudit {
       });
     }
     
-    if (!process.env.PASSWORD_MIN_LENGTH || parseInt(process.env.PASSWORD_MIN_LENGTH) < 8) {
+    if (!process.env.PASSWORD_MIN_LENGTH || parseInt(process.env.PASSWORD_MIN_LENGTH, 10) < 8) {
       this.addWarning('A07', 'Weak password policy', {
         recommendation: 'Set PASSWORD_MIN_LENGTH to at least 8'
       });

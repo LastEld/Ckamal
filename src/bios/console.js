@@ -587,7 +587,7 @@ export class OperatorConsole extends EventEmitter {
     
     if (Array.isArray(options)) {
       const args = this._parseArgs(options);
-      lines = parseInt(args.lines) || 50;
+      lines = parseInt(args.lines, 10) || 50;
       level = args.level || 'all';
       component = args.component || null;
     } else if (options) {

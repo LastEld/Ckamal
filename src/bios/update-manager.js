@@ -529,13 +529,13 @@ export class UpdateManager extends EventEmitter {
     const cmp = compare(latest, current);
     if (cmp === 0) return null;
 
-    const currentMajor = parseInt(current.split('.')[0]);
-    const latestMajor = parseInt(latest.split('.')[0]);
+    const currentMajor = parseInt(current.split('.')[0], 10);
+    const latestMajor = parseInt(latest.split('.')[0], 10);
     
     if (latestMajor > currentMajor) return UpdateType.MAJOR;
     
-    const currentMinor = parseInt(current.split('.')[1] || 0);
-    const latestMinor = parseInt(latest.split('.')[1] || 0);
+    const currentMinor = parseInt(current.split('.')[1] || 0, 10);
+    const latestMinor = parseInt(latest.split('.')[1] || 0, 10);
     
     if (latestMinor > currentMinor) return UpdateType.MINOR;
     
@@ -697,7 +697,7 @@ export class UpdateManager extends EventEmitter {
         .map(e => ({
           name: e.name,
           path: join(this.config.backupDir, e.name),
-          time: parseInt(e.name.split('-')[1]) || 0
+          time: parseInt(e.name.split('-')[1], 10) || 0
         }))
         .sort((a, b) => b.time - a.time);
 

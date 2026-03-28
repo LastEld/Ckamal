@@ -193,15 +193,15 @@ export class AuthMiddleware {
       autoGenerateSecret: config.autoGenerateSecret || process.env.COGNIMESH_AUTH_AUTO_GENERATE === 'true',
       issuer: config.issuer || process.env.COGNIMESH_AUTH_ISSUER || DEFAULT_ISSUER,
       audience: config.audience || process.env.COGNIMESH_AUTH_AUDIENCE || DEFAULT_AUDIENCE,
-      tokenLifetime: config.tokenLifetime || parseInt(process.env.COGNIMESH_TOKEN_LIFETIME) || DEFAULT_TOKEN_LIFETIME,
-      refreshLifetime: config.refreshLifetime || parseInt(process.env.COGNIMESH_REFRESH_LIFETIME) || DEFAULT_REFRESH_LIFETIME,
+      tokenLifetime: config.tokenLifetime || parseInt(process.env.COGNIMESH_TOKEN_LIFETIME, 10) || DEFAULT_TOKEN_LIFETIME,
+      refreshLifetime: config.refreshLifetime || parseInt(process.env.COGNIMESH_REFRESH_LIFETIME, 10) || DEFAULT_REFRESH_LIFETIME,
       rateLimits: {
-        jwt: config.rateLimits?.jwt || parseInt(process.env.COGNIMESH_RATE_LIMIT_JWT) || DEFAULT_RATE_LIMIT_MAX,
-        apiKey: config.rateLimits?.apiKey || parseInt(process.env.COGNIMESH_RATE_LIMIT_APIKEY) || DEFAULT_RATE_LIMIT_MAX,
-        oauth: config.rateLimits?.oauth || parseInt(process.env.COGNIMESH_RATE_LIMIT_OAUTH) || DEFAULT_RATE_LIMIT_MAX,
-        session: config.rateLimits?.session || parseInt(process.env.COGNIMESH_RATE_LIMIT_SESSION) || DEFAULT_RATE_LIMIT_MAX
+        jwt: config.rateLimits?.jwt || parseInt(process.env.COGNIMESH_RATE_LIMIT_JWT, 10) || DEFAULT_RATE_LIMIT_MAX,
+        apiKey: config.rateLimits?.apiKey || parseInt(process.env.COGNIMESH_RATE_LIMIT_APIKEY, 10) || DEFAULT_RATE_LIMIT_MAX,
+        oauth: config.rateLimits?.oauth || parseInt(process.env.COGNIMESH_RATE_LIMIT_OAUTH, 10) || DEFAULT_RATE_LIMIT_MAX,
+        session: config.rateLimits?.session || parseInt(process.env.COGNIMESH_RATE_LIMIT_SESSION, 10) || DEFAULT_RATE_LIMIT_MAX
       },
-      rateLimitWindow: config.rateLimitWindow || parseInt(process.env.COGNIMESH_RATE_LIMIT_WINDOW) || DEFAULT_RATE_LIMIT_WINDOW
+      rateLimitWindow: config.rateLimitWindow || parseInt(process.env.COGNIMESH_RATE_LIMIT_WINDOW, 10) || DEFAULT_RATE_LIMIT_WINDOW
     };
 
     this.#sessions = new Map();

@@ -37,8 +37,8 @@ if (tagIndex !== -1 && args[tagIndex + 1]) {
 // Parse --timeout argument
 const timeoutIndex = args.indexOf('--timeout');
 if (timeoutIndex !== -1 && args[timeoutIndex + 1]) {
-  options.setupTimeout = parseInt(args[timeoutIndex + 1]);
-  options.teardownTimeout = parseInt(args[timeoutIndex + 1]);
+  options.setupTimeout = parseInt(args[timeoutIndex + 1], 10);
+  options.teardownTimeout = parseInt(args[timeoutIndex + 1], 10);
 }
 
 async function discoverScenarios() {
