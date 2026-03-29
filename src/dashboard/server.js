@@ -8,6 +8,7 @@ import express from 'express';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import net from 'net';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -1278,10 +1279,9 @@ export class DashboardServer {
 
     this.app.post('/api/agents/:id/stop', auth, adminOnly, async (req, res) => {
       try {
-        const cv = this.cvSystem.registry.update(req.params.id, {
-          lifecycle: { status: 'deprecated', updated_at: Date.now() }
-        });
-        const agent = this.normalizeCvAgent(cv);
+        const reason = String(req.body?.reason || 'Stopped from dashboard').trim();
+        const result = await this.cvSystem.manager.deprecate(req.params.id, reason);
+        const agent = this.normalizeCvAgent(result?.cv || this.cvSystem.registry.get(req.params.id));
 
         this.notifyAgentUpdate('agent.updated', agent);
         this.notifyAgentUpdate('agent.status', agent);
@@ -1301,14 +1301,137 @@ export class DashboardServer {
         }
 
         const payload = req.body || {};
+        const providerCatalog = getOperatorProviderCatalog();
+        const providerMap = new Map(providerCatalog.map((provider) => [provider.id, provider]));
+        const profileMap = new Map(getSubscriptionModelProfiles().map((profile) => [profile.id, profile]));
+
+        const existingAgent = this.normalizeCvAgent(existing);
+        const modelInput = String(
+          payload.model
+          || existing.runtime?.model
+          || existing.adapterConfig?.model
+          || existingAgent?.model
+          || ''
+        ).trim();
+        const canonicalModelId = normalizeModelId(modelInput);
+        const profile = profileMap.get(canonicalModelId);
+        if (!profile) {
+          return res.status(400).json({ error: `Unsupported model '${modelInput || payload.model || ''}'` });
+        }
+
+        const provider = this.normalizeProviderId(
+          payload.provider
+          || existing.runtime?.provider
+          || existing.adapterConfig?.provider
+          || existingAgent?.provider
+          || profile.runtimeProvider
+        );
+        if (!providerMap.has(provider)) {
+          return res.status(400).json({ error: `Unsupported provider '${payload.provider || provider}'` });
+        }
+        if (provider !== profile.runtimeProvider) {
+          return res.status(400).json({
+            error: `Model '${canonicalModelId}' requires provider '${profile.runtimeProvider}'`
+          });
+        }
+
+        const providerInfo = providerMap.get(provider);
+        const requestedSurface = this.normalizeSurfaceId(
+          payload.surface
+          || payload.mode
+          || existing.runtime?.surface
+          || existing.adapterConfig?.surface
+          || existingAgent?.surface
+          || ''
+        );
+        const allCandidates = getModelRuntimeCandidates(canonicalModelId)
+          .filter((candidate) => providerInfo.supportedModes.includes(candidate.mode));
+        const modelSurfaces = [...new Set(allCandidates.map((candidate) => candidate.mode))];
+
+        if (requestedSurface && !allCandidates.some((candidate) => candidate.mode === requestedSurface)) {
+          return res.status(400).json({
+            error: `Surface '${requestedSurface}' is not supported for model '${canonicalModelId}'`,
+            allowedSurfaces: modelSurfaces
+          });
+        }
+
+        const providerStatus = await this.detectProviderSurfaceStatus();
+        const liveSurfaceStatus = providerStatus[provider] || {};
+        const connectedModes = new Set(
+          Object.entries(liveSurfaceStatus)
+            .filter(([, connected]) => Boolean(connected))
+            .map(([mode]) => mode)
+        );
+        const preferredOrder = [...providerInfo.preferredModes, ...providerInfo.supportedModes];
+        const modeRank = (mode) => {
+          const idx = preferredOrder.indexOf(mode);
+          return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+        };
+        const sortByPreference = (left, right) => modeRank(left.mode) - modeRank(right.mode);
+
+        const requestedCandidates = requestedSurface
+          ? allCandidates.filter((candidate) => candidate.mode === requestedSurface)
+          : allCandidates;
+        const connectedRequested = requestedCandidates
+          .filter((candidate) => connectedModes.has(candidate.mode))
+          .sort(sortByPreference);
+        const connectedAny = allCandidates
+          .filter((candidate) => connectedModes.has(candidate.mode))
+          .sort(sortByPreference);
+        const selectedBinding = connectedRequested[0]
+          || connectedAny[0]
+          || [...requestedCandidates].sort(sortByPreference)[0]
+          || [...allCandidates].sort(sortByPreference)[0]
+          || null;
+
+        if (!selectedBinding) {
+          return res.status(400).json({
+            error: `No runtime surface available for model '${canonicalModelId}' with provider '${provider}'`
+          });
+        }
+
+        const runtimeTags = [
+          `provider:${provider}`,
+          `model:${canonicalModelId}`,
+          `surface:${selectedBinding.mode}`
+        ];
+        const existingTags = Array.isArray(existing.metadata?.tags) ? existing.metadata.tags : [];
+        const preservedTags = existingTags.filter((tag) => (
+          typeof tag === 'string'
+          && !tag.startsWith('provider:')
+          && !tag.startsWith('model:')
+          && !tag.startsWith('surface:')
+        ));
+        const tags = Array.from(new Set([...preservedTags, ...runtimeTags]));
+
+        const adapterPayload = { ...payload };
+        delete adapterPayload.provider;
+        delete adapterPayload.model;
+        delete adapterPayload.surface;
+        delete adapterPayload.mode;
+        delete adapterPayload.clientModel;
+
         const updated = this.cvSystem.registry.update(id, {
           runtime: {
-            ...existing.runtime,
-            model: payload.model || existing.runtime?.model || existing.model || null
+            ...(existing.runtime || {}),
+            provider,
+            model: canonicalModelId,
+            surface: selectedBinding.mode,
+            mode: selectedBinding.mode,
+            clientModel: selectedBinding.clientModel
           },
           adapterConfig: {
             ...(existing.adapterConfig || {}),
-            ...payload
+            ...adapterPayload,
+            provider,
+            model: canonicalModelId,
+            surface: selectedBinding.mode,
+            mode: selectedBinding.mode,
+            clientModel: selectedBinding.clientModel
+          },
+          metadata: {
+            ...(existing.metadata || {}),
+            tags
           },
           lifecycle: {
             ...(existing.lifecycle || {}),
@@ -1319,7 +1442,11 @@ export class DashboardServer {
         const agent = this.normalizeCvAgent(updated);
         this.notifyAgentUpdate('agent.updated', agent);
 
-        return res.json({ agent, updated: true });
+        const warning = requestedSurface && selectedBinding.mode !== requestedSurface
+          ? `Requested surface '${requestedSurface}' is offline. Using '${selectedBinding.mode}' instead.`
+          : null;
+
+        return res.json({ agent, updated: true, warning });
       } catch (error) {
         return res.status(400).json({ error: 'Failed to update agent config', message: error.message });
       }
@@ -1424,8 +1551,10 @@ export class DashboardServer {
         }
 
         const launchResult = this.launchProviderSurface(launchSpec);
-        const providerStatus = await this.detectProviderSurfaceStatus();
-        const connected = Boolean(providerStatus?.[provider]?.[surface]);
+        const connected = await this.waitForProviderSurface(provider, surface, {
+          attempts: 12,
+          intervalMs: 500
+        });
 
         return res.json({
           ok: true,
@@ -1567,7 +1696,7 @@ export class DashboardServer {
       }
     });
 
-    this.app.post('/api/cv', auth, async (req, res) => {
+    this.app.post('/api/cv', auth, adminOnly, async (req, res) => {
       try {
         const { templateName = 'developer', overrides = {}, autoActivate = false } = req.body || {};
         const cv = this.cvSystem.factory.createFromTemplate(templateName, overrides, { autoRegister: true });
@@ -1583,7 +1712,22 @@ export class DashboardServer {
       }
     });
 
-    this.app.post('/api/cv/:id/activate', auth, async (req, res) => {
+    this.app.put('/api/cv/:id', auth, adminOnly, async (req, res) => {
+      try {
+        const existing = this.cvSystem.registry.get(req.params.id);
+        if (!existing) {
+          return res.status(404).json({ error: 'CV not found' });
+        }
+
+        const updates = req.body || {};
+        const updated = this.cvSystem.registry.update(req.params.id, updates);
+        return res.json(updated);
+      } catch (err) {
+        return res.status(500).json({ error: 'Failed to update CV', message: err.message });
+      }
+    });
+
+    this.app.post('/api/cv/:id/activate', auth, adminOnly, async (req, res) => {
       try {
         const result = await this.cvSystem.manager.activate(req.params.id);
         res.json(result?.cv || result);
@@ -1592,7 +1736,7 @@ export class DashboardServer {
       }
     });
 
-    this.app.post('/api/cv/:id/suspend', auth, async (req, res) => {
+    this.app.post('/api/cv/:id/suspend', auth, adminOnly, async (req, res) => {
       try {
         const reason = String(req.body?.reason || '').trim();
         const result = await this.cvSystem.manager.suspend(req.params.id, reason);
@@ -1602,7 +1746,7 @@ export class DashboardServer {
       }
     });
 
-    this.app.delete('/api/cv/:id', auth, async (req, res) => {
+    this.app.delete('/api/cv/:id', auth, adminOnly, async (req, res) => {
       try {
         this.cvSystem.registry.delete(req.params.id);
         res.json({ id: req.params.id, deleted: true });
@@ -2186,12 +2330,12 @@ export class DashboardServer {
       codexVsCodeSocketAvailable,
       kimiVsCodeAvailable
     ] = await Promise.all([
-      this.isTcpEndpointReachable(3456),
+      this.isHttpHealthReachable(3456),
       this.isNamedSocketReachable(this.getClaudeVsCodeSocketPath()),
-      this.isTcpEndpointReachable(3457),
-      this.isTcpEndpointReachable(8443),
+      this.isHttpHealthReachable(3457),
+      this.isHttpHealthReachable(8443),
       this.isTcpEndpointReachable(8444),
-      this.isTcpEndpointReachable(18123)
+      this.isHttpHealthReachable(18123)
     ]);
 
     return {
@@ -2216,6 +2360,23 @@ export class DashboardServer {
     const checker = process.platform === 'win32' ? 'where' : 'which';
     const result = spawnSync(checker, [command], { stdio: 'ignore' });
     return result.status === 0;
+  }
+
+  async isHttpHealthReachable(port, host = '127.0.0.1', timeoutMs = 900) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`http://${host}:${port}/health`, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      return response.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   isTcpEndpointReachable(port, host = '127.0.0.1', timeoutMs = 750) {
@@ -2308,6 +2469,61 @@ export class DashboardServer {
       };
     }
 
+    if (provider === 'claude' && surface === 'desktop') {
+      const launchSpec = this.getClaudeDesktopLaunchSpec();
+      if (!launchSpec) {
+        return null;
+      }
+      return {
+        ...launchSpec,
+        cwd: workspace,
+        detached: true
+      };
+    }
+
+    return null;
+  }
+
+  getClaudeDesktopLaunchSpec() {
+    if (process.platform === 'win32') {
+      const localAppData = process.env.LOCALAPPDATA || '';
+      const candidates = [
+        path.join(localAppData, 'Programs', 'Claude', 'Claude.exe'),
+        path.join(localAppData, 'Anthropic', 'Claude', 'Claude.exe'),
+        path.join(localAppData, 'Programs', 'Anthropic', 'Claude', 'Claude.exe')
+      ].filter(Boolean);
+
+      const executable = candidates.find((candidate) => existsSync(candidate));
+      if (!executable) {
+        return null;
+      }
+
+      return {
+        file: executable,
+        args: [],
+        shell: false,
+        display: `"${executable}"`
+      };
+    }
+
+    if (process.platform === 'darwin') {
+      return {
+        file: 'open',
+        args: ['-a', 'Claude'],
+        shell: false,
+        display: 'open -a Claude'
+      };
+    }
+
+    if (process.platform === 'linux' && this.isCommandAvailable('claude-desktop')) {
+      return {
+        file: 'claude-desktop',
+        args: [],
+        shell: false,
+        display: 'claude-desktop'
+      };
+    }
+
     return null;
   }
 
@@ -2327,6 +2543,25 @@ export class DashboardServer {
     return {
       pid: child.pid || null
     };
+  }
+
+  async waitForProviderSurface(provider, surface, options = {}) {
+    const attempts = Number(options.attempts || 10);
+    const intervalMs = Number(options.intervalMs || 500);
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const status = await this.detectProviderSurfaceStatus();
+      if (Boolean(status?.[provider]?.[surface])) {
+        return true;
+      }
+      await this.sleep(intervalMs);
+    }
+
+    return false;
+  }
+
+  sleep(ms = 0) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   _getCvAgents() {

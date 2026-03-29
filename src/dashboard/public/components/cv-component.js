@@ -281,12 +281,11 @@ class CVComponent {
 
   getSurfacesForProvider(providerId) {
     const provider = (this.providerCatalog?.providers || []).find((entry) => entry.id === providerId);
-    if (Array.isArray(provider?.connectedModes) && provider.connectedModes.length > 0) {
-      return provider.connectedModes;
-    }
-    return Array.isArray(provider?.supportedModes) && provider.supportedModes.length > 0
-      ? provider.supportedModes
-      : ['cli'];
+    const supportedModes = Array.isArray(provider?.supportedModes) ? provider.supportedModes : [];
+    const connectedModes = Array.isArray(provider?.connectedModes) ? provider.connectedModes : [];
+    if (supportedModes.length > 0) return supportedModes;
+    if (connectedModes.length > 0) return connectedModes;
+    return ['cli'];
   }
 
   getSurfaceStatusMap(providerId) {

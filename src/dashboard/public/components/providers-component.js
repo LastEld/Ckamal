@@ -232,10 +232,17 @@ class ProvidersComponent {
               <i data-lucide="alert-triangle"></i>
               <span>${this.escapeHtml(`Need to start: ${disconnectedModes.map((mode) => this.formatModeLabel(mode)).join(', ')}`)}</span>
             </div>
+            <div class="provider-modes">
+              ${disconnectedModes.map((mode) => (
+                `<button class="btn btn-secondary btn-sm open-surface-btn" data-provider-id="${this.escapeHtml(provider.id)}" data-surface-id="${this.escapeHtml(mode)}">Open ${this.escapeHtml(this.formatModeLabel(mode))}</button>`
+              )).join('')}
+            </div>
           ` : ''}
         </div>
       `;
     }).join('');
+
+    this.attachProviderActions();
   }
 
   // Render model matrix table into #modelMatrix
@@ -373,6 +380,51 @@ class ProvidersComponent {
     if (normalized === 'app') return 'App';
     if (normalized === 'desktop') return 'Desktop';
     return normalized;
+  }
+
+  attachProviderActions() {
+    document.querySelectorAll('.open-surface-btn').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const providerId = button.dataset.providerId;
+        const surfaceId = button.dataset.surfaceId;
+        if (!providerId || !surfaceId) return;
+        await this.openProviderSurface(providerId, surfaceId, button);
+      });
+    });
+  }
+
+  async openProviderSurface(providerId, surfaceId, button) {
+    if (!this.api?.openProviderSurface) {
+      Toast?.error?.('Provider open API is unavailable');
+      return;
+    }
+
+    const originalLabel = button?.innerHTML;
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = 'Opening...';
+    }
+
+    try {
+      const result = await this.api.openProviderSurface(providerId, surfaceId);
+      if (result?.connected) {
+        Toast?.success?.(`${providerId}:${surfaceId} is connected`);
+      } else if (result?.alreadyConnected) {
+        Toast?.success?.(`${providerId}:${surfaceId} is already connected`);
+      } else if (result?.manual) {
+        Toast?.warning?.(`${providerId}:${surfaceId} requires manual start`);
+      } else {
+        Toast?.warning?.(`${providerId}:${surfaceId} launched, still waiting for readiness`);
+      }
+      await this.loadProviders();
+    } catch (error) {
+      Toast?.error?.(`Failed to open ${providerId}:${surfaceId}: ${error.message}`);
+    } finally {
+      if (button && originalLabel) {
+        button.disabled = false;
+        button.innerHTML = originalLabel;
+      }
+    }
   }
 
   // XSS protection

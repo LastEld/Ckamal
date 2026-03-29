@@ -721,6 +721,8 @@ class AgentsComponent {
             .filter(s => s.id !== sessionId);
           this.detailPanel?.updateAgent?.(this.selectedAgent);
         }
+      } else {
+        Toast?.warning?.('Session deletion is not available in this build');
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
