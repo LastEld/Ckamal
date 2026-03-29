@@ -786,10 +786,20 @@
         <section class="view" id="contextView">
           <div class="view-header">
             <h2>Context Snapshots</h2>
-            <button class="btn btn-primary" id="createSnapshotBtn">
-              <i data-lucide="plus"></i>
-              <span>New Snapshot</span>
-            </button>
+            <div class="view-toolbar">
+              <div class="search-group">
+                <i data-lucide="search"></i>
+                <input type="text" id="snapshotSearch" placeholder="Search snapshots...">
+              </div>
+              <button class="btn btn-secondary" id="openCompareSnapshotBtn">
+                <i data-lucide="git-compare"></i>
+                <span>Compare</span>
+              </button>
+              <button class="btn btn-primary" id="createSnapshotBtn">
+                <i data-lucide="plus"></i>
+                <span>New Snapshot</span>
+              </button>
+            </div>
           </div>
           <div class="snapshots-grid" id="snapshotsGrid"></div>
         </section>

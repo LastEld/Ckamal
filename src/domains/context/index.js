@@ -136,6 +136,7 @@ export class ContextSnapshotManager extends EventEmitter {
 
       const extensions = [...new Set(fileSnapshots.map(f => path.extname(f.path)))].filter(Boolean);
       const totalSize = fileSnapshots.reduce((sum, f) => sum + f.size, 0);
+      const merkleRoot = this.#computeMerkleRoot(fileSnapshots);
 
       /** @type {ContextSnapshot} */
       const snapshot = {
@@ -146,7 +147,8 @@ export class ContextSnapshotManager extends EventEmitter {
         metadata: {
           fileCount: fileSnapshots.length,
           totalSize,
-          extensions
+          extensions,
+          merkleRoot
         }
       };
 
@@ -420,6 +422,7 @@ export class ContextSnapshotManager extends EventEmitter {
    */
   async listSnapshots() {
     try {
+      await fs.mkdir(this.snapshotDir, { recursive: true });
       const files = await fs.readdir(this.snapshotDir);
       const snapshots = [];
 
@@ -435,7 +438,9 @@ export class ContextSnapshotManager extends EventEmitter {
               id: snapshot.id,
               timestamp: snapshot.timestamp,
               projectPath: snapshot.projectPath,
-              fileCount: snapshot.metadata?.fileCount || 0
+              fileCount: snapshot.metadata?.fileCount || 0,
+              totalSize: snapshot.metadata?.totalSize || 0,
+              merkleRoot: snapshot.metadata?.merkleRoot || this.#computeMerkleRoot(snapshot.files || [])
             });
           } catch (e) {
             // Skip invalid snapshot files
@@ -484,6 +489,40 @@ export class ContextSnapshotManager extends EventEmitter {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     return `snap-${timestamp}-${random}`;
+  }
+
+  /**
+   * Computes deterministic Merkle root for a snapshot file list.
+   * @private
+   * @param {FileSnapshot[]} fileSnapshots
+   * @returns {string}
+   */
+  #computeMerkleRoot(fileSnapshots = []) {
+    if (!Array.isArray(fileSnapshots) || fileSnapshots.length === 0) {
+      return '0'.repeat(64);
+    }
+
+    let level = fileSnapshots
+      .filter((file) => file && typeof file.path === 'string' && typeof file.hash === 'string')
+      .sort((a, b) => a.path.localeCompare(b.path))
+      .map((file) => file.hash);
+
+    if (level.length === 0) {
+      return '0'.repeat(64);
+    }
+
+    while (level.length > 1) {
+      const nextLevel = [];
+      for (let index = 0; index < level.length; index += 2) {
+        const left = level[index];
+        const right = level[index + 1] || level[index];
+        const combined = crypto.createHash('sha256').update(`${left}${right}`).digest('hex');
+        nextLevel.push(combined);
+      }
+      level = nextLevel;
+    }
+
+    return level[0];
   }
 
   /**
@@ -598,6 +637,7 @@ export class ContextSnapshotManager extends EventEmitter {
    * @returns {Promise<void>}
    */
   async #saveSnapshot(snapshot) {
+    await fs.mkdir(this.snapshotDir, { recursive: true });
     const filePath = path.join(this.snapshotDir, `${snapshot.id}.json`);
     await fs.writeFile(filePath, JSON.stringify(snapshot, null, 2));
   }

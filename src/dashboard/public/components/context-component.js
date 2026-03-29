@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CogniMesh v5.0 - Context Snapshots Component
  * Manages project context snapshots with Merkle-tree verification
  */
@@ -34,6 +34,7 @@ class ContextComponent {
       snapshotsGrid: document.getElementById('snapshotsGrid'),
       snapshotSearch: document.getElementById('snapshotSearch'),
       createSnapshotBtn: document.getElementById('createSnapshotBtn'),
+      openCompareSnapshotBtn: document.getElementById('openCompareSnapshotBtn'),
       createSnapshotModal: document.getElementById('createSnapshotModal'),
       snapshotDetailModal: document.getElementById('snapshotDetailModal'),
       compareModal: document.getElementById('compareModal'),
@@ -62,6 +63,13 @@ class ContextComponent {
     // Create snapshot button
     this.elements.createSnapshotBtn?.addEventListener('click', () => {
       this.showCreateModal();
+    });
+    this.elements.openCompareSnapshotBtn?.addEventListener('click', () => {
+      if (!this.snapshots.length) {
+        this.showError('No snapshots available for comparison');
+        return;
+      }
+      this.showCompareModal();
     });
 
     // Save snapshot
@@ -209,7 +217,7 @@ class ContextComponent {
       minute: '2-digit'
     });
     const fileCount = snapshot.metadata?.fileCount || snapshot.fileCount || 0;
-    const totalSize = snapshot.metadata?.totalSize || 0;
+    const totalSize = snapshot.metadata?.totalSize ?? snapshot.totalSize ?? 0;
     const merkleRoot = this.computeMerkleRoot(snapshot);
 
     return `
@@ -327,7 +335,7 @@ class ContextComponent {
     const date = new Date(snapshot.timestamp);
     const formattedDate = date.toLocaleString('en-US');
     const fileCount = snapshot.metadata?.fileCount || snapshot.files?.length || 0;
-    const totalSize = snapshot.metadata?.totalSize || 0;
+    const totalSize = snapshot.metadata?.totalSize ?? snapshot.totalSize ?? 0;
     const merkleRoot = this.computeMerkleRoot(snapshot);
 
     // Update modal content
@@ -617,7 +625,7 @@ class ContextComponent {
               <li class="modified-file">
                 <i data-lucide="file-edit"></i>
                 <span>${this.escapeHtml(f.path)}</span>
-                <span class="size">${this.formatBytes(f.sizeBefore)} → ${this.formatBytes(f.sizeAfter)}</span>
+                <span class="size">${this.formatBytes(f.sizeBefore)} -> ${this.formatBytes(f.sizeAfter)}</span>
               </li>
             `).join('')}
           </ul>
@@ -681,6 +689,11 @@ class ContextComponent {
 
   // Compute Merkle root hash from snapshot
   computeMerkleRoot(snapshot) {
+    const explicitMerkle = snapshot?.metadata?.merkleRoot || snapshot?.merkleRoot;
+    if (typeof explicitMerkle === 'string' && explicitMerkle.trim().length > 0) {
+      return explicitMerkle;
+    }
+
     if (!snapshot.files || snapshot.files.length === 0) {
       return '0'.repeat(64);
     }
@@ -750,3 +763,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ContextComponent };
 }
+

@@ -200,6 +200,7 @@ class ToolsComponent {
     const name = this.escapeHtml(tool.name || 'Unnamed');
     const description = this.escapeHtml(tool.description || 'No description');
     const category = this.escapeHtml(tool.category || '');
+    const source = this.escapeHtml(tool.source || 'registry');
     const tags = Array.isArray(tool.tags) ? tool.tags : [];
 
     const tagChips = tags.slice(0, 5).map(tag =>
@@ -216,6 +217,7 @@ class ToolsComponent {
         </div>
         <p class="tool-card-description">${description}</p>
         ${category ? `<div class="tool-card-category">${category}</div>` : ''}
+        <div class="tool-card-category">Source: ${source}</div>
         ${tags.length > 0 ? `<div class="tool-tags">${tagChips}</div>` : ''}
       </div>
     `;
@@ -258,9 +260,10 @@ class ToolsComponent {
 
     // Build input schema visualization
     let schemaHtml = '';
-    if (tool.inputSchema && tool.inputSchema.properties) {
-      const props = tool.inputSchema.properties;
-      const required = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required : [];
+    const inputSchema = this.normalizeSchema(tool.inputSchema);
+    if (inputSchema?.properties) {
+      const props = inputSchema.properties;
+      const required = Array.isArray(inputSchema.required) ? inputSchema.required : [];
       const rows = Object.entries(props).map(([key, val]) => {
         const fieldName = this.escapeHtml(key);
         const fieldType = this.escapeHtml(val.type || 'any');
@@ -278,6 +281,13 @@ class ToolsComponent {
         <div class="tool-detail-section">
           <h4>Input Schema</h4>
           <div class="schema-fields">${rows}</div>
+        </div>
+      `;
+    } else if (inputSchema) {
+      schemaHtml = `
+        <div class="tool-detail-section">
+          <h4>Input Schema</h4>
+          <pre class="tool-schema-raw">${this.escapeHtml(JSON.stringify(inputSchema, null, 2))}</pre>
         </div>
       `;
     }
@@ -302,6 +312,23 @@ class ToolsComponent {
       <div class="modal-body">
         <p class="tool-detail-description">${description}</p>
         ${tags.length > 0 ? `<div class="tool-tags">${tagChips}</div>` : ''}
+        <div class="tool-detail-section">
+          <h4>Metadata</h4>
+          <div class="schema-fields">
+            <div class="schema-field">
+              <span class="schema-field-name">Category</span>
+              <span class="schema-field-type">${this.escapeHtml(tool.category || this.inferCategory(tool.name))}</span>
+            </div>
+            <div class="schema-field">
+              <span class="schema-field-name">Source</span>
+              <span class="schema-field-type">${this.escapeHtml(tool.source || 'registry')}</span>
+            </div>
+            <div class="schema-field">
+              <span class="schema-field-name">Requires Auth</span>
+              <span class="schema-field-type">${tool.requiresAuth ? 'yes' : 'no'}</span>
+            </div>
+          </div>
+        </div>
         ${schemaHtml}
       </div>
       <div class="modal-footer">
@@ -449,6 +476,26 @@ class ToolsComponent {
     const div = document.createElement('div');
     div.textContent = String(text);
     return div.innerHTML;
+  }
+
+  normalizeSchema(schema) {
+    if (!schema || typeof schema !== 'object') return null;
+    if (schema.type || schema.properties || schema.anyOf || schema.oneOf) {
+      return schema;
+    }
+    if (schema.schema && typeof schema.schema === 'object') {
+      return this.normalizeSchema(schema.schema);
+    }
+    return schema;
+  }
+
+  inferCategory(toolName = '') {
+    const name = String(toolName || '');
+    const separatorIndex = name.search(/[_.-]/);
+    if (separatorIndex > 0) {
+      return name.slice(0, separatorIndex);
+    }
+    return name || 'general';
   }
 }
 

@@ -2860,6 +2860,16 @@ export class DashboardServer {
    * @returns {Promise<import('http').Server>}
    */
   async start() {
+    // Initialize context snapshots storage
+    if (typeof this.contextManager?.initialize === 'function') {
+      try {
+        await this.contextManager.initialize();
+        console.log('Context snapshot manager initialized');
+      } catch (err) {
+        console.error('Failed to initialize context snapshot manager:', err);
+      }
+    }
+
     // Initialize Analytics if provided
     if (this.analytics && !this.analytics._initialized) {
       try {

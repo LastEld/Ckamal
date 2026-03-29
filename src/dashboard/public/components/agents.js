@@ -590,8 +590,9 @@ class AgentsComponent {
   /**
    * Show agent detail panel
    */
-  showAgentDetail(agent) {
-    this.selectedAgent = agent;
+  async showAgentDetail(agent) {
+    const baseAgent = agent || {};
+    this.selectedAgent = baseAgent;
 
     // Create modal container if not exists
     let modalContainer = document.getElementById('agentDetailModal');
@@ -606,10 +607,38 @@ class AgentsComponent {
     modalContainer.classList.add('active');
 
     const contentEl = document.getElementById('agentDetailContent');
+    if (!contentEl) return;
+
+    contentEl.innerHTML = `
+      <div class="loading-state">
+        <i data-lucide="loader-2" class="spin"></i>
+        <p>Loading agent details...</p>
+      </div>
+    `;
+    agentsWindow.lucide?.createIcons?.();
+
+    let liveAgent = baseAgent;
+    const agentId = baseAgent.id || baseAgent.agentId;
+    if (agentId && this.api?.getAgentStatus) {
+      try {
+        const status = await this.api.getAgentStatus(agentId);
+        if (status && typeof status === 'object') {
+          liveAgent = { ...baseAgent, ...status };
+          this.selectedAgent = liveAgent;
+        }
+      } catch (error) {
+        Toast?.warning?.('Live agent details unavailable, showing cached data');
+      }
+    }
+
+    // Modal might have been closed while details were loading
+    if (!document.getElementById('agentDetailContent') || !this.selectedAgent) {
+      return;
+    }
 
     if (AgentDetailPanelCtor3) {
       this.detailPanel = new AgentDetailPanelCtor3({
-        agent,
+        agent: liveAgent,
         container: contentEl,
         onClose: () => this.hideAgentDetail(),
         onSaveConfig: (config, agentData) => this.saveAgentConfig(agentData.id, config),
@@ -619,7 +648,7 @@ class AgentsComponent {
       this.detailPanel.renderElement();
     } else {
       // Fallback detail view
-      contentEl.innerHTML = this.renderFallbackDetail(agent);
+      contentEl.innerHTML = this.renderFallbackDetail(liveAgent);
       this.attachFallbackListeners(contentEl);
     }
 

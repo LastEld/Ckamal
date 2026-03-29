@@ -33,6 +33,7 @@ class AgentDetailPanel {
     this.currentTab = 'overview';
     this.id = this.agent.id || this.agent.agentId || `agent-detail-${Date.now()}`;
     this.element = null;
+    this.persistentListenersBound = false;
 
     // Tab datasets resolved from current agent payload
     this.runs = this.agent.runs || [];
@@ -550,7 +551,9 @@ class AgentDetailPanel {
 
     this.container.innerHTML = this.render();
     this.element = this.container.firstElementChild;
-    this.attachEventListeners();
+    this.persistentListenersBound = false;
+    this.attachPersistentEventListeners();
+    this.attachTabEventListeners();
 
     // Initialize Lucide icons
     if (typeof agentDetailWindow.lucide?.createIcons === 'function') {
@@ -561,10 +564,10 @@ class AgentDetailPanel {
   }
 
   /**
-   * Attach event listeners
+   * Attach listeners that live for the entire panel lifecycle.
    */
-  attachEventListeners() {
-    if (!this.element) return;
+  attachPersistentEventListeners() {
+    if (!this.element || this.persistentListenersBound) return;
 
     // Close button
     this.element.querySelector('.close-panel')?.addEventListener('click', () => {
@@ -578,6 +581,14 @@ class AgentDetailPanel {
         this.switchTab(tabId);
       });
     });
+    this.persistentListenersBound = true;
+  }
+
+  /**
+   * Attach listeners for tab content that is recreated on tab switch.
+   */
+  attachTabEventListeners() {
+    if (!this.element) return;
 
     // Action buttons
     this.element.querySelectorAll('.btn-action').forEach(btn => {
@@ -628,7 +639,7 @@ class AgentDetailPanel {
     const contentEl = this.element?.querySelector('.detail-panel-content');
     if (contentEl) {
       contentEl.innerHTML = this.renderTabContent();
-      this.attachEventListeners();
+      this.attachTabEventListeners();
 
       // Re-initialize icons
       if (typeof agentDetailWindow.lucide?.createIcons === 'function') {
