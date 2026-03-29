@@ -98,7 +98,7 @@ export class GitHubClient {
    * @param {Object} options - Download options
    * @returns {Promise<Object>} Download result with path and size
    */
-  async downloadAsset(url, path, options = {}) {
+  async downloadAsset(url, path, _options = {}) {
     try {
       // Ensure directory exists
       await mkdir(dirname(path), { recursive: true });

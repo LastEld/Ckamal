@@ -452,7 +452,7 @@ export class UpdateManager extends EventEmitter {
         const manifestPath = join(backupPath, '.backup-manifest.json');
         const manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
         previousVersion = manifest.version || previousVersion;
-      } catch {}
+      } catch { /* intentionally empty - backup manifest is optional */ }
 
       const result = {
         success: true,
@@ -705,7 +705,7 @@ export class UpdateManager extends EventEmitter {
       for (const backup of backups.slice(5)) {
         await rm(backup.path, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { /* intentionally empty - cleanup failures are non-fatal */ }
   }
 
   async _loadHistory() {
@@ -723,7 +723,7 @@ export class UpdateManager extends EventEmitter {
       const historyPath = join(this.config.tempDir, 'update-history.json');
       await mkdir(dirname(historyPath), { recursive: true });
       await writeFile(historyPath, JSON.stringify(this.updateHistory, null, 2));
-    } catch {}
+    } catch { /* intentionally empty - history save failures are non-fatal */ }
   }
 
   _addToHistory(entry) {

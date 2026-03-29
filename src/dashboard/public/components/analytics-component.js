@@ -3,6 +3,8 @@
  * Charts and visualizations using Chart.js
  */
 
+/* global Toast */
+
 const analyticsWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class AnalyticsComponent {

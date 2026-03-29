@@ -5,7 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { z } from 'zod';
+
 import { IntentParser } from './autonomous/intents.js';
 import { StatePersistence } from './autonomous/persistence.js';
 
@@ -411,7 +411,7 @@ export class AutonomousController extends EventEmitter {
    * @param {Object} context - Execution context
    * @returns {Promise<Object>} Plan
    */
-  async #generatePlan(intent, context) {
+  async #generatePlan(intent, _context) {
     // Default planning logic
     const steps = [];
     
@@ -508,7 +508,7 @@ export class AutonomousController extends EventEmitter {
    * @param {Object} context - Execution context
    * @returns {Promise<Object>} Verification result
    */
-  async #verifyExecution(result, context) {
+  async #verifyExecution(result, _context) {
     const issues = [];
 
     // Basic verification
@@ -539,7 +539,7 @@ export class AutonomousController extends EventEmitter {
    * @param {Object} context - Execution context
    * @returns {Object} Correction strategy
    */
-  #determineCorrectionStrategy(error, context) {
+  #determineCorrectionStrategy(error, _context) {
     const errorMessage = error.message.toLowerCase();
 
     if (errorMessage.includes('timeout')) {

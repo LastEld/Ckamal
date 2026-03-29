@@ -6,6 +6,9 @@
 import { ArchitectureAnalyzer } from './architecture/index.js';
 import { ContextSnapshotManager } from './context/index.js';
 import { GSDDomain } from './gsd/index.js';
+import { CompanyDomain } from './company/company-domain.js';
+import { ApprovalService } from './approvals/index.js';
+import { SkillService } from './skills/index.js';
 
 /**
  * Domain registry entry
@@ -77,6 +80,33 @@ export class DomainRegistry {
       version: '1.0.0',
       description: 'Workflow execution and task management',
       factory: GSDDomain,
+      dependencies: []
+    });
+
+    // Company Domain
+    this.register('company', {
+      name: 'Company Domain',
+      version: '1.0.0',
+      description: 'Multi-tenant company and organization management',
+      factory: CompanyDomain,
+      dependencies: []
+    });
+
+    // Approval Domain
+    this.register('approvals', {
+      name: 'Approval Domain',
+      version: '1.0.0',
+      description: 'Approval workflows for agent actions',
+      factory: ApprovalService,
+      dependencies: []
+    });
+
+    // Skills Domain
+    this.register('skills', {
+      name: 'Skills Domain',
+      version: '1.0.0',
+      description: 'Skill management and synchronization for AI clients',
+      factory: SkillService,
       dependencies: []
     });
   }
@@ -313,6 +343,15 @@ export class DomainRegistry {
   }
 
   /**
+   * Gets the Company Domain instance
+   * @param {Object} [options] - Instance options
+   * @returns {CompanyDomain} Company domain instance
+   */
+  company(options = {}) {
+    return this.get('company', options);
+  }
+
+  /**
    * Creates a fluent workflow builder
    * @returns {WorkflowBuilder} Workflow builder
    */
@@ -463,6 +502,8 @@ export const domainRegistry = new DomainRegistry();
 export { ArchitectureAnalyzer } from './architecture/index.js';
 export { ContextSnapshotManager } from './context/index.js';
 export { GSDDomain, GSDTools, WorkflowValidator } from './gsd/index.js';
+export { CompanyDomain } from './company/company-domain.js';
+export { ApprovalService, ApprovalMiddleware } from './approvals/index.js';
 
 // Default export
 export default DomainRegistry;

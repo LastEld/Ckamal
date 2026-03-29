@@ -10,6 +10,9 @@
 6. [Design Patterns](#design-patterns)
 7. [Security Architecture](#security-architecture)
 8. [Scalability Considerations](#scalability-considerations)
+9. [System States](#system-states)
+10. [Configuration Summary](#configuration-summary)
+11. [Appendix](#appendix)
 
 ---
 
@@ -21,10 +24,15 @@
 
 - **Multi-Agent Orchestration**: Spawn and manage specialized agents for different tasks
 - **Multi-Client Support**: Unified interface for Claude, Kimi, and Codex AI clients
-- **Domain-Driven Design**: 10 isolated business domains with clear boundaries
+- **Domain-Driven Design**: 18 isolated business domains with clear boundaries
 - **Verifiable Audit**: Cryptographic proof of all operations via Merkle trees
 - **Real-time Communication**: WebSocket-based streaming and event distribution
 - **Auto-scaling**: Dynamic agent pool management based on workload
+- **Multi-tenancy**: Company/organization-based data isolation
+- **Plugin System**: Extensible architecture with worker-isolated plugins
+- **Approval Workflows**: Human-in-the-loop for critical agent actions
+- **Cost Tracking**: Comprehensive billing and budget management
+- **Heartbeat Runtime**: Production-grade agent run tracking and logging
 
 ### Architecture Philosophy
 
@@ -64,6 +72,23 @@ The system follows a **BIOS metaphor** - treating the AI orchestration platform 
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MULTI-ACTOR AUTHENTICATION LAYER                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │         AuthService (JWT/API Keys/Sessions)                         │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
+│  │  │  JWT Auth    │  │  API Keys    │  │  Sessions    │              │   │
+│  │  │  (Users)     │  │  (Agents)    │  │  (Web UI)    │              │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │           MultiActorAuthMiddleware (Express)                        │   │
+│  │     • Token extraction & validation  • Rate limiting               │   │
+│  │     • Permission-based access control  • CSRF protection           │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                         AGENT ORCHESTRATOR LAYER                            │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                  CogniMeshBIOS (v5.0.0)                             │   │
@@ -92,14 +117,51 @@ The system follows a **BIOS metaphor** - treating the AI orchestration platform 
 │  │   Trees     │ │   Engine    │ │  Policies   │ │   & Paths   │          │
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘          │
 │                                                                             │
-│  ┌─────────────┐ ┌─────────────┐                                            │
-│  │    Tasks    │ │   Thought   │                                            │
-│  │  Manager    │ │    Audit    │                                            │
-│  └─────────────┘ └─────────────┘                                            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │    Tasks    │ │   Thought   │ │   Billing   │ │    Cost     │          │
+│  │  Manager    │ │    Audit    │ │  Tracking   │ │  Tracking   │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘          │
+│                                                                             │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │   Issues    │ │  Approvals  │ │   Company   │ │   Skills    │          │
+│  │  Tracking   │ │  Workflow   │ │   Domain    │ │  Manager    │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘          │
+│                                                                             │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                          │
+│  │  Documents  │ │  Routines   │ │  Activity   │                          │
+│  │  Versioning │ │  Scheduler  │ │   Logging   │                          │
+│  └─────────────┘ └─────────────┘ └─────────────┘                          │
 │                                                                             │
 └───────────────────────────────────┬─────────────────────────────────────────┘
                                     │
                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RUNTIME SERVICES LAYER                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                     HeartbeatService                                │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
+│  │  │  Run Queue   │  │   Session    │  │ Cost Ledger  │              │   │
+│  │  │   Manager    │  │   Manager    │  │   Tracking   │              │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
+│  │                                                                     │   │
+│  │  Features: Run lifecycle | Event logging | Orphaned run reaper     │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PLUGIN SYSTEM LAYER                                 │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    Plugin Runtime Environment                       │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
+│  │  │   Plugin     │  │   Worker     │  │   Event      │              │   │
+│  │  │   Registry   │  │   Pool       │  │   Bus        │              │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
+│  │                                                                     │   │
+│  │  SDK Capabilities: tools.register | state.read/write | events      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        GITHUB INTEGRATION LAYER                             │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -118,8 +180,11 @@ The system follows a **BIOS metaphor** - treating the AI orchestration platform 
 |-------|---------------|----------------|
 | **Client Interface** | User-facing AI client integrations | Claude Desktop, Kimi IDE, Codex Copilot |
 | **Client Gateway** | Protocol adaptation and routing | Client adapters, request routing |
+| **Authentication** | Multi-actor auth (users, agents, API keys) | JWT, API Keys, Session management |
 | **Agent Orchestrator** | System lifecycle and state management | CogniMeshBIOS, System Monitor |
-| **Execution Layer** | Business logic and domain operations | 10 DDD domains, GSD Engine |
+| **Execution Layer** | Business logic and domain operations | 18 DDD domains, GSD Engine |
+| **Runtime Services** | Agent execution tracking and logging | HeartbeatService, Session Manager |
+| **Plugin System** | Extensible plugin architecture | Plugin registry, worker isolation |
 | **GitHub Integration** | Version control and auto-updates | Patcher, Update Manager |
 
 ---
@@ -204,7 +269,58 @@ class CodexClient extends BaseClient { }
 
 ---
 
-### 3. Domain Layer (10 Domains)
+### 3. Authentication System
+
+**Purpose**: Production-grade authentication with multi-actor support (users, agents, API keys).
+
+**Key Classes**:
+```javascript
+class AuthService {
+  // User authentication
+  async register(userData) -> { user, tokens }
+  async login(email, password) -> { user, tokens }
+  async logout(refreshToken) -> boolean
+  
+  // Token management
+  async verifyAccessToken(token) -> AuthContext
+  async refreshTokens(refreshToken) -> TokenPair
+  
+  // API key management
+  async createApiKey(options) -> { key, apiKey }
+  async validateApiKey(apiKey) -> AuthContext
+  async revokeApiKey(keyId, revokedBy) -> boolean
+  
+  // Session management
+  getSessions(userId) -> Session[]
+  invalidateSession(sessionId) -> boolean
+  invalidateUserSessions(userId) -> number
+  
+  // Company management
+  async createCompany(data, createdBy) -> Company
+  getCompany(companyId) -> Company|null
+}
+
+class MultiActorAuthMiddleware {
+  constructor(options)
+  async authenticate(req) -> AuthContext
+  requireAuth(options) -> Middleware
+  requirePermission(permission) -> Middleware
+  requireCompany() -> Middleware
+}
+```
+
+**Authentication Methods**:
+| Method | Use Case | Token Lifetime |
+|--------|----------|----------------|
+| JWT | User sessions | 1 hour access / 7 days refresh |
+| API Key | Agent/machine-to-machine | Configurable |
+| Session | Web dashboard | 24 hours |
+
+See [AUTH.md](docs/architecture/AUTH.md) for detailed authentication documentation.
+
+---
+
+### 4. Domain Layer (18 Domains)
 
 **Purpose**: Encapsulates business logic in isolated, testable domains following DDD principles.
 
@@ -235,10 +351,18 @@ class DomainRegistry {
 | **Roadmaps** | Learning paths | `RoadmapManager` |
 | **Tasks** | Task management | `TaskManager`, `EisenhowerMatrix` |
 | **Thought** | Reasoning audit | `ThoughtChain` |
+| **Billing** | Cost tracking & budgets | `CostService`, `BudgetService` |
+| **Issues** | Issue/ticket tracking | `IssueService`, `IssueRepository` |
+| **Approvals** | Approval workflows | `ApprovalService`, `ApprovalMiddleware` |
+| **Company** | Multi-tenant orgs | `CompanyDomain` |
+| **Skills** | Skill management | `SkillService`, `SkillSync` |
+| **Documents** | Document versioning | `DocumentService` |
+| **Routines** | Scheduled tasks | `RoutineService`, `RoutineScheduler` |
+| **Activity** | Activity logging | `ActivityService` |
 
 ---
 
-### 4. GSD Engine (Get Shit Done)
+### 5. GSD Engine (Get Shit Done)
 
 **Purpose**: Core workflow execution engine with agent orchestration.
 
@@ -285,7 +409,136 @@ class Planner {
 
 ---
 
-### 5. Database & Persistence Layer
+### 6. Heartbeat Runtime Service
+
+**Purpose**: Production-grade agent run tracking, logging, and session management.
+
+**Responsibilities**:
+- Run lifecycle management (queued → running → completed)
+- Event streaming and log capture
+- Session persistence across runs
+- Cost tracking per run
+- Orphaned run detection and cleanup
+
+**Key Classes**:
+```javascript
+class HeartbeatService extends EventEmitter {
+  // Run lifecycle
+  async createRun(params) -> Run
+  async startRun(runId) -> Run
+  async completeRun(runId, result) -> Run
+  async failRun(runId, error, errorCode) -> Run
+  async cancelRun(runId, reason) -> Run
+  
+  // Event logging
+  async appendRunEvent(runId, event) -> Event
+  async getRunEvents(runId, options) -> Event[]
+  async appendRunLog(runId, stream, chunk)
+  
+  // Queries
+  async getRun(runId) -> Run
+  async listRuns(filters) -> Run[]
+  async getRunCost(runId) -> CostData
+  
+  // Session management
+  async getOrCreateSession(agentId, taskKey, provider) -> Session
+}
+```
+
+**Run Status States**:
+- `QUEUED` - Waiting to start
+- `RUNNING` - Currently executing
+- `SUCCEEDED` - Completed successfully
+- `FAILED` - Failed with error
+- `CANCELLED` - Cancelled by user/system
+- `TIMED_OUT` - Exceeded time limit
+
+---
+
+### 7. Billing & Cost Tracking
+
+**Purpose**: Comprehensive cost tracking and budget management for AI API usage.
+
+**Key Classes**:
+```javascript
+class CostService extends EventEmitter {
+  async recordCost(data) -> CostEvent
+  async getCosts(filters, pagination) -> CostEvent[]
+  async getStats(filters) -> CostStats
+  async getDailyCosts(days, filters) -> DailyCost[]
+  async predictCosts(days, filters) -> Prediction
+  async getDashboardSummary(options) -> DashboardSummary
+}
+
+class BudgetService extends EventEmitter {
+  async createBudget(data, options) -> Budget
+  async getBudgetStatus(uuid) -> BudgetStatus
+  async checkBudget(operation) -> OperationCheck
+  async checkAlerts() -> BudgetAlert[]
+  async getForecast(uuid, days) -> Forecast
+}
+```
+
+**Budget Features**:
+- Multi-scope budgets (global, company, user, agent)
+- Configurable alert thresholds (50%, 75%, 90%)
+- Enforcement modes (soft, hard, notify-only)
+- Period-based budgets (daily, weekly, monthly, yearly)
+
+---
+
+### 8. Plugin System
+
+**Purpose**: Extensible architecture allowing third-party plugins with worker isolation.
+
+**Key Classes**:
+```javascript
+class PluginRegistry {
+  registerPlugin(plugin) -> PluginRecord
+  unregisterPlugin(id, options)
+  startPlugin(id, config) -> PluginRecord
+  stopPlugin(id) -> PluginRecord
+  hasCapability(pluginId, capability) -> boolean
+  listActive() -> PluginRecord[]
+}
+
+class PluginLoader {
+  async loadPlugin(manifestPath, config) -> PluginRecord
+  async loadFromDirectory(pluginDir, config) -> PluginRecord
+  async reloadPlugin(pluginId)
+  async unloadPlugin(pluginId, options)
+  async executeTool(pluginId, toolName, params, context) -> ToolResult
+}
+
+class PluginWorker {
+  async initialize(params) -> Result
+  async healthCheck() -> HealthDiagnostics
+  async shutdown()
+  async terminate()
+  async executeTool(toolName, params, context) -> ToolResult
+}
+
+// Plugin SDK
+function definePlugin(definition) -> CkamalPlugin
+function createPluginContext(options) -> PluginContext
+function validateManifest(manifest) -> ValidationResult
+```
+
+**Plugin Capabilities**:
+- `tools.register` - Register custom tools
+- `state.read/write` - Scoped state management
+- `events.subscribe/emit` - Event system access
+- `http.outbound` - Proxied HTTP requests
+- `tasks.read/write` - Task management
+- `conversations.read/write` - Conversation access
+- `roadmaps.read/write` - Roadmap management
+- `system.metrics/logs.read` - System observability
+
+See [PLUGIN_SYSTEM.md](docs/architecture/PLUGIN_SYSTEM.md) for detailed plugin documentation.
+
+---
+
+### 9. Database & Persistence Layer
 
 **Purpose**: Provides data persistence with connection pooling and repository pattern.
 
@@ -304,6 +557,9 @@ class RepositoryFactory {
   get roadmaps() -> RoadmapRepository
   get contexts() -> ContextRepository
   get merkle() -> MerkleRepository
+  get companies() -> CompanyRepository
+  get issues() -> IssueRepository
+  get approvals() -> ApprovalRepository
 }
 
 // Base repository interface
@@ -318,12 +574,15 @@ class BaseRepository {
 
 **Schema**:
 - SQLite with multi-connection pooling
-- Migration system with rollback support
-- Vector extension for RAG embeddings
+- 18 migrations with rollback support
+- 56+ tables covering all domains
+- Multi-tenant company isolation
+
+See [DATABASE.md](docs/architecture/DATABASE.md) for detailed schema documentation.
 
 ---
 
-### 6. WebSocket & Real-time Layer
+### 10. WebSocket & Real-time Layer
 
 **Purpose**: Enables real-time bidirectional communication for streaming and events.
 
@@ -353,7 +612,7 @@ class StreamManager {
 
 ---
 
-### 7. GitHub Integration Layer
+### 11. GitHub Integration Layer
 
 **Purpose**: Provides version control integration, auto-updates, and patch management.
 
@@ -387,19 +646,35 @@ class RegressionSuite {
 
 ```
 ┌─────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│ Client  │────▶│    HTTP/     │────▶│    Client    │────▶│  BIOS Check  │
-│ Request │     │   WebSocket  │     │   Gateway    │     │   & Route    │
+│ Client  │────▶│    HTTP/     │────▶│   Auth       │────▶│    Client    │
+│ Request │     │   WebSocket  │     │   Middleware │     │   Gateway    │
 └─────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
-                                                                 │
-                    ┌────────────────────────────────────────────┘
+                                                                  │
+                    ┌─────────────────────────────────────────────┘
                     ▼
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Response   │◀────│   Result     │◀────│   Domain     │◀────│   Tool       │
-│   to Client  │     │   Formatter  │     │   Execution  │     │   Handler    │
+│   Response   │◀────│   Result     │◀────│   Domain     │◀────│   BIOS       │
+│   to Client  │     │   Formatter  │     │   Execution  │     │   Check      │
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-### 2. Agent Spawning Flow
+### 2. Authentication Flow
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Client     │────▶│   Extract    │────▶│   Validate   │────▶│   Create     │
+│   Request    │     │   Token/Key  │     │   JWT/APIKey │     │   Context    │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
+                                                                       │
+                    ┌──────────────────────────────────────────────────┘
+                    ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Attach     │◀────│   Load       │◀────│   Check      │
+│   to Request │     │   Company    │     │   Company    │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+### 3. Agent Spawning Flow
 
 ```
 ┌──────────────┐
@@ -428,23 +703,70 @@ class RegressionSuite {
                    └──────────────┘
 ```
 
-### 3. Update/Patch Flow
+### 4. Plugin Execution Flow
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   GitHub     │────▶│   Download   │────▶│   Verify     │
-│   Release    │     │   Package    │     │   Signature  │
+│   Tool       │────▶│   Plugin     │────▶│   Validate   │
+│   Request    │     │   Registry   │     │   Capability │
 └──────────────┘     └──────────────┘     └──────┬───────┘
-                                                 │
-                    ┌────────────────────────────┘
+                                                  │
+                    ┌─────────────────────────────┘
                     ▼
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Resume     │◀────│   Apply      │◀────│   Create     │◀────│   Run        │
-│   Operations │     │   Patch      │     │   Checkpoint │     │   Regression │
-└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Return     │◀────│   JSON-RPC   │◀────│   Worker     │
+│   Result     │     │   Response   │     │   Execution  │
+└──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-### 4. Multi-Client Orchestration Flow
+### 5. Approval Workflow Flow
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Agent      │────▶│   Assess     │────▶│   Check      │
+│   Action     │     │   Risk       │     │   Auto-      │
+│   Request    │     │   Level      │     │   Approve    │
+└──────────────┘     └──────────────┘     └──────┬───────┘
+                                                  │
+              ┌───────────────────────────────────┴──────────┐
+              │ No auto-approve                             │ Yes
+              ▼                                             ▼
+┌──────────────────────────┐                    ┌──────────────────┐
+│ Create Approval Request  │                    │ Execute Action   │
+│ Notify Stakeholders      │                    │ Log to Audit     │
+└──────────┬───────────────┘                    └──────────────────┘
+           │
+           ▼
+┌──────────────────────────┐
+│ Human Reviews & Decides  │
+│ Approved → Execute       │
+│ Rejected → Cancel        │
+└──────────────────────────┘
+```
+
+### 6. Heartbeat Run Flow
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Wakeup     │────▶│   Create     │────▶│   Queue      │
+│   Request    │     │   Run        │     │   for Agent  │
+└──────────────┘     └──────────────┘     └──────┬───────┘
+                                                  │
+                    ┌─────────────────────────────┘
+                    ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Complete   │◀────│   Execute    │◀────│   Start      │
+│   Run        │     │   Agent      │     │   Run        │
+└──────┬───────┘     └──────────────┘     └──────────────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ Record Costs │────▶│ Emit Events  │────▶│ Update       │
+│ to Ledger    │     │ to WebSocket │     │ Runtime State│
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+### 7. Multi-Client Orchestration Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -488,7 +810,7 @@ class RegressionSuite {
 |-----------|-----------|---------|
 | Database | SQLite | Primary persistence |
 | Connection Pool | Custom | Multi-connection management |
-| Migrations | Custom runner | Schema versioning |
+| Migrations | Custom runner | Schema versioning (18 migrations) |
 | Vector Store | SQLite + Extension | RAG embeddings storage |
 
 ### Communication
@@ -499,6 +821,7 @@ class RegressionSuite {
 | WebSocket | `ws` library | Real-time communication |
 | MCP Protocol | JSON-RPC | Model Context Protocol |
 | Streaming | Server-Sent Events | Live response streaming |
+| Plugin IPC | JSON-RPC over stdio | Plugin communication |
 
 ### AI Integration
 
@@ -516,6 +839,7 @@ class RegressionSuite {
 | Validation | Zod | Schema validation |
 | GitHub API | Octokit | Repository integration |
 | Encryption | Node.js `crypto` | AES-256-GCM, scrypt |
+| JWT | `jose` library | JWT signing/verification |
 
 ### Development Tools
 
@@ -562,7 +886,7 @@ bios.on('system:critical', async (error) => {
 
 ### 2. Domain-Driven Design
 
-10 isolated domains with clear boundaries:
+18 isolated domains with clear boundaries:
 
 ```javascript
 // Domain registration
@@ -609,6 +933,11 @@ agent.on('task:start', (task) => {
 agent.on('task:complete', (result) => {
   eventBus.emit('workflow:progress', result);
 });
+
+// Heartbeat events
+heartbeat.on('run:started', ({ runId, agentId }) => {
+  websocket.broadcast({ type: 'run:started', runId, agentId });
+});
 ```
 
 **Event Categories**:
@@ -616,6 +945,8 @@ agent.on('task:complete', (result) => {
 - Agent state changes
 - Workflow progress
 - Security audit events
+- Plugin events
+- Heartbeat run events
 
 ---
 
@@ -707,6 +1038,35 @@ const agent = AgentFactory.create({
   type: AGENT_TYPES.SPECIALIST,
   cv: cv,
   domain: 'architecture'
+});
+```
+
+---
+
+### 8. Plugin Pattern
+
+Extensible plugin architecture:
+
+```javascript
+// Define a plugin
+export default definePlugin({
+  async setup(ctx) {
+    ctx.tools.register('myTool', {
+      displayName: 'My Tool',
+      description: 'Does something useful',
+      parametersSchema: { type: 'object', properties: {} }
+    }, async (params, runCtx) => {
+      return { content: 'Result!' };
+    });
+    
+    ctx.events.on('task.completed', (event) => {
+      ctx.logger.info('Task completed', { taskId: event.entityId });
+    });
+  },
+  
+  async onHealth() {
+    return { status: 'ok' };
+  }
 });
 ```
 
@@ -1047,6 +1407,10 @@ const metrics = new MetricsMiddleware({
 | **BIOS** | Max 50 agents, 5% regression threshold |
 | **Security** | JWT/OAuth/API Key auth, 15-min rate window |
 | **Cache** | 1000 max entries, 60s TTL |
+| **Auth** | JWT: 1hr access/7days refresh, scrypt passwords |
+| **Plugins** | Worker isolation, JSON-RPC communication |
+| **Heartbeat** | 30s orphan check, 5min timeout |
+| **Billing** | Real-time cost tracking, budget alerts |
 
 ---
 
@@ -1054,27 +1418,79 @@ const metrics = new MetricsMiddleware({
 
 ```
 src/
-├── bios/              # BIOS layer
-├── clients/           # Client adapters
-├── claude/            # Claude integration
-├── controllers/       # MCP tool handlers
-├── dashboard/         # Web dashboard
-├── db/                # Database layer
-├── domains/           # 10 DDD domains
-├── gsd/               # GSD engine
-├── intelligence/      # AI components
-├── middleware/        # Middleware stack
-├── security/          # Security modules
-├── tools/             # Tool definitions
-├── utils/             # Utilities
-├── validation/        # Schema validation
-├── websocket/         # WebSocket server
-├── server.js          # Main entry
-└── config.js          # Configuration
+├── agents/              # Agent lifecycle and pool
+├── alerts/              # Alert system
+├── analysis/            # RAG and analysis
+├── auth/                # Authentication system
+├── bios/                # BIOS layer
+├── clients/             # Client adapters
+├── claude/              # Claude integration
+├── composition/         # Composition gateways
+├── controllers/         # MCP tool handlers
+├── cv/                  # CV (Curriculum Vitae) system
+├── dashboard/           # Web dashboard
+├── db/                  # Database layer
+│   ├── migrations/      # Schema migrations (18 files)
+│   └── repositories/    # Data repositories
+├── domains/             # 18 DDD domains
+│   ├── activity/        # Activity logging
+│   ├── approvals/       # Approval workflows
+│   ├── architecture/    # Architecture analysis
+│   ├── billing/         # Cost tracking (CostService, BudgetService)
+│   ├── company/         # Multi-tenant orgs
+│   ├── context/         # Context snapshots
+│   ├── documents/       # Document management
+│   ├── gsd/             # GSD engine
+│   ├── integrations/    # GitHub service
+│   ├── issues/          # Issue tracking
+│   ├── merkle/          # Merkle trees
+│   ├── orchestration/   # Tool orchestration
+│   ├── retention/       # Data retention
+│   ├── roadmaps/        # Roadmaps
+│   ├── routines/        # Routine scheduling
+│   ├── skills/          # Skill management
+│   ├── tasks/           # Task management
+│   ├── thought/         # Thought audit
+│   └── webhooks/        # Webhooks
+├── engine/              # Execution engine
+├── health/              # Health monitoring
+├── intelligence/        # AI router/scheduler
+├── mcp/                 # MCP server
+├── middleware/          # Middleware stack
+├── models/              # AI model configs
+├── monitoring/          # Monitoring
+├── plugins/             # Plugin system (SDK, Registry, Loader)
+├── queue/               # Task queue
+├── router/              # Model router
+├── runtime/             # Runtime services (HeartbeatService)
+├── security/            # Security modules
+├── tools/               # Tool definitions
+├── utils/               # Utilities
+├── validation/          # Schema validation
+├── websocket/           # WebSocket server
+├── server.js            # Main entry
+└── config.js            # Configuration
+
+docs/
+├── architecture/
+│   ├── AUTH.md              # Authentication documentation
+│   ├── PLUGIN_SYSTEM.md     # Plugin system documentation
+│   ├── DATABASE.md          # Database schema documentation
+│   └── DEPLOYMENT.md        # Deployment guide
+└── ...
 ```
 
 ---
 
+## Documentation References
+
+- [Authentication](docs/architecture/AUTH.md) - Auth architecture and multi-actor design
+- [Plugin System](docs/architecture/PLUGIN_SYSTEM.md) - Plugin architecture and SDK
+- [Database](docs/architecture/DATABASE.md) - Schema overview and migrations
+- [Deployment](docs/architecture/DEPLOYMENT.md) - Deployment options and scaling
+
+---
+
 *Version: 5.0.0*  
-*Last Updated: 2026-03-23*  
+*Last Updated: 2026-03-28*  
 *CogniMesh Architecture Team*

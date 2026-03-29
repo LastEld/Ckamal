@@ -182,7 +182,7 @@ export class MemoryQR {
     }
 
     // Remove incoming edges
-    for (const [sourceId, targets] of this.adjacencyList) {
+    for (const [, targets] of this.adjacencyList) {
       if (targets.has(id)) {
         targets.delete(id);
         this.stats.edgeCount--;
@@ -516,7 +516,7 @@ export class MemoryQR {
     let nodesRemoved = 0;
 
     // Remove old/weak edges
-    for (const [edgeKey, edge] of this.edges) {
+    for (const [, edge] of this.edges) {
       const age = now - edge.timestamp;
       if (age > maxAgeMs || edge.weight < minWeight) {
         this.disconnect(edge.from, edge.to);

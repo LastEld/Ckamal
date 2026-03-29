@@ -172,7 +172,7 @@ export class BootMode {
    * @async
    * @param {Object} options - Boot options
    */
-  async _loadConfiguration(options) {
+  async _loadConfiguration(_options) {
     // Configuration is loaded in the main BIOS class
     // This phase allows for mode-specific config adjustments
     

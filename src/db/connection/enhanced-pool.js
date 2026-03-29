@@ -9,7 +9,7 @@
  * - Query timing and statistics
  */
 
-import { ConnectionPool } from './index.js';
+import { ConnectionPool, ConnectionPoolError } from './index.js';
 import { LRUCache } from '../../analysis/lru-cache.js';
 import { PerformanceMonitor } from '../../utils/performance.js';
 
@@ -24,6 +24,8 @@ import { PerformanceMonitor } from '../../utils/performance.js';
  * @property {boolean} [enableStatementCache=true] - Enable prepared statement caching
  * @property {boolean} [warmupOnInit=true] - Warmup connections on initialization
  * @property {string[]} [warmupQueries] - Queries to run during warmup
+ * @property {number} [warmupTimeout=30000] - Timeout for warmup queries (ms)
+ * @property {number} [statementPrepareTimeout=5000] - Timeout for statement preparation (ms)
  */
 
 /**
@@ -56,6 +58,9 @@ export class EnhancedConnectionPool extends ConnectionPool {
   /** @type {Map<string, number>} */
   #queryStats = new Map();
 
+  /** @type {NodeJS.Timeout|null} */
+  #cleanupInterval = null;
+
   /**
    * Create an enhanced connection pool
    * @param {EnhancedPoolConfig} config - Pool configuration
@@ -70,6 +75,8 @@ export class EnhancedConnectionPool extends ConnectionPool {
       enableQueryCache: false,
       enableStatementCache: true,
       warmupOnInit: true,
+      warmupTimeout: 30000,
+      statementPrepareTimeout: 5000,
       warmupQueries: [
         'SELECT 1',
         'PRAGMA foreign_keys',
@@ -106,15 +113,36 @@ export class EnhancedConnectionPool extends ConnectionPool {
    * @private
    */
   async #warmup() {
-    for (const query of this.#config.warmupQueries) {
-      try {
-        await this.query(query);
-      } catch (error) {
+    const warmupStart = Date.now();
+    const warmupPromises = this.#config.warmupQueries.map(async (query) => {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new ConnectionPoolError(
+            `Warmup query timeout: ${query}`,
+            'WARMUP_TIMEOUT',
+            { query, timeout: this.#config.warmupTimeout }
+          ));
+        }, this.#config.warmupTimeout);
+      });
+      
+      const queryPromise = this.query(query).catch(error => {
         // Non-critical warmup errors
         this.emit('warmupWarning', { query, error: error.message });
-      }
-    }
-    this.emit('warmupComplete');
+        return null;
+      });
+      
+      return Promise.race([queryPromise, timeoutPromise]).catch(error => {
+        this.emit('warmupWarning', { query, error: error.message });
+        return null;
+      });
+    });
+    
+    await Promise.all(warmupPromises);
+    
+    this.emit('warmupComplete', { 
+      duration: Date.now() - warmupStart,
+      queriesExecuted: this.#config.warmupQueries.length
+    });
   }
 
   /**
@@ -123,10 +151,17 @@ export class EnhancedConnectionPool extends ConnectionPool {
    */
   #startCleanupInterval() {
     // Cleanup expired query cache entries every minute
-    const interval = setInterval(() => {
-      this.#queryCache.cleanup();
+    this.#cleanupInterval = setInterval(() => {
+      try {
+        this.#queryCache.cleanup();
+      } catch (error) {
+        this.emit('cleanupError', { error: error.message });
+      }
     }, 60000);
-    interval.unref?.();
+    
+    if (this.#cleanupInterval.unref) {
+      this.#cleanupInterval.unref();
+    }
   }
 
   /**
@@ -136,6 +171,7 @@ export class EnhancedConnectionPool extends ConnectionPool {
    * @param {Object} [options] - Query options
    * @param {boolean} [options.useCache=false] - Use query cache
    * @param {number} [options.cacheTtl] - Override cache TTL
+   * @param {number} [options.timeout] - Query timeout override
    * @returns {Promise<any[]>}
    */
   async query(sql, params = [], options = {}) {
@@ -143,7 +179,7 @@ export class EnhancedConnectionPool extends ConnectionPool {
     const cacheKey = `${sql}:${JSON.stringify(params)}`;
     
     // Check cache for SELECT queries
-    if (useCache && sql.trim().toLowerCase().startsWith('select')) {
+    if (useCache && this.#isCacheableQuery(sql)) {
       const cached = this.#queryCache.get(cacheKey);
       if (cached !== undefined) {
         this.#recordStat('cacheHit');
@@ -154,13 +190,13 @@ export class EnhancedConnectionPool extends ConnectionPool {
     this.#monitor.startTimer('query');
     
     try {
-      const result = await super.query(sql, params);
+      const result = await super.query(sql, params, options);
       
       const duration = this.#monitor.endTimer('query');
       this.#recordStat('query', duration);
       
       // Cache result if caching is enabled
-      if (useCache && sql.trim().toLowerCase().startsWith('select')) {
+      if (useCache && this.#isCacheableQuery(sql)) {
         const ttl = options.cacheTtl ?? this.#config.queryCacheTtl;
         this.#queryCache.set(cacheKey, result, { ttlMs: ttl });
         this.#recordStat('cacheMiss');
@@ -175,14 +211,33 @@ export class EnhancedConnectionPool extends ConnectionPool {
   }
 
   /**
+   * Check if a query is cacheable
+   * @private
+   * @param {string} sql
+   * @returns {boolean}
+   */
+  #isCacheableQuery(sql) {
+    if (!sql) return false;
+    const trimmed = sql.trim().toLowerCase();
+    // Only cache SELECT queries that don't use functions that change results
+    return trimmed.startsWith('select') && 
+           !trimmed.includes('random()') &&
+           !trimmed.includes('datetime') &&
+           !trimmed.includes('current_timestamp') &&
+           !trimmed.includes('now()');
+  }
+
+  /**
    * Execute a query with prepared statement caching
    * @param {string} sql - SQL statement
    * @param {any[]} [params=[]] - Statement parameters
+   * @param {Object} [options] - Query options
+   * @param {number} [options.timeout] - Query timeout override
    * @returns {Promise<{lastID: number, changes: number}>}
    */
-  async run(sql, params = []) {
+  async run(sql, params = [], options = {}) {
     if (!this.#config.enableStatementCache) {
-      return super.run(sql, params);
+      return super.run(sql, params, options);
     }
     
     this.#monitor.startTimer('run');
@@ -193,18 +248,38 @@ export class EnhancedConnectionPool extends ConnectionPool {
       
       if (statement) {
         return new Promise((resolve, reject) => {
+          const timeout = options.timeout || 30000;
+          const timer = setTimeout(() => {
+            reject(new ConnectionPoolError(
+              `Statement execution timeout after ${timeout}ms`,
+              'STATEMENT_TIMEOUT',
+              { timeout }
+            ));
+          }, timeout);
+          
           statement.run(params, function(err) {
-            if (err) reject(err);
-            else resolve({ lastID: this.lastID, changes: this.changes });
+            clearTimeout(timer);
+            if (err) {
+              reject(new ConnectionPoolError(
+                `Statement execution failed: ${err.message}`,
+                'STATEMENT_ERROR',
+                { sqliteError: err.message, code: err.code }
+              ));
+            } else {
+              resolve({ lastID: this.lastID, changes: this.changes });
+            }
           });
         });
       }
       
       // Fallback to regular execution
-      const result = await super.run(sql, params);
+      const result = await super.run(sql, params, options);
       
       const duration = this.#monitor.endTimer('run');
       this.#recordStat('run', duration);
+      
+      // Invalidate cache for modifying queries
+      this.#invalidateCacheForQuery(sql);
       
       return result;
     } catch (error) {
@@ -221,22 +296,50 @@ export class EnhancedConnectionPool extends ConnectionPool {
    * @returns {Promise<import('sqlite3').Statement|null>}
    */
   async #getStatement(sql) {
+    // Return cached statement if available
     if (this.#statementCache.has(sql)) {
-      return this.#statementCache.get(sql);
+      const stmt = this.#statementCache.get(sql);
+      // Verify statement is still valid by checking if it's finalized
+      try {
+        // Try to access a property that would fail if finalized
+        if (stmt && typeof stmt.run === 'function') {
+          return stmt;
+        }
+      } catch (e) {
+        // Statement is invalid, remove from cache
+        this.#statementCache.delete(sql);
+      }
     }
     
-    // Don't cache if at capacity
+    // Don't cache if at capacity - evict oldest
     if (this.#statementCache.size >= this.#config.statementCacheSize) {
-      return null;
+      const firstKey = this.#statementCache.keys().next().value;
+      if (firstKey !== undefined) {
+        const oldStmt = this.#statementCache.get(firstKey);
+        this.#statementCache.delete(firstKey);
+        // Finalize the evicted statement
+        try {
+          if (oldStmt && typeof oldStmt.finalize === 'function') {
+            await new Promise((resolve) => {
+              oldStmt.finalize(() => resolve());
+            });
+          }
+        } catch (e) {
+          // Ignore finalize errors
+        }
+      }
     }
     
     const db = await this.acquire();
     
     try {
-      const statement = db.prepare(sql);
-      this.#statementCache.set(sql, statement);
+      const statement = await this.#prepareStatementWithTimeout(db, sql);
+      if (statement) {
+        this.#statementCache.set(sql, statement);
+      }
       return statement;
     } catch (error) {
+      this.emit('statementPrepareError', { sql, error: error.message });
       return null;
     } finally {
       this.release(db);
@@ -244,11 +347,52 @@ export class EnhancedConnectionPool extends ConnectionPool {
   }
 
   /**
+   * Prepare a statement with timeout
+   * @private
+   * @param {sqlite3.Database} db
+   * @param {string} sql
+   * @returns {Promise<import('sqlite3').Statement|null>}
+   */
+  #prepareStatementWithTimeout(db, sql) {
+    return new Promise((resolve, reject) => {
+      const timeout = this.#config.statementPrepareTimeout;
+      const timer = setTimeout(() => {
+        reject(new ConnectionPoolError(
+          `Statement preparation timeout after ${timeout}ms`,
+          'PREPARE_TIMEOUT',
+          { sql: sql.substring(0, 100), timeout }
+        ));
+      }, timeout);
+      
+      let statement;
+      try {
+        statement = db.prepare(sql, (err) => {
+          clearTimeout(timer);
+          if (err) {
+            reject(new ConnectionPoolError(
+              `Statement preparation failed: ${err.message}`,
+              'PREPARE_ERROR',
+              { sql: sql.substring(0, 100), sqliteError: err.message }
+            ));
+          } else {
+            resolve(statement);
+          }
+        });
+      } catch (error) {
+        clearTimeout(timer);
+        reject(error);
+      }
+    });
+  }
+
+  /**
    * Execute multiple queries in a batch
    * @param {Array<{sql: string, params: any[]}>} queries - Queries to execute
+   * @param {Object} [options] - Batch options
+   * @param {number} [options.timeout] - Timeout per query
    * @returns {Promise<any[]>} Results for each query
    */
-  async batch(queries) {
+  async batch(queries, options = {}) {
     if (!Array.isArray(queries) || queries.length === 0) {
       return [];
     }
@@ -260,15 +404,40 @@ export class EnhancedConnectionPool extends ConnectionPool {
     await this.withTransaction(async (db) => {
       for (const { sql, params = [] } of queries) {
         const result = await new Promise((resolve, reject) => {
+          const timeout = options.timeout || 30000;
+          const timer = setTimeout(() => {
+            reject(new ConnectionPoolError(
+              `Batch query timeout after ${timeout}ms`,
+              'BATCH_TIMEOUT',
+              { sql: sql?.substring(0, 100), timeout }
+            ));
+          }, timeout);
+          
           if (sql.trim().toLowerCase().startsWith('select')) {
             db.all(sql, params, (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
+              clearTimeout(timer);
+              if (err) {
+                reject(new ConnectionPoolError(
+                  `Batch query failed: ${err.message}`,
+                  'BATCH_ERROR',
+                  { sql: sql?.substring(0, 100), sqliteError: err.message }
+                ));
+              } else {
+                resolve(rows);
+              }
             });
           } else {
             db.run(sql, params, function(err) {
-              if (err) reject(err);
-              else resolve({ lastID: this.lastID, changes: this.changes });
+              clearTimeout(timer);
+              if (err) {
+                reject(new ConnectionPoolError(
+                  `Batch query failed: ${err.message}`,
+                  'BATCH_ERROR',
+                  { sql: sql?.substring(0, 100), sqliteError: err.message }
+                ));
+              } else {
+                resolve({ lastID: this.lastID, changes: this.changes });
+              }
             });
           }
         });
@@ -289,11 +458,13 @@ export class EnhancedConnectionPool extends ConnectionPool {
    * @param {Object} [options] - Retry options
    * @param {number} [options.maxRetries=3] - Maximum retry attempts
    * @param {number} [options.delay=100] - Delay between retries (ms)
+   * @param {boolean} [options.exponentialBackoff=true] - Use exponential backoff
    * @returns {Promise<T>}
    */
   async withRetry(fn, options = {}) {
     const maxRetries = options.maxRetries ?? 3;
-    const delay = options.delay ?? 100;
+    const baseDelay = options.delay ?? 100;
+    const exponentialBackoff = options.exponentialBackoff !== false;
     
     let lastError;
     
@@ -308,13 +479,29 @@ export class EnhancedConnectionPool extends ConnectionPool {
           throw error;
         }
         
+        if (error.message?.includes('SQLITE_MISMATCH')) {
+          throw error;
+        }
+
+        if (error.code?.startsWith('POOL_')) {
+          throw error;
+        }
+        
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, delay * (attempt + 1)));
+          const delay = exponentialBackoff 
+            ? baseDelay * Math.pow(2, attempt) 
+            : baseDelay;
+          this.emit('retry', { attempt, delay, error: error.message });
+          await this.#delay(delay);
         }
       }
     }
     
-    throw lastError;
+    throw new ConnectionPoolError(
+      `Failed after ${maxRetries + 1} attempts: ${lastError.message}`,
+      'MAX_RETRIES_EXCEEDED',
+      { lastError: lastError.message, attempts: maxRetries + 1 }
+    );
   }
 
   /**
@@ -337,19 +524,45 @@ export class EnhancedConnectionPool extends ConnectionPool {
   /**
    * Invalidate query cache for a pattern
    * @param {string} pattern - SQL pattern to match
+   * @returns {number}
    */
   invalidateCache(pattern) {
-    const regex = new RegExp(pattern, 'i');
-    let count = 0;
-    
-    for (const key of this.#queryCache.keys()) {
-      if (regex.test(key)) {
-        this.#queryCache.delete(key);
-        count++;
+    try {
+      const regex = new RegExp(pattern, 'i');
+      let count = 0;
+      
+      for (const key of this.#queryCache.keys()) {
+        if (regex.test(key)) {
+          this.#queryCache.delete(key);
+          count++;
+        }
       }
+      
+      return count;
+    } catch (error) {
+      this.emit('cacheInvalidateError', { pattern, error: error.message });
+      return 0;
     }
+  }
+
+  /**
+   * Invalidate cache based on query type
+   * @private
+   * @param {string} sql
+   */
+  #invalidateCacheForQuery(sql) {
+    if (!sql) return;
     
-    return count;
+    const trimmed = sql.trim().toLowerCase();
+    
+    // Invalidate all cache on INSERT/UPDATE/DELETE since we don't know what tables are affected
+    if (trimmed.startsWith('insert') || 
+        trimmed.startsWith('update') || 
+        trimmed.startsWith('delete') ||
+        trimmed.startsWith('replace')) {
+      this.#queryCache.clear();
+      this.emit('cacheInvalidated', { reason: 'modifying_query', query: sql.substring(0, 100) });
+    }
   }
 
   /**
@@ -395,16 +608,55 @@ export class EnhancedConnectionPool extends ConnectionPool {
   clearCaches() {
     this.#queryCache.clear();
     
-    for (const stmt of this.#statementCache.values()) {
+    // Finalize all cached statements
+    const finalizePromises = [];
+    for (const [sql, stmt] of this.#statementCache.entries()) {
       try {
-        stmt.finalize();
+        if (stmt && typeof stmt.finalize === 'function') {
+          finalizePromises.push(
+            new Promise((resolve) => {
+              stmt.finalize(() => resolve());
+            })
+          );
+        }
       } catch (error) {
         // Ignore finalize errors
       }
     }
-    this.#statementCache.clear();
     
+    // Wait for finalization but don't block
+    Promise.all(finalizePromises).catch(() => {});
+    
+    this.#statementCache.clear();
     this.#queryStats.clear();
+    
+    this.emit('cachesCleared');
+  }
+
+  /**
+   * Get statement cache size
+   * @returns {number}
+   */
+  getStatementCacheSize() {
+    return this.#statementCache.size;
+  }
+
+  /**
+   * Get query cache size
+   * @returns {number}
+   */
+  getQueryCacheSize() {
+    return this.#queryCache.size;
+  }
+
+  /**
+   * Delay utility
+   * @private
+   * @param {number} ms
+   * @returns {Promise<void>}
+   */
+  #delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -412,7 +664,16 @@ export class EnhancedConnectionPool extends ConnectionPool {
    * @returns {Promise<void>}
    */
   async close() {
+    // Clear cleanup interval
+    if (this.#cleanupInterval) {
+      clearInterval(this.#cleanupInterval);
+      this.#cleanupInterval = null;
+    }
+    
+    // Clear caches (this finalizes statements)
     this.clearCaches();
+    
+    // Close base pool
     await super.close();
   }
 }

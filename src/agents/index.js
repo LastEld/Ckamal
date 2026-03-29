@@ -149,7 +149,7 @@ export class AgentManager {
         const agent = this.pool.agents.get(data.agentId);
         if (agent) {
           this.supervisor.supervise(agent, {
-            onUnhealthy: async (agent, reason) => {
+            onUnhealthy: async (agent, _reason) => {
               // Destroy unhealthy agent and let pool replace it
               await this.pool._destroyAgent(agent.id);
             }

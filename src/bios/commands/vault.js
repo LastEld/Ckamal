@@ -6,7 +6,7 @@
 import * as f from './utils/formatters.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 
 const VAULT_DIR = join(process.cwd(), '.vault');
 const VAULT_FILE = join(VAULT_DIR, 'secrets.json');
@@ -146,7 +146,7 @@ export async function migrateSecrets(options = {}) {
 /**
  * List vault secrets
  */
-export async function listSecrets(options = {}) {
+export async function listSecrets(_options = {}) {
   const spinner = f.createSpinner('Loading vault');
   spinner.start();
 
@@ -213,7 +213,7 @@ export async function addSecret(key, value, options = {}) {
 /**
  * Remove a secret from vault
  */
-export async function removeSecret(key, options = {}) {
+export async function removeSecret(key, _options = {}) {
   const vault = loadVault();
   
   if (!vault.secrets[key]) {
@@ -237,7 +237,7 @@ export async function removeSecret(key, options = {}) {
 /**
  * Check vault status
  */
-export async function vaultStatus(options = {}) {
+export async function vaultStatus(_options = {}) {
   const vault = loadVault();
   const isMigrated = existsSync(MIGRATED_FILE);
   

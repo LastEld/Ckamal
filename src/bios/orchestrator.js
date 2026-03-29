@@ -1,10 +1,11 @@
-/**
+﻿/**
  * @fileoverview Agent Orchestrator - Multi-client task execution and coordination
  * @module bios/orchestrator
  */
 
 import { EventEmitter } from 'events';
-import { SpawnManager, LifecycleState } from './spawn-manager.js';
+import { SpawnManager } from './spawn-manager.js';
+import { getApprovalService, ApprovalStatus } from '../domains/approvals/approval-service.js';
 
 /**
  * Execution strategies
@@ -130,6 +131,14 @@ export class AgentOrchestrator extends EventEmitter {
     
     // Plan mode storage
     this.plans = new Map();
+    
+    // Approval integration
+    this.approvalService = options.approvalService;
+    this.requireApproval = options.requireApproval !== false;
+    this.approvalTypes = options.approvalTypes || ['file_delete', 'system_command', 'deployment', 'access_grant'];
+    
+    // Pending approvals queue
+    this.pendingApprovals = new Map();
     
     // Swarm management
     this.swarms = new Map();
@@ -556,10 +565,20 @@ export class AgentOrchestrator extends EventEmitter {
         });
         
         // Check for approval if required
-        if (options.requireApproval) {
-          // In a real implementation, this would wait for external approval
-          // For now, we auto-approve
-          this.emit('planModeAwaitingApproval', { planId, step: i + 1 });
+        if (options.requireApproval || this._requiresApproval(step)) {
+          const approvalResult = await this._checkStepApproval(planId, i, step, task);
+          
+          if (!approvalResult.approved) {
+            this.emit('planModeAwaitingApproval', { 
+              planId, 
+              step: i + 1,
+              approvalId: approvalResult.approvalId,
+              reason: approvalResult.reason
+            });
+            
+            // Wait for approval
+            await this._waitForApproval(approvalResult.approvalId);
+          }
         }
         
         // Execute step
@@ -1027,6 +1046,250 @@ export class AgentOrchestrator extends EventEmitter {
     
     this.removeAllListeners();
   }
+  
+  // ========================================================================
+  // Approval Integration Methods
+  // ========================================================================
+  
+  /**
+   * Check if a task type requires approval
+   * @private
+   * @param {Task} task - Task to check
+   * @returns {boolean} True if approval required
+   */
+  _requiresApproval(task) {
+    if (!this.requireApproval || !this.approvalService) {
+      return false;
+    }
+    
+    const actionType = task.type || task.action;
+    if (!actionType) return false;
+    
+    return this.approvalTypes.some(type => 
+      actionType.includes(type) || type.includes(actionType)
+    );
+  }
+  
+  /**
+   * Check approval for a plan step
+   * @private
+   * @param {string} planId - Plan ID
+   * @param {number} stepIndex - Step index
+   * @param {Object} step - Step definition
+   * @param {Task} task - Original task
+   * @returns {Promise<Object>} Approval result
+   */
+  async _checkStepApproval(planId, stepIndex, step, task) {
+    if (!this.approvalService) {
+      // No approval service configured, auto-approve
+      return { approved: true };
+    }
+    
+    try {
+      const payload = {
+        action: step.type || step.task,
+        target: step.data?.target || step.target,
+        params: step.data,
+        planId,
+        stepIndex,
+        estimatedImpact: step.impact || 'medium',
+        description: step.description
+      };
+      
+      const approvalType = this._mapTaskToApprovalType(step.type || step.task, payload);
+      
+      const approval = await this.approvalService.createApproval({
+        companyId: task.companyId || task.data?.companyId || 'default',
+        type: approvalType,
+        payload,
+        requestedByAgentId: task.assignedAgent,
+        priority: this._determinePriority(step)
+      });
+      
+      if (approval.status === ApprovalStatus.APPROVED) {
+        return { approved: true, approvalId: approval.id };
+      }
+      
+      // Store pending approval
+      this.pendingApprovals.set(approval.id, {
+        planId,
+        stepIndex,
+        createdAt: Date.now()
+      });
+      
+      return {
+        approved: false,
+        approvalId: approval.id,
+        reason: 'Approval required for this step'
+      };
+      
+    } catch (error) {
+      this.emit('approvalCheckError', { planId, stepIndex, error: error.message });
+      // On error, allow execution (fail open) or block based on config
+      return { approved: true, error: error.message };
+    }
+  }
+  
+  /**
+   * Wait for an approval to be decided
+   * @private
+   * @param {string} approvalId - Approval ID to wait for
+   * @param {number} [timeout=300000] - Timeout in ms (default 5 minutes)
+   * @returns {Promise<Object>} Approval result
+   */
+  async _waitForApproval(approvalId, timeout = 300000) {
+    const startTime = Date.now();
+    const checkInterval = 5000; // Check every 5 seconds
+    
+    return new Promise((resolve, reject) => {
+      const check = () => {
+        const approval = this.approvalService?.getApproval(approvalId);
+        
+        if (!approval) {
+          this.pendingApprovals.delete(approvalId);
+          return reject(new Error(`Approval ${approvalId} not found`));
+        }
+        
+        if (approval.status === ApprovalStatus.APPROVED) {
+          this.pendingApprovals.delete(approvalId);
+          return resolve({ approved: true, approval });
+        }
+        
+        if (approval.status === ApprovalStatus.REJECTED) {
+          this.pendingApprovals.delete(approvalId);
+          return reject(new Error(`Approval ${approvalId} was rejected: ${approval.decisionNote}`));
+        }
+        
+        if (approval.status === ApprovalStatus.CHANGES_REQUESTED) {
+          this.pendingApprovals.delete(approvalId);
+          return reject(new Error(`Changes requested for approval ${approvalId}: ${approval.decisionNote}`));
+        }
+        
+        if (Date.now() - startTime > timeout) {
+          this.pendingApprovals.delete(approvalId);
+          return reject(new Error(`Timeout waiting for approval ${approvalId}`));
+        }
+        
+        // Check again after interval
+        setTimeout(check, checkInterval);
+      };
+      
+      check();
+    });
+  }
+  
+  /**
+   * Approve a pending approval
+   * @param {string} approvalId - Approval ID
+   * @param {string} userId - Approving user ID
+   * @param {string} [note] - Optional note
+   * @returns {Promise<Object>} Updated approval
+   */
+  async approveAction(approvalId, userId, note) {
+    if (!this.approvalService) {
+      throw new Error('Approval service not configured');
+    }
+    
+    const approval = await this.approvalService.approve(approvalId, {
+      decidedByUserId: userId,
+      note
+    });
+    
+    this.emit('actionApproved', { approvalId, approvedBy: userId });
+    
+    return approval;
+  }
+  
+  /**
+   * Reject a pending approval
+   * @param {string} approvalId - Approval ID
+   * @param {string} userId - Rejecting user ID
+   * @param {string} [reason] - Rejection reason
+   * @returns {Promise<Object>} Updated approval
+   */
+  async rejectAction(approvalId, userId, reason) {
+    if (!this.approvalService) {
+      throw new Error('Approval service not configured');
+    }
+    
+    const approval = await this.approvalService.reject(approvalId, {
+      decidedByUserId: userId,
+      reason
+    });
+    
+    this.emit('actionRejected', { approvalId, rejectedBy: userId, reason });
+    
+    return approval;
+  }
+  
+  /**
+   * Map task type to approval type
+   * @private
+   * @param {string} taskType - Task type
+   * @param {Object} payload - Task payload
+   * @returns {string} Approval type
+   */
+  _mapTaskToApprovalType(taskType, payload) {
+    const mapping = {
+      'file_delete': 'file_delete',
+      'file_modify': 'file_modify',
+      'deploy': 'deployment',
+      'deployment': 'deployment',
+      'config_change': 'config_change',
+      'system_command': 'system_command',
+      'api_call': 'api_call',
+      'access_grant': 'access_grant'
+    };
+    
+    for (const [key, value] of Object.entries(mapping)) {
+      if (taskType?.includes(key)) return value;
+    }
+    
+    // Check payload for hints
+    if (payload?.requiresSudo || payload?.requiresAdmin) {
+      return 'system_command';
+    }
+    
+    if (payload?.target?.includes('production') || payload?.target?.includes('prod')) {
+      return 'deployment';
+    }
+    
+    return 'agent_action';
+  }
+  
+  /**
+   * Determine priority based on step data
+   * @private
+   * @param {Object} step - Step data
+   * @returns {string} Priority level
+   */
+  _determinePriority(step) {
+    if (step.urgent || step.priority === 'critical') return 'critical';
+    if (step.priority === 'high') return 'high';
+    if (step.priority === 'low') return 'low';
+    return 'normal';
+  }
+  
+  /**
+   * Get pending approvals
+   * @returns {Object[]} Pending approvals
+   */
+  getPendingApprovals() {
+    if (!this.approvalService) return [];
+    
+    return this.approvalService.listApprovals({
+      status: ApprovalStatus.PENDING
+    });
+  }
+  
+  /**
+   * Initialize approval service
+   * @param {Object} options - Initialization options
+   * @param {Object} options.db - Database instance
+   */
+  initializeApprovalService(options) {
+    if (options.db) {
+      this.approvalService = getApprovalService({ db: options.db });
+    }
+  }
 }
-
-export default AgentOrchestrator;

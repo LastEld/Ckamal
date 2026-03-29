@@ -1517,7 +1517,7 @@ export class OperatorConsole extends EventEmitter {
     
     if (result.recommendations?.length > 0) {
       output += '\n💡 Recommendations:\n';
-      result.recommendations.slice(0, 5).forEach((rec, i) => {
+      result.recommendations.slice(0, 5).forEach((rec) => {
         const icon = rec.priority === 'high' ? '🔴' : rec.priority === 'medium' ? '🟡' : '🟢';
         output += `  ${icon} ${rec.description.slice(0, 60)}${rec.description.length > 60 ? '...' : ''}\n`;
       });

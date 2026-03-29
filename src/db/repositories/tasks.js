@@ -326,6 +326,8 @@ export class TaskRepository extends BaseRepository {
    */
   async findByTag(tag, options = {}) {
     const { limit = 50, offset = 0 } = options;
+    // Sanitize tag to prevent SQL injection via JSON pattern
+    const safeTag = typeof tag === 'string' ? tag.replace(/["\\]/g, '') : '';
     
     const sql = `
       SELECT * FROM ${this.tableName} 
@@ -334,7 +336,7 @@ export class TaskRepository extends BaseRepository {
       LIMIT ? OFFSET ?
     `;
     
-    return (await this.pool.all(sql, [`%"${tag}"%`, limit, offset])).map(hydrateTask);
+    return (await this.pool.all(sql, [`%"${safeTag}"%`, limit, offset])).map(hydrateTask);
   }
 
   /**
@@ -498,7 +500,13 @@ export class TaskRepository extends BaseRepository {
    */
   async search(query, options = {}) {
     const { limit = 20 } = options;
-    const searchPattern = `%${query}%`;
+    // Validate and sanitize query input
+    if (typeof query !== 'string' || query.length === 0) {
+      return [];
+    }
+    // Escape SQL LIKE special characters
+    const safeQuery = query.replace(/[%_]/g, '\\$&');
+    const searchPattern = `%${safeQuery}%`;
 
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -510,12 +518,11 @@ export class TaskRepository extends BaseRepository {
       LIMIT ?
     `;
 
-    const exactPattern = `%${query}%`;
     const tasks = await this.pool.all(sql, [
       searchPattern, 
       searchPattern, 
       searchPattern,
-      exactPattern,
+      searchPattern,
       limit
     ]);
     return tasks.map(hydrateTask);

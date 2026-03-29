@@ -13,12 +13,18 @@ No API keys. No metered billing. No surprises.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/LastEld/Ckamal/ci.yml?label=CI&style=for-the-badge&logo=github&logoColor=white)](https://github.com/LastEld/Ckamal/actions/workflows/ci.yml)
 [![Pages](https://img.shields.io/github/actions/workflow/status/LastEld/Ckamal/pages.yml?label=Pages&style=for-the-badge&logo=github&logoColor=white)](https://github.com/LastEld/Ckamal/actions/workflows/pages.yml)
+[![Release](https://img.shields.io/github/actions/workflow/status/LastEld/Ckamal/release.yml?label=Release&style=for-the-badge&logo=github&logoColor=white)](https://github.com/LastEld/Ckamal/actions/workflows/release.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](#quick-start)
+[![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](../LICENSE)
 
+![Version](https://img.shields.io/badge/version-5.0.1-blue?style=for-the-badge)
 ![Models](https://img.shields.io/badge/models-7-e67e22?style=for-the-badge)
 ![Providers](https://img.shields.io/badge/providers-3-3498db?style=for-the-badge)
 ![Surfaces](https://img.shields.io/badge/surfaces-5-9b59b6?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-110%2B%20passing-brightgreen?style=for-the-badge)
+![Coverage](https://img.shields.io/badge/coverage-87%25-success?style=for-the-badge)
 ![Billing](https://img.shields.io/badge/%2418--20%2Fmo-subscription--only-2ecc71?style=for-the-badge)
+![MCP Tools](https://img.shields.io/badge/MCP%20Tools-58-ff6b6b?style=for-the-badge)
 
 <br/>
 
@@ -87,6 +93,18 @@ No API keys needed. No metered charges. Everything routes through your existing 
 CLI, Desktop App, VS Code Extension, Copilot, and Cursor IDE. Use the interface that fits your workflow.
 
 </td>
+<td width="33%" valign="top">
+
+### Web Dashboard
+
+Rich web interface with real-time updates, workflow management, agent CV configuration, and context snapshots.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top"
+
+</td>
 </tr>
 <tr>
 <td width="33%" valign="top">
@@ -119,6 +137,39 @@ CI/CD pipelines, provider matrix verification, release packaging, and GitHub Act
 
 <br/>
 
+## What's New in v5.0
+
+### BIOS Control System
+Firmware-inspired system management with boot sequences, operational modes (BOOT, DIAGNOSE, OPERATIONAL, MAINTENANCE, SAFE_MODE), and interactive CLI console.
+
+### Multi-Tenant Architecture  
+Company-based data isolation enabling multiple organizations on a single instance with role-based access control.
+
+### 58 MCP Tools
+Complete tool ecosystem across 5 categories: Task (11), Roadmap (13), Claude (12), System (12), Analysis (10).
+
+### 3 New Dashboard Surfaces
+- **Workflows** - GSD workflow management with real-time execution
+- **CV Management** - Agent curriculum vitae creation and activation  
+- **Context Snapshots** - Save, restore, and compare system state
+
+### Heartbeat Runtime
+Agent run tracking with session persistence, cost attribution, orphaned run recovery, and live event streaming.
+
+### Billing & Budgets
+Real-time cost tracking with budget management at company, user, and agent levels with multi-threshold alerts.
+
+### Security Hardening
+Merkle tree audit trails, token bucket rate limiting, Zod input validation, and comprehensive audit logging.
+
+See [CHANGELOG_NEW.md](docs/CHANGELOG_NEW.md) for complete details.
+
+<br/>
+
+---
+
+<br/>
+
 ## Quick Start
 
 ### Option 1: Interactive Setup (Recommended)
@@ -129,9 +180,11 @@ The interactive setup wizard configures your environment in under 5 minutes:
 git clone https://github.com/LastEld/Ckamal.git
 cd Ckamal
 npm install
-npm run setup              # Interactive configuration wizard
-npm start
+npm run setup              # Interactive configuration wizard (5 min)
+npm start                  # Starts API (3000) and Dashboard (3001)
 ```
+
+Then open http://localhost:3001 for the web dashboard.
 
 ### Option 2: Manual Setup
 
@@ -327,7 +380,7 @@ The router uses quality/latency/complexity scoring for model selection. `costPer
 
 ```
 src/
-├── bios/              # BIOS orchestration, CLI, modes, kernel
+├── bios/              # BIOS orchestration, CLI, modes, kernel (47 files)
 ├── clients/           # Surface clients (Claude, Codex, Kimi)
 │   ├── catalog.js     # Canonical model ↔ surface registry
 │   └── index.js       # ClientFactory
@@ -335,10 +388,18 @@ src/
 ├── router/            # Multi-factor intelligent model routing
 ├── controllers/       # Request handlers and domain logic
 ├── domains/           # Tasks, roadmaps, contexts, merkle state
-├── dashboard/         # Web UI for operator management
-├── db/                # SQLite schema, migrations
+├── dashboard/         # Web UI with 24 components, real-time WebSocket
+│   ├── server.js      # Express API server (50+ endpoints)
+│   └── public/components/  # UI components
+│       ├── workflows-component.js    # GSD workflow management
+│       ├── cv-component.js           # Agent CV management
+│       ├── context-component.js      # Context snapshots
+│       ├── agents-component.js       # Agent monitoring
+│       ├── tasks-component.js        # Task management
+│       └── analytics-component.js    # Performance dashboards
+├── db/                # SQLite schema, 18 migrations
 ├── middleware/        # Auth, rate limiting, validation
-├── security/          # Authentication, sanitization
+├── security/          # Authentication, sanitization, audit
 └── server.js          # Main entry point
 ```
 
@@ -383,18 +444,44 @@ Three commands verify the entire surface before any push, tag, or release:
 
 ## Documentation
 
+📚 **[Documentation Index](docs/INDEX.md)** - Complete documentation map and learning paths
+
+### Getting Started
+
+| Document | Description |
+|:---------|:------------|
+| [Quick Start](docs/QUICK_START.md) | 5-minute setup guide for new users |
+| [Implementation Report](docs/IMPLEMENTATION_REPORT.md) | Comprehensive implementation summary |
+| [Tutorials](docs/tutorials/first-task.md) | Step-by-step first agent deployment |
+
+### Architecture & Development
+
 | Document | Description |
 |:---------|:------------|
 | [Architecture](ARCHITECTURE.md) | System design, layers, and component overview |
-| [Deployment Guide](DEPLOYMENT.md) | Production deployment and configuration |
 | [API Reference](API_REFERENCE.md) | HTTP endpoints and MCP tool catalog |
-| [Claude Sonnet 4.6 Integration](docs/integrations/CLAUDE_SONNET_46_INTEGRATION.md) | Sonnet IDE and CLI integration guide |
-| [GPT-5.4 Codex Integration](docs/integrations/GPT54_CODEX_INTEGRATION.md) | Codex multi-surface integration |
-| [Kimi 2.5 Integration](docs/integrations/KIMI_25_INTEGRATION_REPORT.md) | Moonshot/Kimi setup and config |
+| [Changelog](CHANGELOG.md) | Version history and changes |
+| [What's New](docs/CHANGELOG_NEW.md) | Latest features and migration notes |
+| [Migration Guide](docs/MIGRATION_GUIDE.md) | Single to multi-tenant migration |
+
+### Integrations
+
+| Document | Description |
+|:---------|:------------|
+| [Claude Sonnet 4.6](docs/integrations/CLAUDE_SONNET_46_INTEGRATION.md) | Sonnet IDE and CLI integration guide |
+| [GPT-5.4 Codex](docs/integrations/GPT54_CODEX_INTEGRATION.md) | Codex multi-surface integration |
+| [Kimi 2.5](docs/integrations/KIMI_25_INTEGRATION_REPORT.md) | Moonshot/Kimi setup and config |
 | [Claude Desktop + Opus 4.6](docs/CLAUDE_DESKTOP_OPUS46_INTEGRATION.md) | Desktop app WebSocket integration |
 | [Kimi VS Code](docs/kimi-vscode-integration.md) | Kimi IDE extension guide |
+
+### Operations
+
+| Document | Description |
+|:---------|:------------|
+| [Deployment Guide](DEPLOYMENT.md) | Production deployment and configuration |
 | [Deploy Checklist](docs/release/DEPLOY_CHECKLIST.md) | Pre-deployment verification steps |
 | [Monitoring](docs/operations/MONITORING.md) | Operational monitoring and metrics |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
 Historical reports are archived in [`docs/reports/historical/`](docs/reports/historical/).
 

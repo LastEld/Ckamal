@@ -137,7 +137,7 @@ export class OperationalMode extends EventEmitter {
    * @param {Object} [options={}] - Entry options
    * @returns {Promise<void>}
    */
-  async enter(options = {}) {
+  async enter(_options = {}) {
     if (this._active) {
       return;
     }

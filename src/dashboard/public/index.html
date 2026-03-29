@@ -2,7 +2,27 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="description" content="Multi-Agent Orchestration Platform Dashboard">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CogniMesh">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="CogniMesh">
+  <meta name="msapplication-TileColor" content="#3b82f6">
+  <meta name="msapplication-config" content="/browserconfig.xml">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#3b82f6">
+  
   <title>CogniMesh v5.0 Dashboard</title>
   
   <!-- Google Fonts -->
@@ -21,6 +41,11 @@
   
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles/components/mobile-nav.css">
+  <link rel="stylesheet" href="styles/components/cost-widget.css">
+  <link rel="stylesheet" href="styles/components/command-palette.css">
+  <link rel="stylesheet" href="styles/mobile-pwa.css">
+  <link rel="stylesheet" href="styles/components/dashboard-widgets.css">
 </head>
 <body>
   <div id="app" class="dashboard">
@@ -114,6 +139,12 @@
               <span>Agent CVs</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#orgchart" class="nav-link" data-view="orgchart">
+              <i data-lucide="network"></i>
+              <span>Org Chart</span>
+            </a>
+          </li>
         </ul>
         
         <div class="nav-section">
@@ -142,6 +173,12 @@
               <a href="#settings" class="nav-link" data-view="settings">
                 <i data-lucide="settings"></i>
                 <span>Settings</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#billing" class="nav-link" data-view="billing">
+                <i data-lucide="credit-card"></i>
+                <span>Billing</span>
               </a>
             </li>
           </ul>
@@ -181,9 +218,10 @@
         
         <div class="header-right">
           <!-- Search -->
-          <div class="search-box">
+          <div class="search-box" id="commandPaletteTrigger" title="Press ⌘K to open Command Palette">
             <i data-lucide="search"></i>
             <input type="text" placeholder="Search tasks, roadmaps..." id="globalSearch">
+            <kbd class="search-shortcut">⌘K</kbd>
           </div>
           
           <!-- Theme Toggle -->
@@ -297,6 +335,25 @@
                 </div>
               </div>
             </div>
+
+            <!-- Budget Incidents Banner -->
+            <div id="budgetIncidentsContainer"></div>
+
+            <!-- Cost Overview Widget -->
+            <div id="costWidgetContainer"></div>
+
+            <!-- Performance Chart & System Health -->
+            <div class="dashboard-split">
+              <div class="panel">
+                <div id="performanceChartContainer"></div>
+              </div>
+              <div class="panel">
+                <div id="systemHealthContainer"></div>
+              </div>
+            </div>
+
+            <!-- Recent Activity Feed -->
+            <div id="activityFeedContainer"></div>
 
             <!-- Recent Alerts -->
             <div class="panel alerts-panel">
@@ -456,10 +513,16 @@
           <div class="agents-container">
             <div class="view-toolbar">
               <h2>Active Agents</h2>
-              <button class="btn btn-secondary" id="refreshAgentsBtn">
-                <i data-lucide="refresh-cw"></i>
-                <span>Refresh</span>
-              </button>
+              <div class="filter-group">
+                <button class="btn btn-primary" id="createAgentToolbarBtn">
+                  <i data-lucide="plus"></i>
+                  <span>Create Agent</span>
+                </button>
+                <button class="btn btn-secondary" id="refreshAgentsBtn">
+                  <i data-lucide="refresh-cw"></i>
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
             <div class="agents-grid" id="agentsGrid">
               <!-- Agent cards will be rendered here -->
@@ -583,6 +646,42 @@
                 </select>
               </div>
             </div>
+
+            <div class="settings-section">
+              <h3>Integrations & Security</h3>
+              <p class="settings-hint">
+                Configure GitHub access and JWT signing directly from dashboard.
+              </p>
+
+              <div class="setting-form-group">
+                <label for="githubTokenInput">GitHub Token</label>
+                <div class="secret-input-row">
+                  <input type="password" id="githubTokenInput" placeholder="ghp_..." autocomplete="off">
+                  <button type="button" class="btn btn-secondary btn-sm" id="toggleGithubTokenBtn">Show</button>
+                </div>
+                <small class="setting-hint-text" id="githubTokenStatus">Loading...</small>
+              </div>
+
+              <div class="setting-form-group">
+                <label for="jwtSecretInput">JWT Secret</label>
+                <div class="secret-input-row">
+                  <input type="password" id="jwtSecretInput" placeholder="Enter new JWT secret (min 16 chars)" autocomplete="off">
+                  <button type="button" class="btn btn-secondary btn-sm" id="toggleJwtSecretBtn">Show</button>
+                </div>
+                <small class="setting-hint-text" id="jwtSecretStatus">Loading...</small>
+              </div>
+
+              <div class="settings-actions-row">
+                <button type="button" class="btn btn-secondary" id="reloadIntegrationSettingsBtn">
+                  <i data-lucide="refresh-cw"></i>
+                  <span>Reload</span>
+                </button>
+                <button type="button" class="btn btn-primary" id="saveIntegrationSettingsBtn">
+                  <i data-lucide="save"></i>
+                  <span>Save Integration Settings</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -631,6 +730,58 @@
           <div class="cv-grid" id="cvGrid"></div>
         </section>
 
+        <!-- Org Chart View -->
+        <section class="view" id="orgchartView">
+          <div class="view-header">
+            <h2>Organization Chart</h2>
+            <div class="view-toolbar">
+              <div class="search-group">
+                <i data-lucide="search"></i>
+                <input type="text" id="orgChartSearch" placeholder="Search agents...">
+              </div>
+              <button class="btn btn-secondary" id="orgChartRefresh" title="Refresh">
+                <i data-lucide="refresh-cw"></i>
+              </button>
+              <button class="btn btn-secondary" id="orgChartExpandAll" title="Expand All">
+                <i data-lucide="expand"></i>
+              </button>
+              <button class="btn btn-secondary" id="orgChartCollapseAll" title="Collapse All">
+                <i data-lucide="collapse"></i>
+              </button>
+              <div class="zoom-controls">
+                <button class="btn btn-icon" id="orgChartZoomOut" title="Zoom Out">
+                  <i data-lucide="zoom-out"></i>
+                </button>
+                <button class="btn btn-icon" id="orgChartZoomReset" title="Reset View">
+                  <i data-lucide="maximize"></i>
+                </button>
+                <button class="btn btn-icon" id="orgChartZoomIn" title="Zoom In">
+                  <i data-lucide="zoom-in"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="orgchart-container" id="orgChartContainer">
+            <svg id="orgChartSvg" class="orgchart-svg" preserveAspectRatio="xMidYMid meet">
+              <!-- SVG content will be generated by OrgChartComponent -->
+            </svg>
+            <div class="orgchart-minimap">
+              <svg id="orgChartMinimap" viewBox="0 0 200 100"></svg>
+            </div>
+            <div class="orgchart-detail" id="orgChartDetail">
+              <div class="orgchart-detail-header">
+                <h4>Agent Details</h4>
+                <button class="btn-icon" id="orgChartCloseDetail">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
+              <div class="orgchart-detail-content" id="orgChartDetailContent">
+                <!-- Detail content will be populated by component -->
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Context Snapshots View -->
         <section class="view" id="contextView">
           <div class="view-header">
@@ -641,6 +792,11 @@
             </button>
           </div>
           <div class="snapshots-grid" id="snapshotsGrid"></div>
+        </section>
+
+        <!-- Billing View -->
+        <section class="view" id="billingView">
+          <div id="billingContainer"></div>
         </section>
       </div>
     </main>
@@ -819,8 +975,64 @@
     </div>
   </div>
 
+  <!-- Mobile Bottom Navigation -->
+  <div id="mobileNav"></div>
+
+  <!-- Mobile Optimizations -->
+  <script src="mobile-optimizations.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    (function() {
+      'use strict';
+      
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('[PWA] ServiceWorker registered:', registration.scope);
+              
+              // Handle updates
+              registration.addEventListener('updatefound', function() {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', function() {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New update available
+                    console.log('[PWA] Update available');
+                    if (confirm('A new version is available. Reload to update?')) {
+                      newWorker.postMessage({ type: 'skip-waiting' });
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch(function(error) {
+              console.error('[PWA] ServiceWorker registration failed:', error);
+            });
+          
+          // Listen for messages from service worker
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'sync-complete') {
+              console.log('[PWA] Background sync completed');
+            }
+          });
+        });
+        
+        // Request notification permission
+        if ('Notification' in window) {
+          Notification.requestPermission().then(function(permission) {
+            console.log('[PWA] Notification permission:', permission);
+          });
+        }
+      }
+    })();
+  </script>
+  
   <!-- Application Scripts -->
   <script src="components/toast.js"></script>
+  <script src="components/command-palette.js"></script>
+  <script src="components/toast-manager.js"></script>
   <script src="components/api-client.js"></script>
   <script src="components/websocket-client.js"></script>
   <script src="components/presence-component.js"></script>
@@ -828,12 +1040,26 @@
   <script src="components/tasks-component.js"></script>
   <script src="components/roadmaps-component.js"></script>
   <script src="components/analytics-component.js"></script>
-  <script src="components/agents-component.js"></script>
+  <!-- Enhanced Agent UI Components -->
+  <script src="components/agent-status-badge.js"></script>
+  <script src="components/agent-card.js"></script>
+  <script src="components/agent-detail-panel.js"></script>
+  <script src="components/active-agents-panel.js"></script>
+  <script src="components/agents.js"></script>
   <script src="components/tools-component.js"></script>
   <script src="components/providers-component.js"></script>
   <script src="components/context-component.js"></script>
   <script src="components/cv-component.js"></script>
+  <script src="components/org-chart.js"></script>
   <script src="components/workflows-component.js"></script>
+  <script src="components/cost-widget.js"></script>
+  <script src="components/mobile-nav.js"></script>
+  <script src="components/pwa-manager.js"></script>
+  <!-- Dashboard Widgets -->
+  <script src="components/budget-incidents-banner.js"></script>
+  <script src="components/activity-feed.js"></script>
+  <script src="components/performance-chart.js"></script>
+  <script src="components/system-health.js"></script>
   <script src="components/dashboard-app.js"></script>
   <script src="app.js"></script>
 </body>

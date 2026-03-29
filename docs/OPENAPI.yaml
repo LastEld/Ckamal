@@ -1,0 +1,1328 @@
+openapi: 3.0.3
+info:
+  title: CogniMesh API
+  description: |
+    Multi-model AI orchestration platform API.
+    
+    CogniMesh routes work across GPT, Claude, and Kimi through flat-rate subscriptions.
+    No API keys. No metered billing. No surprises.
+    
+    ## Features
+    
+    - **Multi-Model Routing**: Intelligent routing across 7 AI models
+    - **Zero API Billing**: Uses existing subscription clients
+    - **5 Operator Surfaces**: CLI, Desktop, VS Code, Copilot, Cursor
+    - **58 MCP Tools**: Task management, roadmaps, Claude integration
+    - **Company Management**: Multi-tenant organization support
+    - **Billing & Budgets**: Cost tracking and budget management
+    - **GitHub Integration**: Repository, issue, and PR management
+    - **Webhooks**: Event subscriptions with retry logic
+    - **Routines**: Scheduled task automation
+    - **Approvals**: Workflow approval system
+    - **Plugins**: Extensible plugin architecture
+    
+    ## Authentication
+    
+    Most endpoints require authentication via:
+    - **JWT Token**: `Authorization: Bearer <token>` header
+    - **API Key**: `X-API-Key: <key>` header (for service-to-service)
+  
+  version: 5.0.0
+  contact:
+    name: CogniMesh Support
+    url: https://github.com/LastEld/Ckamal/issues
+  license:
+    name: MIT
+    url: https://github.com/LastEld/Ckamal/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+  - url: https://api.cognimesh.io/api/v1
+    description: Production server
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Authentication
+    description: User registration, login, and token management
+  - name: Companies
+    description: Company and organization management
+  - name: Tasks
+    description: Task management operations with Eisenhower Matrix
+  - name: Roadmaps
+    description: Roadmap creation and learning path management
+  - name: Issues
+    description: Issue/ticket tracking system
+  - name: Documents
+    description: Document management with versioning
+  - name: Billing
+    description: Cost tracking and budget management
+  - name: GitHub
+    description: GitHub integration endpoints
+  - name: Webhooks
+    description: Webhook management and event subscriptions
+  - name: Routines
+    description: Scheduled routine and automation management
+  - name: Approvals
+    description: Approval workflow management
+  - name: Plugins
+    description: Plugin lifecycle management
+  - name: Activity
+    description: Activity logging and audit trail
+  - name: MCP
+    description: Model Context Protocol tool execution
+
+paths:
+  # System Endpoints
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check
+      description: Returns the current health status of the CogniMesh server
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /status:
+    get:
+      tags:
+        - System
+      summary: System status
+      description: Returns detailed system status information
+      operationId: getStatus
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /tools:
+    get:
+      tags:
+        - System
+      summary: List available tools
+      description: Returns all registered MCP tools
+      operationId: listTools
+      responses:
+        '200':
+          description: List of tools
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolList'
+
+  # Authentication Endpoints
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate and receive access tokens
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate session and tokens
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Logout successful
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get current user profile
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    
+    put:
+      tags:
+        - Authentication
+      summary: Update current user
+      description: Update user profile
+      operationId: updateMe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+
+  /api/auth/api-keys:
+    get:
+      tags:
+        - Authentication
+      summary: List API keys
+      description: List API keys for current user
+      operationId: listApiKeys
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: API keys retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyList'
+    
+    post:
+      tags:
+        - Authentication
+      summary: Create API key
+      description: Create new API key
+      operationId: createApiKey
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+
+  /api/auth/api-keys/{id}:
+    delete:
+      tags:
+        - Authentication
+      summary: Revoke API key
+      description: Revoke an API key
+      operationId: revokeApiKey
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API key revoked
+
+  # Company Endpoints
+  /api/companies:
+    get:
+      tags:
+        - Companies
+      summary: List companies
+      description: List companies for current user
+      operationId: listCompanies
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Companies retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyList'
+    
+    post:
+      tags:
+        - Companies
+      summary: Create company
+      description: Create a new company
+      operationId: createCompany
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+      responses:
+        '201':
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  /api/companies/{id}:
+    get:
+      tags:
+        - Companies
+      summary: Get company
+      description: Get company by ID
+      operationId: getCompany
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+    
+    put:
+      tags:
+        - Companies
+      summary: Update company
+      description: Update company details
+      operationId: updateCompany
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated
+    
+    delete:
+      tags:
+        - Companies
+      summary: Delete company
+      description: Soft delete company
+      operationId: deleteCompany
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company deleted
+
+  /api/companies/{id}/members:
+    get:
+      tags:
+        - Companies
+      summary: List members
+      description: List company members
+      operationId: listMembers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberList'
+    
+    post:
+      tags:
+        - Companies
+      summary: Add member
+      description: Add member to company
+      operationId: addMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '201':
+          description: Member added
+
+  /api/companies/{id}/members/{userId}:
+    put:
+      tags:
+        - Companies
+      summary: Update member
+      description: Update member role
+      operationId: updateMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [owner, admin, member, viewer]
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Member updated
+    
+    delete:
+      tags:
+        - Companies
+      summary: Remove member
+      description: Remove member from company
+      operationId: removeMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member removed
+
+  # Task Endpoints
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List tasks
+      description: Retrieve a list of tasks with optional filtering
+      operationId: listTasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by task status
+          schema:
+            type: string
+            enum: [backlog, todo, in_progress, review, done, cancelled]
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            type: string
+            enum: [urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+    
+    post:
+      tags:
+        - Tasks
+      summary: Create task
+      description: Create a new task
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get task
+      description: Get task by ID
+      operationId: getTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+    
+    patch:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update an existing task
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated
+    
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Delete a task
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cascade
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Task deleted
+
+  /tasks/matrix:
+    get:
+      tags:
+        - Tasks
+      summary: Get Eisenhower Matrix
+      description: Get tasks organized by Eisenhower Matrix quadrants
+      operationId: getEisenhowerMatrix
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Matrix retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EisenhowerMatrix'
+
+  /tasks/next-actions:
+    get:
+      tags:
+        - Tasks
+      summary: Get next actions
+      description: Get prioritized next actions
+      operationId: getNextActions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Next actions retrieved
+
+  # MCP Endpoints
+  /mcp/execute:
+    post:
+      tags:
+        - MCP
+      summary: Execute MCP tool
+      description: Execute a Model Context Protocol tool
+      operationId: executeMCPTool
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPExecuteRequest'
+      responses:
+        '200':
+          description: Tool executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPExecuteResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    # System Schemas
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            healthy:
+              type: boolean
+            status:
+              type: string
+            version:
+              type: string
+            uptime:
+              type: number
+            timestamp:
+              type: string
+              format: date-time
+            checks:
+              type: object
+
+    SystemStatus:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+            version:
+              type: string
+            uptime:
+              type: number
+            bios:
+              type: object
+              properties:
+                version:
+                  type: string
+                state:
+                  type: string
+                components:
+                  type: array
+                  items:
+                    type: string
+            timestamp:
+              type: string
+              format: date-time
+
+    ToolList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            tools:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  requiresAuth:
+                    type: boolean
+            count:
+              type: integer
+
+    # Auth Schemas
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        companyId:
+          type: string
+          format: uuid
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            tokens:
+              $ref: '#/components/schemas/TokenResponse'
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            auth:
+              type: object
+              properties:
+                actorType:
+                  type: string
+                companyId:
+                  type: string
+                role:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    CreateApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        expiresIn:
+          type: integer
+          description: Seconds until expiration
+        rateLimit:
+          type: integer
+
+    ApiKeyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            key:
+              type: string
+            apiKey:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+
+    ApiKeyList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              createdAt:
+                type: string
+
+    # Company Schemas
+    CreateCompanyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        description:
+          type: string
+          maxLength: 500
+        brandColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        logoUrl:
+          type: string
+          format: uri
+        settings:
+          type: object
+
+    UpdateCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        brandColor:
+          type: string
+        logoUrl:
+          type: string
+        settings:
+          type: object
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        brandColor:
+          type: string
+        logoUrl:
+          type: string
+        status:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        membership:
+          type: object
+          properties:
+            role:
+              type: string
+            status:
+              type: string
+            joinedAt:
+              type: string
+
+    CompanyList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Company'
+
+    AddMemberRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, admin, member, viewer]
+          default: member
+        permissions:
+          type: array
+          items:
+            type: string
+
+    MemberList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              user:
+                $ref: '#/components/schemas/User'
+              membership:
+                type: object
+
+    # Task Schemas
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, review, done, cancelled]
+        priority:
+          type: string
+          enum: [urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, review, done, cancelled]
+          default: todo
+        priority:
+          type: string
+          enum: [urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important]
+          default: not_urgent_important
+        assignee:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        parentId:
+          type: string
+        roadmapId:
+          type: string
+        nodeId:
+          type: string
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        assignee:
+          type: string
+        dueDate:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    TaskList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            pageSize:
+              type: integer
+
+    EisenhowerMatrix:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            Q1:
+              type: array
+              description: Urgent & Important - Do first
+              items:
+                $ref: '#/components/schemas/Task'
+            Q2:
+              type: array
+              description: Not Urgent & Important - Schedule
+              items:
+                $ref: '#/components/schemas/Task'
+            Q3:
+              type: array
+              description: Urgent & Not Important - Delegate
+              items:
+                $ref: '#/components/schemas/Task'
+            Q4:
+              type: array
+              description: Not Urgent & Not Important - Eliminate
+              items:
+                $ref: '#/components/schemas/Task'
+            descriptions:
+              type: object
+
+    # MCP Schemas
+    MCPExecuteRequest:
+      type: object
+      required:
+        - tool
+        - params
+      properties:
+        tool:
+          type: string
+          description: Name of the MCP tool to execute
+        params:
+          type: object
+          description: Tool-specific parameters
+        context:
+          type: object
+          properties:
+            userId:
+              type: string
+            subscription:
+              type: string
+
+    MCPExecuteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        errors:
+          type: array
+          items:
+            type: string
+        executionTime:
+          type: number
+
+    # Error Schema
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              field:
+                type: string
+        executionTime:
+          type: number
+
+security:
+  - bearerAuth: []

@@ -19,13 +19,35 @@ import { createConfig, loadConfig, ConfigError } from './config.js';
 
 // Database
 import { RepositoryFactory } from './db/repositories/index.js';
-import { ConnectionPool } from './db/connection/index.js';
+import { ConnectionPool, setDb } from './db/connection/index.js';
 import { MigrationRunner } from './db/migrations/index.js';
 
 // Tools and Controllers
 import { ToolRegistry } from './tools/index.js';
 import { allTools } from './tools/definitions/index.js';
 import { UnifiedController } from './controllers/unified.js';
+import { IssuesController } from './controllers/issues-controller.js';
+import { DocumentsController } from './controllers/documents-controller.js';
+import { BillingController } from './controllers/billing-controller.js';
+import { FinanceController } from './controllers/finance-controller.js';
+import { BudgetPolicyController } from './controllers/budget-policy-controller.js';
+import { AuthController } from './controllers/auth-controller.js';
+import { CompanyController } from './controllers/company-controller.js';
+import { HeartbeatController } from './controllers/heartbeat-controller.js';
+import { ActivityController } from './controllers/activity-controller.js';
+import { ApprovalsController } from './controllers/approvals-controller.js';
+import { RoutinesController } from './controllers/routines-controller.js';
+import { WebhooksController } from './controllers/webhooks-controller.js';
+import { PluginsController } from './controllers/plugins-controller.js';
+import { WorkspacesController } from './controllers/workspaces-controller.js';
+import { WorkProductsController } from './controllers/work-products-controller.js';
+
+// Plugin System
+import { PluginRegistry, PluginLoader } from './plugins/index.js';
+
+// Runtime and Activity
+import { HeartbeatService, SessionManager } from './runtime/index.js';
+import { ActivityService, getActivityService } from './domains/activity/index.js';
 
 // WebSocket
 import { WebSocketServer } from './websocket/server.js';
@@ -49,6 +71,7 @@ import { RoadmapDomain } from './domains/roadmaps/index.js';
 
 // Utilities
 import { logger } from './utils/logger.js';
+import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,6 +141,38 @@ export class CogniMeshServer extends EventEmitter {
     this._alertManager = null;
     this._taskDomain = null;
     this._roadmapDomain = null;
+    
+    // Runtime and Activity services
+    this._heartbeatService = null;
+    this._sessionManager = null;
+    this._activityService = null;
+    
+    // Controllers
+    this._heartbeatController = null;
+    this._activityController = null;
+
+    // Billing controller
+    this._billingController = null;
+    this._financeController = null;
+    this._budgetPolicyController = null;
+    this._issuesController = null;
+    this._documentsController = null;
+
+    // Approvals and Routines controllers
+    this._approvalsController = null;
+    this._routinesController = null;
+
+    // Webhooks controller
+    this._webhooksController = null;
+
+    // Workspace and work product controllers
+    this._workspacesController = null;
+    this._workProductsController = null;
+
+    // Plugin System
+    this._pluginRegistry = null;
+    this._pluginLoader = null;
+    this._pluginsController = null;
 
     // Health checker
     this._healthChecker = new HealthChecker({
@@ -168,9 +223,12 @@ export class CogniMeshServer extends EventEmitter {
 
       // Phase 3: Business Logic Layer
       await this._initializeDomains();
+      await this._initializeRuntimeServices();
+      await this._initializeActivityService();
       await this._initializeTools();
       await this._initializeAnalytics();
       await this._initializeAlertManager();
+      await this._initializePluginSystem();
 
       // Phase 4: Middleware Layer
       await this._initializeRateLimiters();
@@ -297,6 +355,53 @@ export class CogniMeshServer extends EventEmitter {
         }
       }
 
+      // Shutdown runtime services
+      if (this._heartbeatService) {
+        try {
+          logger.info('[Runtime] Disposing heartbeat service...');
+          await this._heartbeatService.dispose();
+        } catch (error) {
+          logger.error('[Runtime] Error disposing heartbeat service:', error);
+        }
+      }
+
+      if (this._sessionManager) {
+        try {
+          logger.info('[Runtime] Disposing session manager...');
+          await this._sessionManager.dispose();
+        } catch (error) {
+          logger.error('[Runtime] Error disposing session manager:', error);
+        }
+      }
+
+      if (this._activityService) {
+        try {
+          logger.info('[Activity] Shutting down activity service...');
+          await this._activityService.shutdown();
+        } catch (error) {
+          logger.error('[Activity] Error shutting down activity service:', error);
+        }
+      }
+
+      // Shutdown Plugin System
+      if (this._pluginLoader) {
+        try {
+          logger.info('[Plugins] Disposing plugin loader...');
+          await this._pluginLoader.dispose();
+        } catch (error) {
+          logger.error('[Plugins] Error disposing plugin loader:', error);
+        }
+      }
+
+      if (this._pluginRegistry) {
+        try {
+          logger.info('[Plugins] Disposing plugin registry...');
+          await this._pluginRegistry.dispose();
+        } catch (error) {
+          logger.error('[Plugins] Error disposing plugin registry:', error);
+        }
+      }
+
       // Shutdown BIOS (will shutdown all registered components)
       if (this._bios) {
         logger.info('[BIOS] Shutting down...');
@@ -394,6 +499,10 @@ export class CogniMeshServer extends EventEmitter {
     });
 
     await this._connectionPool.initialize();
+    
+    // Set global database reference for components that need better-sqlite3
+    this._db = new Database(this._config.database.path);
+    setDb(this._db);
   }
 
   async _runMigrations() {
@@ -435,6 +544,53 @@ export class CogniMeshServer extends EventEmitter {
     await this._taskDomain.loadFromRepository();
     await this._roadmapDomain.loadFromRepository();
     logger.info('[Domains] Task and Roadmap domains initialized (persisted)');
+  }
+
+  async _initializeRuntimeServices() {
+    logger.info('[Runtime] Initializing heartbeat service...');
+    
+    // Initialize Heartbeat Service
+    this._heartbeatService = new HeartbeatService({
+      db: this._connectionPool,
+      config: {
+        maxConcurrentRuns: this._config.runtime?.maxConcurrentRuns || 1,
+        defaultTimeout: this._config.runtime?.defaultTimeout || 60000,
+        maxRetries: this._config.runtime?.maxRetries || 3
+      }
+    });
+    await this._heartbeatService.initialize();
+    
+    // Initialize Session Manager
+    logger.info('[Runtime] Initializing session manager...');
+    this._sessionManager = new SessionManager({
+      db: this._connectionPool,
+      config: {
+        compaction: {
+          enabled: true,
+          maxSessionRuns: 10,
+          maxRawInputTokens: 100000,
+          maxSessionAgeHours: 24
+        }
+      }
+    });
+    await this._sessionManager.initialize();
+    
+    // Wire up session manager to heartbeat service
+    this._heartbeatService.sessionManager = this._sessionManager;
+    
+    logger.info('[Runtime] Heartbeat service and session manager initialized');
+  }
+
+  async _initializeActivityService() {
+    logger.info('[Activity] Initializing activity service...');
+    
+    this._activityService = getActivityService({
+      db: this._db,
+      connectionPool: this._connectionPool
+    });
+    await this._activityService.initialize();
+    
+    logger.info('[Activity] Activity service initialized');
   }
 
   async _initializeTools() {
@@ -482,6 +638,201 @@ export class CogniMeshServer extends EventEmitter {
       autoCleanup: true
     });
     logger.info('[Alerts] Alert manager initialized');
+  }
+
+  async _initializePluginSystem() {
+    logger.info('[Plugins] Initializing plugin system...');
+
+    // Create plugin registry
+    this._pluginRegistry = new PluginRegistry({
+      db: this._db || this._connectionPool?.getConnection?.(),
+      logger: logger,
+      eventBus: this,
+      pluginDir: this._config.plugins?.directory || './plugins',
+      healthCheckInterval: this._config.plugins?.healthCheckInterval || 30000,
+      maxRestarts: this._config.plugins?.maxRestarts || 5
+    });
+
+    // Create plugin loader
+    this._pluginLoader = new PluginLoader({
+      registry: this._pluginRegistry,
+      logger: logger,
+      rpcTimeout: this._config.plugins?.rpcTimeout || 30000
+    });
+
+    // Initialize registry
+    await this._pluginRegistry.initialize();
+
+    // Load plugins from configured directories
+    await this._loadPluginsFromDirectories();
+
+    // Register plugin tools with MCP tool registry
+    await this._registerPluginTools();
+
+    // Create plugins controller
+    this._pluginsController = new PluginsController({
+      registry: this._pluginRegistry,
+      loader: this._pluginLoader,
+      toolRegistry: this._tools,
+      db: this._connectionPool?.getConnection?.() || this._db,
+      logger: logger
+    });
+    await this._pluginsController.initialize();
+
+    // Listen for plugin events
+    this._pluginRegistry.on('activated', ({ pluginId }) => {
+      logger.info(`[Plugins] Plugin activated: ${pluginId}`);
+      this.emit('plugin:activated', { pluginId });
+    });
+
+    this._pluginRegistry.on('failed', ({ pluginId, error }) => {
+      logger.error(`[Plugins] Plugin failed: ${pluginId}`, { error });
+      this.emit('plugin:failed', { pluginId, error });
+    });
+
+    this._pluginRegistry.on('workerError', ({ pluginId, error }) => {
+      logger.error(`[Plugins] Worker error for ${pluginId}:`, { error });
+      this.emit('plugin:worker:error', { pluginId, error });
+    });
+
+    logger.info(`[Plugins] Plugin system initialized with ${this._pluginRegistry.plugins.size} plugins`);
+  }
+
+  async _loadPluginsFromDirectories() {
+    const pluginDirs = this._config.plugins?.directories || ['./plugins'];
+    const { readdir, stat } = await import('fs/promises');
+    const { resolve } = await import('path');
+
+    for (const dir of pluginDirs) {
+      try {
+        const entries = await readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            const pluginDir = resolve(dir, entry.name);
+            const manifestPath = resolve(pluginDir, 'ckamal-plugin.json');
+            
+            try {
+              await stat(manifestPath);
+              // Try to load the plugin
+              await this._pluginLoader.loadFromDirectory(pluginDir);
+              logger.info(`[Plugins] Auto-loaded plugin from ${pluginDir}`);
+            } catch (err) {
+              // No manifest or failed to load, skip
+              logger.debug(`[Plugins] Skipping ${pluginDir}: ${err.message}`);
+            }
+          }
+        }
+      } catch (error) {
+        logger.debug(`[Plugins] Could not read plugin directory ${dir}: ${error.message}`);
+      }
+    }
+  }
+
+  async _registerPluginTools() {
+    if (!this._tools || !this._pluginRegistry) return;
+
+    // Create a dynamic tool wrapper for plugin tools
+    const pluginToolHandler = async (toolName, params, context) => {
+      // Parse plugin ID and tool name from format: plugin:{id}:{tool}
+      const match = toolName.match(/^plugin:([^:]+):(.+)$/);
+      if (!match) {
+        throw new Error(`Invalid plugin tool format: ${toolName}`);
+      }
+      
+      const [, pluginId, pluginToolName] = match;
+      
+      return this._pluginLoader.executeTool(
+        pluginId,
+        pluginToolName,
+        params,
+        context
+      );
+    };
+
+    // The actual registration happens when plugins activate and register tools
+    // This is handled via the plugin registry events
+    this._pluginRegistry.on('activated', async ({ pluginId }) => {
+      const plugin = this._pluginRegistry.getPlugin(pluginId);
+      if (!plugin || !plugin.manifest?.tools) return;
+
+      // Register each tool from the manifest
+      for (const toolDecl of plugin.manifest.tools) {
+        const fullToolName = `plugin:${pluginId}:${toolDecl.name}`;
+        
+        try {
+          // Create tool definition
+          const toolDef = {
+            name: fullToolName,
+            description: `[${plugin.name}] ${toolDecl.description}`,
+            inputSchema: this._convertSchemaToZod(toolDecl.parametersSchema),
+            outputSchema: { parse: (x) => x }, // Allow any output
+            handler: async (params, context) => {
+              return pluginToolHandler(fullToolName, params, context);
+            },
+            tags: ['plugin', pluginId, ...(toolDecl.tags || [])],
+            requiresAuth: true
+          };
+
+          this._tools.register(toolDef);
+          logger.info(`[Plugins] Registered tool: ${fullToolName}`);
+        } catch (error) {
+          logger.error(`[Plugins] Failed to register tool ${fullToolName}:`, error);
+        }
+      }
+    });
+  }
+
+  /**
+   * Convert JSON schema to Zod schema (simplified)
+   * @private
+   */
+  _convertSchemaToZod(jsonSchema) {
+    
+    if (!jsonSchema || typeof jsonSchema !== 'object') {
+      return z.object({});
+    }
+
+    if (jsonSchema.type === 'object') {
+      const shape = {};
+      for (const [key, prop] of Object.entries(jsonSchema.properties || {})) {
+        shape[key] = this._convertSchemaToZod(prop);
+      }
+      
+      let schema = z.object(shape);
+      
+      if (jsonSchema.required) {
+        // Zod already makes all properties required by default
+      }
+      
+      return schema;
+    }
+
+    if (jsonSchema.type === 'string') {
+      let schema = z.string();
+      if (jsonSchema.enum) {
+        schema = z.enum(jsonSchema.enum);
+      }
+      return schema;
+    }
+
+    if (jsonSchema.type === 'number') {
+      return z.number();
+    }
+
+    if (jsonSchema.type === 'integer') {
+      return z.number().int();
+    }
+
+    if (jsonSchema.type === 'boolean') {
+      return z.boolean();
+    }
+
+    if (jsonSchema.type === 'array') {
+      return z.array(this._convertSchemaToZod(jsonSchema.items));
+    }
+
+    return z.any();
   }
 
   async _initializeRateLimiters() {
@@ -626,7 +977,8 @@ export class CogniMeshServer extends EventEmitter {
   }
 
   async _initializeController() {
-    logger.info('[Controller] Initializing unified controller...');
+    logger.info('[Controller] Initializing controllers...');
+    
     this._controller = new UnifiedController({
       repositories: this._repositories,
       tools: this._tools,
@@ -638,7 +990,102 @@ export class CogniMeshServer extends EventEmitter {
       auditMiddleware: this._auditMiddleware
     });
     await this._controller.initialize();
-    logger.info('[Controller] Unified controller initialized');
+    
+    // Initialize Issues Controller
+    this._issuesController = new IssuesController({
+      repositories: this._repositories
+    });
+    await this._issuesController.initialize();
+    
+    // Initialize Documents Controller
+    this._documentsController = new DocumentsController({
+      repositories: this._repositories
+    });
+    await this._documentsController.initialize();
+
+    // Controllers/services that use raw SQL expect better-sqlite3 semantics.
+    // Prefer the direct DB handle over pooled sqlite3 connections.
+    const directDb = this._db || this._connectionPool?.getConnection?.() || null;
+    
+    // Initialize Billing Controller
+    this._billingController = new BillingController({
+      repositories: this._repositories,
+      db: directDb
+    });
+    await this._billingController.initialize();
+
+    // Initialize Finance Controller
+    this._financeController = new FinanceController({
+      db: directDb
+    });
+    await this._financeController.initialize();
+
+    // Initialize Budget Policy Controller
+    this._budgetPolicyController = new BudgetPolicyController({
+      db: directDb
+    });
+    await this._budgetPolicyController.initialize();
+    
+    // Initialize Auth Controller
+    const { AuthService } = await import('./auth/auth-service.js');
+    this._authService = new AuthService({ db: directDb });
+    this._authController = new AuthController({
+      authService: this._authService,
+      db: directDb
+    });
+    
+    // Initialize Company Controller
+    this._companyController = new CompanyController({
+      repositories: this._repositories,
+      db: directDb
+    });
+    
+    // Initialize Heartbeat Controller
+    this._heartbeatController = new HeartbeatController({
+      heartbeatService: this._heartbeatService,
+      sessionManager: this._sessionManager,
+      spawnManager: this._bios?.getSpawnManager?.(),
+      wsServer: this._wsServer
+    });
+    await this._heartbeatController.initialize();
+    
+    // Initialize Activity Controller
+    this._activityController = new ActivityController({
+      activityService: this._activityService,
+      wsServer: this._wsServer
+    });
+    await this._activityController.initialize();
+
+    // Initialize Approvals Controller
+    this._approvalsController = new ApprovalsController({
+      db: directDb
+    });
+
+    // Initialize Routines Controller
+    this._routinesController = new RoutinesController({
+      db: directDb,
+      logger: logger
+    });
+
+    // Initialize Webhooks Controller
+    this._webhooksController = new WebhooksController({
+      db: directDb,
+      logger: logger
+    });
+
+    // Initialize Workspaces Controller
+    this._workspacesController = new WorkspacesController({
+      db: directDb
+    });
+    await this._workspacesController.initialize();
+
+    // Initialize Work Products Controller
+    this._workProductsController = new WorkProductsController({
+      db: directDb
+    });
+    await this._workProductsController.initialize();
+    
+    logger.info('[Controller] All controllers initialized');
   }
 
   async _initializeHttpServer() {
@@ -792,6 +1239,118 @@ export class CogniMeshServer extends EventEmitter {
       return this._handleApiAgents(req, res);
     }
 
+    // Issues API routes
+    const issuesRoute = this._matchIssuesRoute(pathname, req.method);
+    if (issuesRoute) {
+      return await issuesRoute.handler(req, res, issuesRoute.params);
+    }
+
+    // Documents API routes
+    const documentsRoute = this._matchDocumentsRoute(pathname, req.method);
+    if (documentsRoute) {
+      return await documentsRoute.handler(req, res, documentsRoute.params);
+    }
+
+    // Auth API routes
+    const authRoute = this._matchAuthRoute(pathname, req.method);
+    if (authRoute) {
+      // Apply auth middleware if route requires authentication
+      if (authRoute.requiresAuth) {
+        const authResult = await this._applyAuthMiddleware(req, res);
+        if (!authResult) return true; // Auth failed, response already sent
+      } else {
+        // Try to authenticate but don't require it
+        await this._applyAuthMiddleware(req, res, { required: false });
+      }
+      return await authRoute.handler(req, res, authRoute.params);
+    }
+
+    // Company API routes
+    const companyRoute = this._matchCompanyRoute(pathname, req.method);
+    if (companyRoute) {
+      // All company routes require authentication
+      const authResult = await this._applyAuthMiddleware(req, res);
+      if (!authResult) return true; // Auth failed, response already sent
+      return await companyRoute.handler(req, res, companyRoute.params);
+    }
+
+    // Finance API routes
+    if (pathname.startsWith('/api/finance')) {
+      if (typeof this._financeController?.handle === 'function') {
+        return await this._financeController.handle(req, res);
+      }
+    }
+
+    // Budget policy API routes
+    if (pathname.startsWith('/api/billing/policies') || pathname.startsWith('/api/billing/incidents')) {
+      if (typeof this._budgetPolicyController?.handle === 'function') {
+        return await this._budgetPolicyController.handle(req, res);
+      }
+    }
+
+    // Billing API routes
+    if (pathname.startsWith('/api/billing')) {
+      if (typeof this._billingController?.handle === 'function') {
+        return await this._billingController.handle(req, res);
+      }
+    }
+
+    // Workspaces API routes
+    if (pathname.startsWith('/api/workspaces')) {
+      if (typeof this._workspacesController?.handle === 'function') {
+        return await this._workspacesController.handle(req, res);
+      }
+    }
+
+    // Work products API routes
+    if (pathname.startsWith('/api/work-products')) {
+      if (typeof this._workProductsController?.handle === 'function') {
+        return await this._workProductsController.handle(req, res);
+      }
+    }
+
+    // Heartbeat API routes
+    if (pathname.startsWith('/api/heartbeat')) {
+      if (typeof this._heartbeatController?.handle === 'function') {
+        return await this._heartbeatController.handle(req, res);
+      }
+    }
+
+    // Activity API routes
+    if (pathname.startsWith('/api/activity')) {
+      if (typeof this._activityController?.handle === 'function') {
+        return await this._activityController.handle(req, res);
+      }
+    }
+
+    // Approvals API routes
+    if (pathname.startsWith('/api/approvals')) {
+      if (typeof this._approvalsController?.handle === 'function') {
+        return await this._approvalsController.handle(req, res);
+      }
+    }
+
+    // Routines API routes
+    if (pathname.startsWith('/api/routines')) {
+      if (typeof this._routinesController?.handle === 'function') {
+        return await this._routinesController.handle(req, res);
+      }
+    }
+
+    // Webhooks API routes
+    if (pathname.startsWith('/api/webhooks')) {
+      if (typeof this._webhooksController?.handle === 'function') {
+        return await this._webhooksController.handle(req, res);
+      }
+    }
+
+    // Plugins API routes
+    if (pathname.startsWith('/api/plugins')) {
+      if (typeof this._pluginsController?.handle === 'function') {
+        return await this._pluginsController.handle(req, res);
+      }
+    }
+
     // API routes via controller
     if (pathname.startsWith('/api/')) {
       if (typeof this._controller?.handle === 'function') {
@@ -806,6 +1365,265 @@ export class CogniMeshServer extends EventEmitter {
   _sendJson(res, statusCode, payload) {
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(payload, null, 2));
+  }
+
+  /**
+   * Match Issues API routes
+   * @private
+   */
+  _matchIssuesRoute(pathname, method) {
+    if (!this._issuesController) return null;
+
+    const patterns = [
+      // Issue CRUD
+      { pattern: /^\/api\/issues$/, methods: { GET: 'listIssues', POST: 'createIssue' } },
+      { pattern: /^\/api\/issues\/search$/, methods: { GET: 'searchIssues' } },
+      { pattern: /^\/api\/issues\/statistics$/, methods: { GET: 'getStatistics' } },
+      { pattern: /^\/api\/issues\/unread$/, methods: { GET: 'getUnreadIssues' } },
+      { pattern: /^\/api\/issues\/labels$/, methods: { GET: 'listLabels', POST: 'createLabel' } },
+      { pattern: /^\/api\/issues\/([^/]+)$/, methods: { GET: 'getIssue', PUT: 'updateIssue', DELETE: 'deleteIssue' }, params: ['id'] },
+      
+      // Comments
+      { pattern: /^\/api\/issues\/([^/]+)\/comments$/, methods: { GET: 'listComments', POST: 'addComment' }, params: ['id'] },
+      { pattern: /^\/api\/issues\/([^/]+)\/comments\/([^/]+)$/, methods: { PUT: 'updateComment', DELETE: 'deleteComment' }, params: ['id', 'commentId'] },
+      
+      // Labels
+      { pattern: /^\/api\/issues\/([^/]+)\/labels$/, methods: { POST: 'addLabel' }, params: ['id'] },
+      { pattern: /^\/api\/issues\/([^/]+)\/labels\/([^/]+)$/, methods: { DELETE: 'removeLabel' }, params: ['id', 'labelId'] },
+      
+      // Assignment
+      { pattern: /^\/api\/issues\/([^/]+)\/assign$/, methods: { POST: 'assignIssue' }, params: ['id'] },
+      
+      // Read state
+      { pattern: /^\/api\/issues\/([^/]+)\/read$/, methods: { POST: 'markAsRead' }, params: ['id'] },
+    ];
+
+    for (const route of patterns) {
+      const match = pathname.match(route.pattern);
+      if (match && route.methods[method]) {
+        const params = {};
+        if (route.params) {
+          route.params.forEach((param, index) => {
+            params[param] = match[index + 1];
+          });
+        }
+        return {
+          handler: this._issuesController[route.methods[method]].bind(this._issuesController),
+          params
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Match Documents API routes
+   * @private
+   */
+  _matchDocumentsRoute(pathname, method) {
+    if (!this._documentsController) return null;
+
+    const patterns = [
+      // Document CRUD
+      { pattern: /^\/api\/documents$/, methods: { GET: 'listDocuments', POST: 'createDocument' } },
+      { pattern: /^\/api\/documents\/search$/, methods: { GET: 'searchDocuments' } },
+      { pattern: /^\/api\/documents\/statistics$/, methods: { GET: 'getStatistics' } },
+      { pattern: /^\/api\/documents\/([^/]+)$/, methods: { GET: 'getDocument', PUT: 'updateDocument', DELETE: 'deleteDocument' }, params: ['id'] },
+      
+      // Revisions
+      { pattern: /^\/api\/documents\/([^/]+)\/revisions$/, methods: { GET: 'listRevisions' }, params: ['id'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/revisions\/([^/]+)$/, methods: { GET: 'getRevision' }, params: ['id', 'version'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/restore$/, methods: { POST: 'restoreDocument' }, params: ['id'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/restore\/([^/]+)$/, methods: { POST: 'restoreRevision' }, params: ['id', 'version'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/compare$/, methods: { GET: 'compareRevisions' }, params: ['id'] },
+      
+      // Sharing
+      { pattern: /^\/api\/documents\/([^/]+)\/share$/, methods: { POST: 'shareDocument' }, params: ['id'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/shares$/, methods: { GET: 'listShares' }, params: ['id'] },
+      { pattern: /^\/api\/documents\/([^/]+)\/shares\/([^/]+)$/, methods: { DELETE: 'revokeShare' }, params: ['id', 'shareId'] },
+    ];
+
+    for (const route of patterns) {
+      const match = pathname.match(route.pattern);
+      if (match && route.methods[method]) {
+        const params = {};
+        if (route.params) {
+          route.params.forEach((param, index) => {
+            params[param] = match[index + 1];
+          });
+        }
+        return {
+          handler: this._documentsController[route.methods[method]].bind(this._documentsController),
+          params
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Match Auth API routes
+   * @private
+   */
+  _matchAuthRoute(pathname, method) {
+    if (!this._authController) return null;
+
+    const patterns = [
+      // Public Authentication
+      { pattern: /^\/api\/auth\/register$/, methods: { POST: 'register' }, requiresAuth: false },
+      { pattern: /^\/api\/auth\/login$/, methods: { POST: 'login' }, requiresAuth: false },
+      { pattern: /^\/api\/auth\/refresh$/, methods: { POST: 'refresh' }, requiresAuth: false },
+      { pattern: /^\/api\/auth\/forgot-password$/, methods: { POST: 'forgotPassword' }, requiresAuth: false },
+      { pattern: /^\/api\/auth\/reset-password$/, methods: { POST: 'resetPassword' }, requiresAuth: false },
+      
+      // Protected Authentication
+      { pattern: /^\/api\/auth\/logout$/, methods: { POST: 'logout' }, requiresAuth: true },
+      
+      // Profile
+      { pattern: /^\/api\/auth\/me$/, methods: { GET: 'getMe', PUT: 'updateMe' }, requiresAuth: true },
+      
+      // API Keys
+      { pattern: /^\/api\/auth\/api-keys$/, methods: { GET: 'listApiKeys', POST: 'createApiKey' }, requiresAuth: true },
+      { pattern: /^\/api\/auth\/api-keys\/([^/]+)$/, methods: { DELETE: 'revokeApiKey' }, params: ['id'], requiresAuth: true },
+    ];
+
+    for (const route of patterns) {
+      const match = pathname.match(route.pattern);
+      if (match && route.methods[method]) {
+        const params = {};
+        if (route.params) {
+          route.params.forEach((param, index) => {
+            params[param] = match[index + 1];
+          });
+        }
+        return {
+          handler: this._authController[route.methods[method]].bind(this._authController),
+          params,
+          requiresAuth: route.requiresAuth
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Match Company API routes
+   * @private
+   */
+  _matchCompanyRoute(pathname, method) {
+    if (!this._companyController) return null;
+
+    const patterns = [
+      // Company CRUD
+      { pattern: /^\/api\/companies$/, methods: { GET: 'listCompanies', POST: 'createCompany' } },
+      { pattern: /^\/api\/companies\/([^/]+)$/, methods: { GET: 'getCompany', PUT: 'updateCompany', DELETE: 'deleteCompany' }, params: ['id'] },
+      
+      // Members
+      { pattern: /^\/api\/companies\/([^/]+)\/members$/, methods: { GET: 'listMembers', POST: 'addMember' }, params: ['id'] },
+      { pattern: /^\/api\/companies\/([^/]+)\/members\/([^/]+)$/, methods: { DELETE: 'removeMember', PUT: 'updateMember' }, params: ['id', 'userId'] },
+    ];
+
+    for (const route of patterns) {
+      const match = pathname.match(route.pattern);
+      if (match && route.methods[method]) {
+        const params = {};
+        if (route.params) {
+          route.params.forEach((param, index) => {
+            params[param] = match[index + 1];
+          });
+        }
+        return {
+          handler: this._companyController[route.methods[method]].bind(this._companyController),
+          params
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Apply authentication middleware
+   * @private
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Object} options - Auth options
+   * @returns {Promise<boolean>} True if auth passed (or not required), false if auth failed
+   */
+  async _applyAuthMiddleware(req, res, options = { required: true }) {
+    try {
+      // Check for Authorization header
+      const authHeader = req.headers['authorization'];
+      const apiKey = req.headers['x-api-key'];
+
+      if (!authHeader && !apiKey && options.required) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        }));
+        return false;
+      }
+
+      // Try to authenticate
+      if (this._authService) {
+        try {
+          let authContext;
+          
+          if (apiKey) {
+            authContext = await this._authService.validateApiKey(apiKey);
+          } else if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            authContext = await this._authService.verifyAccessToken(token);
+          } else {
+            authContext = { authenticated: false };
+          }
+
+          req.auth = authContext;
+        } catch (error) {
+          if (options.required) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: error.message || 'Authentication failed',
+              code: error.code || 'AUTH_FAILED'
+            }));
+            return false;
+          }
+          req.auth = { authenticated: false };
+        }
+      } else {
+        // No auth service available
+        if (options.required) {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            error: 'Authentication service unavailable',
+            code: 'AUTH_UNAVAILABLE'
+          }));
+          return false;
+        }
+        req.auth = { authenticated: false };
+      }
+
+      return true;
+    } catch (error) {
+      if (options.required) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          error: 'Authentication error',
+          code: 'AUTH_ERROR'
+        }));
+        return false;
+      }
+      req.auth = { authenticated: false };
+      return true;
+    }
   }
 
   _getSystemSnapshot() {
@@ -1202,6 +2020,60 @@ export class CogniMeshServer extends EventEmitter {
       });
     }
 
+    if (this._heartbeatService) {
+      this._bios.registerComponent('heartbeatService', {
+        type: 'service',
+        initialize: async () => true,
+        healthCheck: async () => ({
+          healthy: true,
+          message: 'Heartbeat service active',
+          stats: {
+            activeRuns: this._heartbeatService.activeRuns?.size || 0
+          }
+        }),
+        shutdown: async () => {
+          await this._heartbeatService.dispose();
+        }
+      });
+    }
+
+    if (this._sessionManager) {
+      this._bios.registerComponent('sessionManager', {
+        type: 'service',
+        initialize: async () => true,
+        healthCheck: async () => ({
+          healthy: true,
+          message: 'Session manager active'
+        }),
+        shutdown: async () => {
+          await this._sessionManager.dispose();
+        }
+      });
+    }
+
+    if (this._activityService) {
+      this._bios.registerComponent('activityService', {
+        type: 'service',
+        initialize: async () => true,
+        healthCheck: async () => ({
+          healthy: true,
+          message: 'Activity service active'
+        }),
+        shutdown: async () => {
+          await this._activityService.shutdown();
+        }
+      });
+    }
+
+    // Register plugin system with BIOS
+    if (this._pluginRegistry) {
+      this._bios.registerPluginSystem({
+        registry: this._pluginRegistry,
+        loader: this._pluginLoader
+      });
+      logger.info('[BIOS] Plugin system registered');
+    }
+
     logger.info('[BIOS] All components registered');
   }
 
@@ -1308,6 +2180,7 @@ export class CogniMeshServer extends EventEmitter {
     const biosStatus = this._bios?.getStatus() || { state: 'unknown' };
     const dbStats = this._connectionPool?.getStats() || { total: 0, inUse: 0, available: 0 };
     const wsStats = this._wsServer?.getStats() || { clients: 0, rooms: 0 };
+    const pluginStatus = this._bios?.getPluginSystemStatus();
 
     const checks = {
       bios: biosStatus.state === 'OPERATIONAL',
@@ -1316,7 +2189,8 @@ export class CogniMeshServer extends EventEmitter {
       tools: (this._tools?.count || 0) > 0,
       http: this._status === ServerStatus.RUNNING,
       websocket: this._wsServer ? this._wsServer.isRunning() : true,
-      dashboard: this._dashboardServer ? true : true
+      dashboard: this._dashboardServer ? true : true,
+      plugins: pluginStatus ? true : true // Optional component
     };
 
     const healthy = Object.values(checks).every(check => check);
@@ -1340,7 +2214,8 @@ export class CogniMeshServer extends EventEmitter {
         },
         websocket: wsStats,
         rateLimiters: Object.keys(this._rateLimiters),
-        circuitBreakers: Array.from(this._circuitBreakers.keys())
+        circuitBreakers: Array.from(this._circuitBreakers.keys()),
+        plugins: pluginStatus || null
       }
     };
   }

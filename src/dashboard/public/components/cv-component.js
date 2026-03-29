@@ -11,6 +11,7 @@ class CVComponent {
     this.cvs = [];
     this.templates = ['system-admin', 'developer', 'analyst', 'code-reviewer', 'test-agent'];
     this.loading = false;
+    this.providerCatalog = { providers: [], models: [] };
 
     // Bind refresh button
     document.getElementById('refreshCVsBtn')?.addEventListener('click', () => {
@@ -149,6 +150,26 @@ class CVComponent {
     const role = this.escapeHtml(cv.identity?.role || 'Unknown');
     const status = this.escapeHtml(cv.lifecycle?.status || 'unknown');
     const capabilities = Array.isArray(cv.capabilities) ? cv.capabilities : [];
+    const tags = Array.isArray(cv.metadata?.tags) ? cv.metadata.tags : [];
+    const provider = (
+      cv.runtime?.provider
+      || cv.adapterConfig?.provider
+      || this.extractTaggedValue(tags, 'provider')
+      || 'unknown'
+    );
+    const model = (
+      cv.runtime?.model
+      || cv.adapterConfig?.model
+      || this.extractTaggedValue(tags, 'model')
+      || ''
+    );
+    const surface = (
+      cv.runtime?.surface
+      || cv.adapterConfig?.surface
+      || this.extractTaggedValue(tags, 'surface')
+      || 'cli'
+    );
+    const runtimeSummary = [provider, model, surface].filter(Boolean).join(' | ');
 
     const capabilityTags = capabilities.slice(0, 3).map(c =>
       `<span class="capability-tag">${this.escapeHtml(c.name || c)}</span>`
@@ -169,6 +190,7 @@ class CVComponent {
           </span>
         </div>
         <div class="cv-role">${role}</div>
+        <div class="cv-role">${this.escapeHtml(runtimeSummary)}</div>
         ${capabilities.length > 0 ? `
           <div class="cv-capabilities">
             ${capabilityTags}${moreTag}
@@ -201,7 +223,7 @@ class CVComponent {
 
     // Create CV button
     document.getElementById('createCVBtn')?.addEventListener('click', () => {
-      this.showCreateModal();
+      void this.showCreateModal();
     });
   }
 
@@ -237,14 +259,131 @@ class CVComponent {
   }
 
   /**
+   * Load provider catalog for CV creation
+   */
+  async loadProviderCatalog() {
+    if (!this.api?.getProviders) {
+      this.providerCatalog = { providers: [], models: [] };
+      return this.providerCatalog;
+    }
+
+    const data = await this.api.getProviders();
+    this.providerCatalog = {
+      providers: Array.isArray(data?.providers) ? data.providers : [],
+      models: Array.isArray(data?.models) ? data.models : []
+    };
+    return this.providerCatalog;
+  }
+
+  getModelsForProvider(providerId) {
+    return (this.providerCatalog?.models || []).filter((model) => model.provider === providerId);
+  }
+
+  getSurfacesForProvider(providerId) {
+    const provider = (this.providerCatalog?.providers || []).find((entry) => entry.id === providerId);
+    if (Array.isArray(provider?.connectedModes) && provider.connectedModes.length > 0) {
+      return provider.connectedModes;
+    }
+    return Array.isArray(provider?.supportedModes) && provider.supportedModes.length > 0
+      ? provider.supportedModes
+      : ['cli'];
+  }
+
+  getSurfaceStatusMap(providerId) {
+    const provider = (this.providerCatalog?.providers || []).find((entry) => entry.id === providerId);
+    return provider?.surfaceStatus && typeof provider.surfaceStatus === 'object'
+      ? provider.surfaceStatus
+      : {};
+  }
+
+  populateCVModelOptions(providerId) {
+    const modelSelect = document.getElementById('cvModelSelect');
+    if (!modelSelect) return;
+
+    const models = this.getModelsForProvider(providerId);
+    if (models.length === 0) {
+      modelSelect.innerHTML = '<option value="">Provider default</option>';
+      return;
+    }
+
+    modelSelect.innerHTML = models.map((model) => (
+      `<option value="${this.escapeHtml(model.id)}">${this.escapeHtml(model.name || model.id)}</option>`
+    )).join('');
+  }
+
+  populateCVSurfaceOptions(providerId, modelId = '') {
+    const surfaceSelect = document.getElementById('cvSurfaceSelect');
+    if (!surfaceSelect) return;
+
+    const providerSurfaces = this.getSurfacesForProvider(providerId).map((surface) => this.normalizeSurfaceId(surface));
+    const surfaceStatus = this.getSurfaceStatusMap(providerId);
+    const model = (this.providerCatalog?.models || []).find((entry) => entry.id === modelId);
+    const modelSurfaces = Array.isArray(model?.surfaces)
+      ? model.surfaces.map((surface) => this.normalizeSurfaceId(surface)).filter(Boolean)
+      : [];
+    const surfaces = modelSurfaces.length > 0
+      ? providerSurfaces.filter((surface) => modelSurfaces.includes(surface))
+      : providerSurfaces;
+
+    const labels = {
+      cli: 'CLI',
+      vscode: 'VS Code',
+      app: 'App',
+      desktop: 'Desktop'
+    };
+    surfaceSelect.innerHTML = surfaces.map((surface) => {
+      const online = Boolean(surfaceStatus[surface]);
+      const statusLabel = online ? 'online' : 'offline';
+      return `<option value="${surface}">${labels[surface] || surface} (${statusLabel})</option>`;
+    }).join('');
+    const preferredOnline = surfaces.find((surface) => Boolean(surfaceStatus[surface]));
+    if (preferredOnline) {
+      surfaceSelect.value = preferredOnline;
+    }
+  }
+
+  normalizeSurfaceId(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (['vscode', 'vs code', 'vs-code'].includes(normalized)) return 'vscode';
+    if (['cli', 'terminal', 'shell'].includes(normalized)) return 'cli';
+    if (['app', 'desktop'].includes(normalized)) return normalized;
+    return '';
+  }
+
+  extractTaggedValue(tags, prefix) {
+    const entry = (tags || []).find((tag) => typeof tag === 'string' && tag.startsWith(`${prefix}:`));
+    if (!entry) return '';
+    return entry.slice(prefix.length + 1).trim();
+  }
+
+  /**
    * Show modal for creating new CV
    */
-  showCreateModal() {
+  async showCreateModal() {
     // Remove any existing CV modals
     this.closeCVModals();
+    try {
+      await this.loadProviderCatalog();
+    } catch (error) {
+      console.error('Failed to load provider catalog for CV creation:', error);
+      if (typeof cvWindow.Toast?.warning === 'function') {
+        cvWindow.Toast.warning('Provider catalog unavailable, using defaults');
+      }
+      this.providerCatalog = { providers: [], models: [] };
+    }
 
     const overlay = document.getElementById('modalOverlay');
     if (overlay) overlay.classList.add('active');
+
+    const fallbackProviders = [
+      { id: 'codex', name: 'Codex' },
+      { id: 'claude', name: 'Claude' },
+      { id: 'kimi', name: 'Kimi' }
+    ];
+    const providers = this.providerCatalog.providers.length > 0
+      ? this.providerCatalog.providers
+      : fallbackProviders;
+    const defaultProvider = providers[0]?.id || 'codex';
 
     const modal = document.createElement('div');
     modal.className = 'modal cv-create-modal active';
@@ -270,6 +409,34 @@ class CVComponent {
         <div class="form-group">
           <label for="cvRoleInput">Role</label>
           <input type="text" id="cvRoleInput" class="form-control" placeholder="Enter agent role">
+        </div>
+        <div class="form-group">
+          <label for="cvProviderSelect">Provider</label>
+          <select id="cvProviderSelect" class="form-control">
+            ${providers.map((provider) => (
+              (() => {
+                const connectedModes = Array.isArray(provider.connectedModes) ? provider.connectedModes : [];
+                const suffix = connectedModes.length > 0
+                  ? ` (online: ${connectedModes.join(', ')})`
+                  : ' (offline)';
+                return `<option value="${this.escapeHtml(provider.id)}">${this.escapeHtml(provider.name || provider.id)}${this.escapeHtml(suffix)}</option>`;
+              })()
+            )).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cvModelSelect">Model</label>
+          <select id="cvModelSelect" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label for="cvSurfaceSelect">Surface</label>
+          <select id="cvSurfaceSelect" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="cvAutoActivate" checked>
+            <span>Activate immediately</span>
+          </label>
         </div>
       </div>
       <div class="modal-footer">
@@ -298,6 +465,24 @@ class CVComponent {
       await this.createCV();
     });
 
+    const providerSelect = document.getElementById('cvProviderSelect');
+    providerSelect.value = defaultProvider;
+    this.populateCVModelOptions(defaultProvider);
+    const initialModel = document.getElementById('cvModelSelect')?.value || '';
+    this.populateCVSurfaceOptions(defaultProvider, initialModel);
+
+    providerSelect?.addEventListener('change', (event) => {
+      const providerId = event.target.value;
+      this.populateCVModelOptions(providerId);
+      const selectedModel = document.getElementById('cvModelSelect')?.value || '';
+      this.populateCVSurfaceOptions(providerId, selectedModel);
+    });
+
+    document.getElementById('cvModelSelect')?.addEventListener('change', (event) => {
+      const providerId = document.getElementById('cvProviderSelect')?.value || defaultProvider;
+      this.populateCVSurfaceOptions(providerId, event.target.value);
+    });
+
     // Enter key to submit
     modal.querySelectorAll('input').forEach(input => {
       input.addEventListener('keypress', (e) => {
@@ -315,6 +500,10 @@ class CVComponent {
     const template = document.getElementById('cvTemplateSelect')?.value;
     const name = document.getElementById('cvNameInput')?.value?.trim();
     const role = document.getElementById('cvRoleInput')?.value?.trim();
+    const provider = document.getElementById('cvProviderSelect')?.value || 'codex';
+    const model = document.getElementById('cvModelSelect')?.value || '';
+    const surface = this.normalizeSurfaceId(document.getElementById('cvSurfaceSelect')?.value || 'cli') || 'cli';
+    const autoActivate = Boolean(document.getElementById('cvAutoActivate')?.checked);
 
     if (!name) {
       if (typeof cvWindow.Toast?.error === 'function') {
@@ -324,19 +513,50 @@ class CVComponent {
     }
 
     try {
+      const fallbackClients = ['claude', 'codex', 'kimi'].filter((entry) => entry !== provider);
+      const runtimeTags = [
+        `provider:${provider}`,
+        surface ? `surface:${surface}` : null,
+        model ? `model:${model}` : null
+      ].filter(Boolean);
+
       const overrides = {
-        identity: { name }
+        identity: { name },
+        execution: {
+          preferred_client: provider,
+          fallback_clients: fallbackClients
+        },
+        runtime: {
+          provider,
+          model: model || null,
+          surface,
+          mode: surface
+        },
+        adapterConfig: {
+          provider,
+          model: model || null,
+          surface,
+          mode: surface
+        },
+        metadata: {
+          tags: runtimeTags,
+          category: 'worker',
+          domain: 'engineering'
+        }
       };
       if (role) {
         overrides.identity.role = role;
+        overrides.specialization = {
+          primary: role.toLowerCase().replace(/\s+/g, '-')
+        };
       }
 
-      await this.api.createCV({ templateName: template, overrides });
+      await this.api.createCV({ templateName: template, overrides, autoActivate });
       this.closeCVModals();
       await this.loadCVs();
 
       if (typeof cvWindow.Toast?.success === 'function') {
-        cvWindow.Toast.success('CV created successfully');
+        cvWindow.Toast.success(autoActivate ? 'CV created and activated' : 'CV created successfully');
       }
     } catch (error) {
       console.error('Failed to create CV:', error);

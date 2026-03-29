@@ -372,7 +372,7 @@ export class DBGateway extends EventEmitter {
     }
 
     // Release any active connections
-    for (const [id, conn] of this.#activeConnections) {
+    for (const [, conn] of this.#activeConnections) {
       try {
         conn.release();
       } catch {

@@ -29,7 +29,7 @@ const integrationEvents = new EventEmitter();
  * Webhook signing secret
  * @type {string}
  */
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'default-secret-change-in-production';
+// const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'default-secret-change-in-production';
 
 /**
  * Integration tools

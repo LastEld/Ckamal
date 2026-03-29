@@ -575,22 +575,22 @@ export class PatchVerifier extends EventEmitter {
   
   // Private helper methods
   
-  async checkSyntax(patchId, options) {
+  async checkSyntax(_patchId, _options) {
     // Implementation would use actual syntax checker
     return { valid: true, issues: [] };
   }
   
-  async checkCodeStyle(patchId, options) {
+  async checkCodeStyle(_patchId, _options) {
     // Implementation would use linter (ESLint, etc.)
     return { violations: [] };
   }
   
-  async analyzeComplexity(patchId, options) {
+  async analyzeComplexity(_patchId, _options) {
     // Implementation would use complexity analyzer
     return { cyclomatic: 10, cognitive: 8, location: patchId };
   }
   
-  async checkCodeCoverage(patchId, options) {
+  async checkCodeCoverage(_patchId, _options) {
     // Implementation would use coverage tool
     return { percentage: 0.85 };
   }

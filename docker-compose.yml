@@ -1,46 +1,236 @@
 version: '3.8'
+
 services:
+  # ============================================================
+  # CogniMesh MCP Server
+  # ============================================================
   cognimesh:
-    build: .
-    ports:
-      - "3000:3000"
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_PATH=/data/cognimesh.db
-    volumes:
-      - ./data:/data
-      - ./logs:/app/logs
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: cognimesh/cognimesh-server:v5.0.0
+    container_name: cognimesh-server
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
-      interval: 30s
-      timeout: 3s
-      start_period: 5s
-      retries: 3
-    depends_on:
-      - vault
+    
+    ports:
+      - "${COGNIMESH_PORT:-3000}:3000"      # HTTP API
+      - "${DASHBOARD_PORT:-3001}:3001"      # Dashboard
+      - "${WS_PORT:-8080}:8080"             # WebSocket
+    
+    environment:
+      # Core settings
+      - NODE_ENV=production
+      - COGNIMESH_PORT=3000
+      - COGNIMESH_HOST=0.0.0.0
+      - COGNIMESH_NAME=cognimesh-server
+      
+      # Paths
+      - COGNIMESH_DATA_DIR=/app/data
+      - COGNIMESH_CACHE_DIR=/app/cache
+      - COGNIMESH_LOGS_DIR=/app/logs
+      - DATABASE_PATH=/app/data/cognimesh.db
+      - STATE_PATH=/app/data/state
+      
+      # Database
+      - DB_MAX_CONNECTIONS=20
+      - DB_BUSY_TIMEOUT_MS=5000
+      - DB_MAX_RETRIES=5
+      - DB_RETRY_DELAY_MS=200
+      
+      # Feature flags
+      - WS_ENABLED=${WS_ENABLED:-true}
+      - WS_PORT=8080
+      - WS_HOST=0.0.0.0
+      - DASHBOARD_ENABLED=${DASHBOARD_ENABLED:-true}
+      - DASHBOARD_PORT=3001
+      - DASHBOARD_HOST=0.0.0.0
+      
+      # Security (override in .env)
+      - SECURITY_MODE=${SECURITY_MODE:-enforced}
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-true}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      
+      # Secrets (from .env)
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SECURITY_PEPPER=${SECURITY_PEPPER}
+    
+    volumes:
+      # Persistent data
+      - cognimesh-data:/app/data
+      - cognimesh-cache:/app/cache
+      - cognimesh-logs:/app/logs
+      - cognimesh-backups:/app/backups
+      
+      # Config (read-only)
+      - ./config:/app/config:ro
+      
+      # Environment file (read-only)
+      - ./.env:/app/.env:ro
+    
     networks:
       - cognimesh-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:3000/health/live"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
 
+  # ============================================================
+  # HashiCorp Vault (Optional - for secrets management)
+  # ============================================================
   vault:
-    image: hashicorp/vault:latest
+    image: hashicorp/vault:1.15
+    container_name: cognimesh-vault
+    restart: unless-stopped
+    profiles:
+      - vault
+      - full
+    
     ports:
       - "8200:8200"
+    
     environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=dev-token
+      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_DEV_TOKEN:-dev-token-only-for-development}
       - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_ADDR=http://0.0.0.0:8200
+    
     cap_add:
       - IPC_LOCK
+    
     volumes:
       - vault-data:/vault/file
-    command: server -dev -dev-root-token-id="dev-token"
+      - ./config/vault:/vault/config:ro
+    
+    command: server -dev -dev-root-token-id="${VAULT_DEV_TOKEN:-dev-token-only-for-development}"
+    
     networks:
       - cognimesh-network
+    
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ============================================================
+  # Prometheus (Optional - for metrics collection)
+  # ============================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: cognimesh-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+      - full
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    
+    networks:
+      - cognimesh-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # Grafana (Optional - for metrics visualization)
+  # ============================================================
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: cognimesh-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+      - full
+    
+    ports:
+      - "3002:3000"
+    
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+    
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    
+    networks:
+      - cognimesh-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+    depends_on:
+      - prometheus
+
+# ============================================================
+# Networks
+# ============================================================
 networks:
   cognimesh-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
+# ============================================================
+# Volumes
+# ============================================================
 volumes:
+  cognimesh-data:
+    driver: local
+  cognimesh-cache:
+    driver: local
+  cognimesh-logs:
+    driver: local
+  cognimesh-backups:
+    driver: local
   vault-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

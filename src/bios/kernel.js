@@ -7,7 +7,7 @@
 
 import { EventEmitter } from 'events';
 import { SystemState } from './index.js';
-import { BootMode, BootPhase } from './modes/boot.js';
+import { BootMode } from './modes/boot.js';
 import { OperationalMode } from './modes/operational.js';
 import { MaintenanceMode } from './modes/maintenance.js';
 import { SafeMode } from './modes/safe-mode.js';

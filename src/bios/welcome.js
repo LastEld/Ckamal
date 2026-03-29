@@ -37,7 +37,7 @@ export function renderWelcome(options = {}) {
   const hr = '\u2550'.repeat(w);
   const line = '\u2500'.repeat(w);
 
-  const pad = (text, width = w) => {
+  const _pad = (text, width = w) => {
     // Strip ANSI codes for length calculation
     // eslint-disable-next-line no-control-regex
     const clean = text.replace(/\x1b\[[0-9;]*m/g, '');

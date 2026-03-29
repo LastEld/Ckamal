@@ -337,7 +337,7 @@ export class QualityChecker {
    * @param {Array<Object>} sources - Source documents
    * @returns {number} Attribution score (0-1)
    */
-  _checkAttribution(response, sources) {
+  _checkAttribution(response, _sources) {
     const attributionPatterns = [
       /according to/gi,
       /as stated in/gi,

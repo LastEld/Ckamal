@@ -10,18 +10,295 @@ Complete API documentation for the CogniMesh Multi-Agent Orchestration Platform.
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [MCP Tools API](#mcp-tools-api)
+2. [REST API Endpoints](#rest-api-endpoints)
+   - [Authentication](#authentication-endpoints)
+   - [Companies](#companies-endpoints)
+   - [Billing](#billing-endpoints)
+   - [Issues](#issues-endpoints)
+   - [Documents](#documents-endpoints)
+   - [Approvals](#approvals-endpoints)
+   - [Routines](#routines-endpoints)
+   - [Heartbeat](#heartbeat-endpoints)
+   - [Activity](#activity-endpoints)
+   - [Plugins](#plugins-endpoints)
+3. [MCP Tools API](#mcp-tools-api)
    - [Task Tools (11)](#task-tools)
    - [Roadmap Tools (13)](#roadmap-tools)
    - [Claude Tools (12)](#claude-tools)
    - [System Tools (12)](#system-tools)
    - [Analysis Tools (10)](#analysis-tools)
-3. [HTTP API Endpoints](#http-api-endpoints)
-4. [WebSocket API](#websocket-api)
-5. [BIOS Console Commands](#bios-console-commands)
-6. [JavaScript API](#javascript-api)
-7. [Configuration API](#configuration-api)
-8. [Event API](#event-api)
+4. [HTTP API Endpoints](#http-api-endpoints)
+5. [WebSocket API](#websocket-api)
+6. [BIOS Console Commands](#bios-console-commands)
+7. [JavaScript API](#javascript-api)
+8. [Configuration API](#configuration-api)
+9. [Event API](#event-api)
+
+## REST API Endpoints
+
+Complete REST API endpoints organized by resource. For detailed documentation, see:
+
+- [Authentication Guide](./docs/api/AUTHENTICATION.md) - Auth flows, JWT, API keys
+- [Endpoints Reference](./docs/api/ENDPOINTS.md) - Full API endpoint documentation
+- [WebSocket API](./docs/api/WEBSOCKET.md) - Real-time communication
+- [Error Reference](./docs/api/ERRORS.md) - Error codes and troubleshooting
+
+### Base URL
+
+```
+https://api.example.com/api
+```
+
+### Response Format
+
+```json
+{
+  "success": boolean,
+  "data": object | array | null,
+  "error": string | undefined,
+  "code": string | undefined,
+  "pagination": {
+    "total": number,
+    "limit": number,
+    "offset": number
+  }
+}
+```
+
+---
+
+### Authentication Endpoints
+
+Base path: `/api/auth`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/register` | No | Register new user |
+| POST | `/login` | No | Authenticate user |
+| POST | `/logout` | Yes | Logout user |
+| POST | `/refresh` | No | Refresh access token |
+| POST | `/forgot-password` | No | Request password reset |
+| POST | `/reset-password` | No | Reset password |
+| GET | `/me` | Yes | Get current user profile |
+| PUT | `/me` | Yes | Update profile |
+| POST | `/api-keys` | Yes | Create API key |
+| GET | `/api-keys` | Yes | List API keys |
+| DELETE | `/api-keys/:id` | Yes | Revoke API key |
+
+**Example:**
+```bash
+curl -X POST https://api.example.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "SecurePassword123!"}'
+```
+
+---
+
+### Companies Endpoints
+
+Base path: `/api/companies`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/` | Yes | Create company |
+| GET | `/` | Yes | List user companies |
+| GET | `/:id` | Yes | Get company details |
+| PUT | `/:id` | Yes | Update company |
+| DELETE | `/:id` | Yes | Delete company |
+| GET | `/:id/members` | Yes | List members |
+| POST | `/:id/members` | Yes | Add member |
+| DELETE | `/:id/members/:userId` | Yes | Remove member |
+| PUT | `/:id/members/:userId` | Yes | Update member role |
+
+**Roles:** `owner`, `admin`, `member`, `viewer`
+
+---
+
+### Billing Endpoints
+
+Base path: `/api/billing`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/summary` | Yes | Dashboard summary |
+| GET | `/costs` | Yes | List cost events |
+| GET | `/costs/by-model` | Yes | Costs grouped by model |
+| GET | `/costs/by-provider` | Yes | Costs grouped by provider |
+| GET | `/costs/by-agent` | Yes | Costs grouped by agent |
+| GET | `/budgets` | Yes | List budgets |
+| POST | `/budgets` | Yes | Create budget |
+| GET | `/budgets/:id` | Yes | Get budget |
+| PUT | `/budgets/:id` | Yes | Update budget |
+| DELETE | `/budgets/:id` | Yes | Delete budget |
+| GET | `/alerts` | Yes | List budget alerts |
+| PUT | `/alerts/:id/acknowledge` | Yes | Acknowledge alert |
+| GET | `/forecast` | Yes | Spending forecast |
+
+---
+
+### Issues Endpoints
+
+Base path: `/api/issues`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/` | Yes | Create issue |
+| GET | `/` | Yes | List issues |
+| GET | `/search` | Yes | Search issues |
+| GET | `/statistics` | Yes | Issue statistics |
+| GET | `/unread` | Yes | Get unread issues |
+| GET | `/:id` | Yes | Get issue |
+| PUT | `/:id` | Yes | Update issue |
+| DELETE | `/:id` | Yes | Delete issue |
+| POST | `/:id/comments` | Yes | Add comment |
+| GET | `/:id/comments` | Yes | List comments |
+| PUT | `/:id/comments/:commentId` | Yes | Update comment |
+| DELETE | `/:id/comments/:commentId` | Yes | Delete comment |
+| POST | `/:id/labels` | Yes | Add label |
+| DELETE | `/:id/labels/:labelId` | Yes | Remove label |
+| POST | `/:id/assign` | Yes | Assign/unassign |
+| POST | `/:id/read` | Yes | Mark as read |
+
+**Statuses:** `open`, `in_progress`, `resolved`, `closed`  
+**Priorities:** `low`, `medium`, `high`, `critical`
+
+---
+
+### Documents Endpoints
+
+Base path: `/api/documents`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/` | Yes | Create document |
+| GET | `/` | Yes | List documents |
+| GET | `/search` | Yes | Search documents |
+| GET | `/statistics` | Yes | Document statistics |
+| GET | `/:id` | Yes | Get document |
+| PUT | `/:id` | Yes | Update document |
+| DELETE | `/:id` | Yes | Delete document |
+| GET | `/:id/revisions` | Yes | List revisions |
+| GET | `/:id/revisions/:version` | Yes | Get revision |
+| POST | `/:id/restore/:version` | Yes | Restore revision |
+| GET | `/:id/compare` | Yes | Compare revisions |
+| POST | `/:id/share` | Yes | Share document |
+| GET | `/:id/shares` | Yes | List shares |
+| DELETE | `/:id/shares/:shareId` | Yes | Revoke share |
+| POST | `/:id/restore` | Yes | Restore deleted document |
+
+---
+
+### Approvals Endpoints
+
+Base path: `/api/approvals`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/` | Yes | Create approval |
+| GET | `/` | Yes | List approvals |
+| GET | `/pending` | Yes | Get pending for user |
+| GET | `/:id` | Yes | Get approval |
+| POST | `/:id/approve` | Yes | Approve request |
+| POST | `/:id/reject` | Yes | Reject request |
+| POST | `/:id/request-changes` | Yes | Request changes |
+| POST | `/:id/delegate` | Yes | Delegate approval |
+| POST | `/:id/comments` | Yes | Add comment |
+
+**Types:** `code_change`, `deployment`, `data_access`, `config_change`, `budget_change`  
+**Statuses:** `pending`, `approved`, `rejected`, `changes_requested`
+
+---
+
+### Routines Endpoints
+
+Base path: `/api/routines`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/` | Yes | Create routine |
+| GET | `/` | Yes | List routines |
+| GET | `/:id` | Yes | Get routine |
+| PUT | `/:id` | Yes | Update routine |
+| DELETE | `/:id` | Yes | Delete routine |
+| POST | `/:id/run` | Yes | Run immediately |
+| POST | `/:id/pause` | Yes | Pause routine |
+| POST | `/:id/resume` | Yes | Resume routine |
+| GET | `/:id/runs` | Yes | List run history |
+| GET | `/:id/runs/:runId` | Yes | Get run details |
+| POST | `/:id/runs/:runId/retry` | Yes | Retry failed run |
+| POST | `/:id/triggers` | Yes | Add trigger |
+| GET | `/:id/triggers` | Yes | List triggers |
+| DELETE | `/:id/triggers/:triggerId` | Yes | Remove trigger |
+| POST | `/:id/agents` | Yes | Assign agent |
+| DELETE | `/:id/agents/:agentId` | Yes | Unassign agent |
+
+**Trigger Types:** `cron`, `webhook`, `event`, `manual`
+
+---
+
+### Heartbeat Endpoints
+
+Base path: `/api/heartbeat`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/runs` | Yes | List runs |
+| POST | `/runs` | Yes | Create run |
+| GET | `/runs/:id` | Yes | Get run |
+| POST | `/runs/:id/cancel` | Yes | Cancel run |
+| POST | `/runs/:id/retry` | Yes | Retry run |
+| GET | `/runs/:id/events` | Yes | Get run events |
+| GET | `/runs/:id/log` | Yes | Stream run log (SSE) |
+| GET | `/runs/:id/cost` | Yes | Get run cost |
+| POST | `/agents/:id/wakeup` | Yes | Wake up agent |
+| GET | `/agents/:id/sessions` | Yes | List sessions |
+| DELETE | `/agents/:id/sessions/:sessionId` | Yes | Delete session |
+| GET | `/costs` | Yes | Cost summary |
+| GET | `/health` | Yes | Health check |
+
+**Run Statuses:** `queued`, `running`, `succeeded`, `failed`, `cancelled`, `timed_out`
+
+---
+
+### Activity Endpoints
+
+Base path: `/api/activity`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Yes | Activity feed |
+| GET | `/:id` | Yes | Get single activity |
+| GET | `/dashboard` | Yes | Dashboard aggregations |
+| GET | `/entity/:type/:id` | Yes | Entity activity |
+| GET | `/security` | Yes | Security events |
+| GET | `/alerts` | Yes | Anomaly alerts |
+| POST | `/alerts/:id/acknowledge` | Yes | Acknowledge alert |
+| GET | `/export` | Yes | Export activity |
+| POST | `/subscribe` | Yes | WebSocket subscription |
+
+**Export Formats:** `csv`, `json`
+
+---
+
+### Plugins Endpoints
+
+Base path: `/api/plugins`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Yes | List plugins |
+| POST | `/` | Yes | Install plugin |
+| GET | `/:id` | Yes | Get plugin details |
+| PUT | `/:id` | Yes | Update plugin config |
+| DELETE | `/:id` | Yes | Uninstall plugin |
+| POST | `/:id/enable` | Yes | Enable plugin |
+| POST | `/:id/disable` | Yes | Disable plugin |
+| GET | `/:id/logs` | Yes | Get plugin logs |
+| POST | `/:id/tools/:toolId` | Yes | Execute tool |
+
+**Statuses:** `active`, `inactive`, `error`
+
+---
 
 ---
 

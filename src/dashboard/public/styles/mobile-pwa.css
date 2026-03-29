@@ -1,0 +1,568 @@
+/**
+ * CogniMesh Dashboard - Mobile PWA Styles
+ * Mobile-specific styles for PWA experience
+ */
+
+/* ============================================
+   Mobile Optimizations
+   ============================================ */
+
+body.mobile-optimized {
+  /* Prevent text selection on UI elements */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-optimized input,
+body.mobile-optimized textarea {
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+/* ============================================
+   Safe Area Support (notch devices)
+   ============================================ */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .mobile-optimized .top-header {
+    padding-top: calc(0.5rem + env(safe-area-inset-top));
+    height: calc(64px + env(safe-area-inset-top));
+  }
+  
+  .mobile-optimized .sidebar {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .mobile-optimized .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .mobile-optimized .view-container {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================
+   Touch Feedback
+   ============================================ */
+
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.touch-feedback:active::before {
+  transform: translate(-50%, -50%) scale(2);
+}
+
+/* Button touch targets */
+.mobile-optimized button,
+.mobile-optimized .btn,
+.mobile-optimized .btn-icon,
+.mobile-optimized .nav-link {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.mobile-optimized .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================
+   Pull to Refresh
+   ============================================ */
+
+.pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  transform: translateY(-100%);
+  z-index: 99;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.ptr-spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.ptr-icon {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease;
+}
+
+.ptr-refreshing .ptr-icon {
+  animation: ptr-spin 1s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ptr-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ptr-ready .ptr-text {
+  color: var(--color-brand-primary);
+}
+
+.ptr-refreshing .ptr-text {
+  color: var(--color-brand-primary);
+}
+
+body.ptr-disabled .pull-to-refresh {
+  display: none;
+}
+
+/* ============================================
+   Edge Swipe Indicator
+   ============================================ */
+
+.edge-swipe-indicator {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  width: 4px;
+  height: 40px;
+  background: var(--color-brand-primary);
+  border-radius: 0 4px 4px 0;
+  transform: translateY(-50%) scaleY(0);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 98;
+  opacity: 0.6;
+}
+
+.mobile-optimized .edge-swipe-indicator {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.edge-swipe-indicator:active {
+  opacity: 1;
+  width: 6px;
+}
+
+/* ============================================
+   Mobile Bottom Navigation
+   ============================================ */
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.mobile-nav-items {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 56px;
+  padding: 0 8px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.mobile-nav-item:active {
+  color: var(--color-brand-primary);
+}
+
+.mobile-nav-item.active {
+  color: var(--color-brand-primary);
+}
+
+.mobile-nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 2px;
+}
+
+.mobile-nav-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.mobile-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--color-error);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-badge.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mobile-nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mobile-nav-safe-area {
+  height: env(safe-area-inset-bottom, 0);
+}
+
+/* Hide bottom nav when keyboard is open */
+body.keyboard-open .mobile-bottom-nav {
+  transform: translateY(100%);
+}
+
+/* ============================================
+   Gesture Hints
+   ============================================ */
+
+.gesture-hint {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.gesture-hint.visible {
+  opacity: 1;
+}
+
+.gesture-hint-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: white;
+}
+
+.gesture-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.gesture-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ============================================
+   View Transitions
+   ============================================ */
+
+.view {
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view.entering {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.view.leaving {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* Modal transitions */
+.modal {
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay {
+  transition: opacity 300ms ease;
+}
+
+/* Sidebar transitions */
+.sidebar {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   PWA Install Prompt
+   ============================================ */
+
+.pwa-install-prompt {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  left: 16px;
+  right: 16px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  transform: translateY(200%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pwa-install-prompt.visible {
+  transform: translateY(0);
+}
+
+.pwa-install-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pwa-install-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pwa-install-icon svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+}
+
+.pwa-install-text {
+  flex: 1;
+}
+
+.pwa-install-text h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.pwa-install-text p {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.pwa-install-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.pwa-install-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pwa-install-btn.primary {
+  background: var(--color-brand-primary);
+  color: white;
+  border: none;
+}
+
+.pwa-install-btn.secondary {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.pwa-install-btn:active {
+  opacity: 0.8;
+}
+
+/* ============================================
+   Offline Indicator
+   ============================================ */
+
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-warning);
+  color: var(--color-text-primary);
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 10000;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.offline-indicator.visible {
+  transform: translateY(0);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Smaller padding on mobile */
+  .view-container {
+    padding: 1rem;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  }
+  
+  /* Larger touch targets */
+  .nav-link {
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Card adjustments */
+  .stat-card,
+  .agent-card,
+  .roadmap-card {
+    padding: 1rem;
+  }
+  
+  /* Form elements */
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Modal adjustments */
+  .modal {
+    width: 95%;
+    max-height: 85vh;
+    margin: 1rem;
+  }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .view,
+  .modal,
+  .sidebar,
+  .mobile-bottom-nav,
+  .pull-to-refresh,
+  .pwa-install-prompt {
+    transition: none !important;
+  }
+  
+  .ptr-refreshing .ptr-icon {
+    animation: none;
+  }
+}
+
+/* ============================================
+   Standalone Mode (installed PWA)
+   ============================================ */
+
+@media (display-mode: standalone) {
+  /* Hide browser-specific UI */
+  .browser-only {
+    display: none !important;
+  }
+  
+  /* Adjust for status bar */
+  .top-header {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  
+  /* Show install prompt button */
+  .standalone-only {
+    display: block !important;
+  }
+}
+
+@media (display-mode: browser) {
+  .standalone-only {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   Dark Mode Adjustments
+   ============================================ */
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+[data-theme="light"] .mobile-bottom-nav {
+  background: rgba(255, 255, 255, 0.95);
+}

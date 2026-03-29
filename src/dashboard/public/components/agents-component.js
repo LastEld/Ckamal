@@ -3,6 +3,8 @@
  * Agent cards grid with status, capabilities, and stats
  */
 
+/* global Toast */
+
 const agentsWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class AgentsComponent {

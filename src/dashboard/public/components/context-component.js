@@ -3,6 +3,8 @@
  * Manages project context snapshots with Merkle-tree verification
  */
 
+/* global Toast */
+
 const contextWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class ContextComponent {

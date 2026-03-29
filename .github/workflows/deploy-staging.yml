@@ -1,0 +1,67 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.cognimesh.example.com
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Set up Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to staging
+        run: |
+          cd k8s
+          
+          # Update image tag
+          kustomize edit set image cognimesh/cognimesh-server=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          
+          # Apply manifests
+          kustomize build . | kubectl apply -f -
+          
+          # Wait for rollout
+          kubectl rollout status deployment/cognimesh-server -n cognimesh --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n cognimesh
+          kubectl get svc -n cognimesh
+          
+          # Health check
+          kubectl port-forward svc/cognimesh-server 3000:3000 -n cognimesh &
+          sleep 5
+          curl -f http://localhost:3000/health || exit 1

@@ -266,7 +266,7 @@ export class RoadmapController {
      * @example
      * const roadmaps = await controller.getRoadmaps();
      */
-    async getRoadmaps(filters = {}, pagination = {}) {
+    async getRoadmaps(_filters = {}, pagination = {}) {
         try {
             const { limit, offset } = parsePagination(pagination);
             
@@ -410,7 +410,7 @@ export class RoadmapController {
                 };
             }
 
-            const result = await this.gateway.updateNodeProgress(roadmapId, nodeId, status);
+            await this.gateway.updateNodeProgress(roadmapId, nodeId, status);
 
             return formatResponse({
                 roadmapId,
@@ -571,7 +571,7 @@ export class RoadmapController {
      *   NodeStatus.COMPLETED
      * );
      */
-    async updateNodeProgress(roadmapId, nodeId, progress, options = {}) {
+    async updateNodeProgress(roadmapId, nodeId, progress, _options = {}) {
         try {
             if (!roadmapId || !nodeId || !progress) {
                 return {

@@ -117,7 +117,7 @@ export function table(data, options = {}) {
   }
 
   // Data rows
-  data.forEach((row, idx) => {
+  data.forEach((row) => {
     output += '│' + columns.map(col => {
       const value = String(row[col] ?? '');
       const padded = ' ' + value.padEnd(widths[col] - 1);
@@ -249,7 +249,7 @@ export function createSpinner(text) {
  * Tree view
  */
 export function tree(items, options = {}) {
-  const { indent = 0, prefix = '' } = options;
+  const { indent = 0, prefix: _prefix = '' } = options;
   let output = '';
 
   items.forEach((item, idx) => {

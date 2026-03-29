@@ -33,6 +33,9 @@ export const PROVIDER_SURFACES = Object.freeze({
 export const MODEL_ALIASES = Object.freeze({
   'claude-opus-4': 'claude-opus-4-6',
   'claude-opus-4-5-latest': 'claude-opus-4-5',
+  'gpt-5.4': 'gpt-5.4-codex',
+  'gpt-5.4-mini': 'gpt-5.4-codex',
+  'gpt-5.3': 'gpt-5.3-codex',
   'kimi-k2': 'kimi-k2-5'
 });
 

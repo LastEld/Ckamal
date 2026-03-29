@@ -612,7 +612,7 @@ export class RAGSystem {
    * Invalidate cache entries related to a document
    * @private
    */
-  _invalidateSearchCache(docId) {
+  _invalidateSearchCache(_docId) {
     // Simple approach: clear all cache
     // For production, could track which queries reference which docs
     this.searchCache.clear();

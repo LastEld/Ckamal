@@ -554,22 +554,22 @@ export class RegressionSuite extends EventEmitter {
   
   // Measurement methods - would be implemented with actual measurement tools
   
-  async measureLatency(testCase) {
+  async measureLatency(_testCase) {
     // Implementation would use actual latency measurement
     return { avg: 0, p50: 0, p95: 0, p99: 0 };
   }
   
-  async measureThroughput(testCase) {
+  async measureThroughput(_testCase) {
     // Implementation would use actual throughput measurement
     return 0;
   }
   
-  async measureMemory(testCase) {
+  async measureMemory(_testCase) {
     // Implementation would use actual memory measurement
     return { used: 0, heap: 0, rss: 0 };
   }
   
-  async measureErrorRate(testCase) {
+  async measureErrorRate(_testCase) {
     // Implementation would use actual error rate measurement
     return 0;
   }

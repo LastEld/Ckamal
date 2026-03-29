@@ -181,7 +181,7 @@ export class BaseChannel extends EventEmitter {
    * @param {Alert} alert - Alert to send
    * @returns {Promise<boolean>} - Whether the alert was sent successfully
    */
-  async send(alert) {
+  async send(_alert) {
     throw new Error('send() must be implemented by subclass');
   }
 
@@ -283,7 +283,7 @@ ${JSON.stringify(alert.metadata, null, 2)}
    * @param {Object} content - Email content
    * @returns {Promise<void>}
    */
-  async smtpSend(content) {
+  async smtpSend(_content) {
     // Placeholder: In real implementation, use nodemailer
     // For now, simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100));

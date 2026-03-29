@@ -288,15 +288,22 @@ export class SystemMonitor extends EventEmitter {
    */
   async _checkMemory() {
     const usage = process.memoryUsage();
-    const totalUsed = usage.heapUsed + usage.external;
-    const totalAvailable = usage.heapTotal + usage.external;
-    const percentage = (totalUsed / totalAvailable) * 100;
+    const os = await import('os');
+    const totalSystemMemory = os.totalmem();
+    const rssPercentage = totalSystemMemory > 0
+      ? (usage.rss / totalSystemMemory) * 100
+      : 0;
+    const heapPressure = usage.heapTotal > 0
+      ? (usage.heapUsed / usage.heapTotal) * 100
+      : 0;
     
-    this.recordMetric('memory.usage', percentage, {
+    this.recordMetric('memory.usage', rssPercentage, {
       heapUsed: usage.heapUsed,
       heapTotal: usage.heapTotal,
       external: usage.external,
-      rss: usage.rss
+      rss: usage.rss,
+      totalSystemMemory,
+      heapPressure
     });
   }
 

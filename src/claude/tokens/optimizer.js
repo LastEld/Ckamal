@@ -446,7 +446,7 @@ export class TokenOptimizer extends EventEmitter {
 
     // If still over target, truncate
     if (this.countTokens(result) > targetTokens) {
-      const maxLen = targetTokens * 4; // Approximate chars
+      // const maxLen = targetTokens * 4; // Approximate chars
       result = this.#truncateAtSentence(result, targetTokens);
       strategies.push('truncation');
       warnings.truncation = 'Content was truncated to meet target';

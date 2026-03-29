@@ -394,7 +394,7 @@ export class HealthMonitor extends EventEmitter {
     const usage = process.memoryUsage();
     
     // Calculate percentage
-    const totalSystem = usage.heapTotal + usage.external;
+    // const totalSystem = usage.heapTotal + usage.external;
     const usedPercent = (usage.heapUsed / usage.heapTotal) * 100;
     
     return {

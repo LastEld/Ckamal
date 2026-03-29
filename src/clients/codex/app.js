@@ -13,7 +13,7 @@
 import { BaseClient } from '../base-client.js';
 import { WebSocket } from 'ws';
 import http from 'http';
-import crypto from 'crypto';
+
 
 /**
  * GPT 5.4 Codex Desktop Application Client

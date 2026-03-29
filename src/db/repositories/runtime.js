@@ -349,11 +349,20 @@ export class RuntimeRepository {
       return result.changes || 0;
     }
 
-    const placeholders = keepIds.map(() => '?').join(', ');
+    // Validate keepIds to prevent SQL injection and ensure they're valid strings
+    const validIds = keepIds.filter(id => typeof id === 'string' && id.length > 0 && id.length <= 128);
+    if (validIds.length === 0) {
+      const result = await this.#pool.run(`
+        DELETE FROM runtime_checkpoints WHERE state_key = ?
+      `, [key]);
+      return result.changes || 0;
+    }
+
+    const placeholders = validIds.map(() => '?').join(', ');
     const result = await this.#pool.run(`
       DELETE FROM runtime_checkpoints
       WHERE state_key = ? AND id NOT IN (${placeholders})
-    `, [key, ...keepIds]);
+    `, [key, ...validIds]);
 
     return result.changes || 0;
   }

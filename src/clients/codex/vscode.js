@@ -559,7 +559,7 @@ export class GPT54CodexVSCodeClient extends BaseClient {
     return files;
   }
 
-  async _readFileContent(filePath) {
+  async _readFileContent(_filePath) {
     // This would typically use VSCode's filesystem API
     // For now, return a placeholder that VSCode extension will resolve
     return null;

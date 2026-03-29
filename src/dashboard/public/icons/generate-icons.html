@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniMesh - Icon Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 2rem;
+    }
+    
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .icon-card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    
+    .icon-preview {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 0.75rem;
+      background: #0f172a;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .icon-preview img,
+    .icon-preview svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    .icon-name {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+    
+    .icon-size {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+    
+    .actions {
+      max-width: 1200px;
+      margin: 2rem auto;
+      text-align: center;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: #1e293b;
+      display: none;
+    }
+    
+    .status.visible {
+      display: block;
+    }
+    
+    .status.success {
+      border: 1px solid #22c55e;
+      color: #22c55e;
+    }
+    
+    .status.error {
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+    
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 CogniMesh Icon Generator</h1>
+  <p>Generate PNG icons from SVG sources for PWA support</p>
+  
+  <div class="actions">
+    <button id="generateBtn" onclick="generateAllIcons()">Generate All Icons</button>
+    <button id="downloadBtn" onclick="downloadAllIcons()" disabled>Download All (.zip)</button>
+    <div id="status" class="status"></div>
+  </div>
+  
+  <div class="icon-grid" id="iconGrid"></div>
+  
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const ICON_SIZES = [16, 32, 72, 96, 128, 144, 152, 180, 192, 384, 512];
+    const SHORTCUT_ICONS = ['shortcut-dashboard', 'shortcut-tasks', 'shortcut-agents', 'shortcut-alerts'];
+    
+    const generatedIcons = [];
+    
+    // Initialize preview
+    function initPreview() {
+      const grid = document.getElementById('iconGrid');
+      
+      ICON_SIZES.forEach(size => {
+        const card = createIconCard(`icon-${size}x${size}`, size, 'icon.svg');
+        grid.appendChild(card);
+      });
+      
+      SHORTCUT_ICONS.forEach(name => {
+        const card = createIconCard(name, 96, `${name}.svg`);
+        grid.appendChild(card);
+      });
+    }
+    
+    function createIconCard(name, size, source) {
+      const card = document.createElement('div');
+      card.className = 'icon-card';
+      card.innerHTML = `
+        <div class="icon-preview" style="width: ${Math.min(size, 96)}px; height: ${Math.min(size, 96)}px;">
+          <img src="${source}" width="${Math.min(size, 80)}" height="${Math.min(size, 80)}" alt="${name}">
+        </div>
+        <div class="icon-name">${name}</div>
+        <div class="icon-size">${size}x${size}</div>
+      `;
+      return card;
+    }
+    
+    async function generateAllIcons() {
+      const btn = document.getElementById('generateBtn');
+      const status = document.getElementById('status');
+      
+      btn.disabled = true;
+      status.className = 'status visible';
+      status.textContent = 'Generating icons...';
+      
+      try {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Generate main icons
+        for (const size of ICON_SIZES) {
+          canvas.width = size;
+          canvas.height = size;
+          
+          const svgData = await fetch('icon.svg').then(r => r.text());
+          const img = await loadSvg(svgData);
+          
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          
+          const blob = await canvasToBlob(canvas);
+          generatedIcons.push({ name: `icon-${size}x${size}.png`, blob });
+        }
+        
+        // Generate shortcut icons
+        for (const name of SHORTCUT_ICONS) {
+          canvas.width = 96;
+          canvas.height = 96;
+          
+          const svgData = await fetch(`${name}.svg`).then(r => r.text());
+          const img = await loadSvg(svgData);
+          
+          ctx.clearRect(0, 0, 96, 96);
+          ctx.drawImage(img, 0, 0, 96, 96);
+          
+          const blob = await canvasToBlob(canvas);
+          generatedIcons.push({ name: `${name}.png`, blob });
+        }
+        
+        status.className = 'status visible success';
+        status.textContent = `✅ Generated ${generatedIcons.length} icons successfully!`;
+        document.getElementById('downloadBtn').disabled = false;
+        
+      } catch (error) {
+        console.error(error);
+        status.className = 'status visible error';
+        status.textContent = `❌ Error: ${error.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    
+    function loadSvg(svgData) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+    
+    function canvasToBlob(canvas) {
+      return new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/png');
+      });
+    }
+    
+    async function downloadAllIcons() {
+      // Simple individual downloads (in production, use JSZip)
+      for (const icon of generatedIcons) {
+        const url = URL.createObjectURL(icon.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = icon.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        // Small delay between downloads
+        await new Promise(r => setTimeout(r, 100));
+      }
+    }
+    
+    // Initialize on load
+    initPreview();
+  </script>
+</body>
+</html>

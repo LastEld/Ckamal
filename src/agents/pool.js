@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { AgentLifecycle } from './lifecycle.js';
-import { AgentType, AgentTypeConfigs, AgentLifecycleState } from './types.js';
+import { AgentType, AgentLifecycleState } from './types.js';
 
 /**
  * Agent Pool with dynamic scaling and health checks

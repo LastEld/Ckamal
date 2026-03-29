@@ -4,7 +4,7 @@
  */
 
 import { CVRegistry } from './cv-registry.js';
-import { validateCV, createDefaultCV, sanitizeCV, diffCVs } from './cv-schema.js';
+import { validateCV, createDefaultCV, diffCVs } from './cv-schema.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

@@ -3,6 +3,8 @@
  * Eisenhower matrix with drag-and-drop functionality
  */
 
+/* global Toast */
+
 const tasksWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class TasksComponent {
@@ -443,7 +445,20 @@ class TasksComponent {
       window.dashboardApp?.closeAllModals();
       this.loadTasks();
       this.onTaskChange();
-      Toast.success('Task saved successfully');
+      // Use toastManager for enhanced toast with action button
+      if (window.toastManager) {
+        window.toastManager.success(`Task "${task.title}" created successfully`, {
+          duration: 4000,
+          action: {
+            label: 'View',
+            onClick: () => {
+              window.dashboardApp?.navigateTo('tasks');
+            }
+          }
+        });
+      } else {
+        Toast.success('Task saved successfully');
+      }
     } catch (error) {
       console.error('Failed to save task:', error);
       this.showError('Failed to save task');
@@ -479,9 +494,52 @@ class TasksComponent {
 
   // Utility: Show error
   showError(message) {
-    if (typeof window.Toast?.error === 'function') {
+    if (window.toastManager) {
+      window.toastManager.error(message, { duration: 5000 });
+    } else if (typeof window.Toast?.error === 'function') {
       window.Toast.error(message);
     }
+  }
+
+  // Example: Show bulk delete confirmation
+  async confirmBulkDelete(taskIds) {
+    if (!window.toastManager) {
+      return confirm(`Delete ${taskIds.length} tasks?`);
+    }
+    
+    return new Promise((resolve) => {
+      window.toastManager.confirm(`Delete ${taskIds.length} tasks?`, {
+        title: 'Confirm Delete',
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+  }
+
+  // Example: Show task moved toast with undo action
+  showTaskMovedToast(task, fromQuadrant, toQuadrant) {
+    if (!window.toastManager) return;
+
+    const quadrantNames = {
+      'do-first': 'Do First',
+      'schedule': 'Schedule',
+      'delegate': 'Delegate',
+      'eliminate': 'Eliminate'
+    };
+
+    window.toastManager.info(`Task moved to "${quadrantNames[toQuadrant]}"`, {
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          // Revert the move
+          this.moveTask(task.id, fromQuadrant);
+          window.toastManager.success('Move undone');
+        }
+      }
+    });
   }
 }
 

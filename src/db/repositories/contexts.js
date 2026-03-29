@@ -248,6 +248,8 @@ export class ContextRepository extends BaseRepository {
    * @returns {Promise<ContextSnapshot[]>}
    */
   async findByTag(tag, options = {}) {
+    // Sanitize tag to prevent SQL injection via JSON pattern
+    const safeTag = typeof tag === 'string' ? tag.replace(/["\\]/g, '') : '';
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE tags LIKE ?
@@ -256,7 +258,7 @@ export class ContextRepository extends BaseRepository {
     `;
 
     return this.pool.all(sql, [
-      `%"${tag}"%`,
+      `%"${safeTag}"%`,
       options.limit || 50,
       options.offset || 0
     ]);
@@ -484,7 +486,13 @@ export class ContextRepository extends BaseRepository {
    */
   async search(query, options = {}) {
     const { limit = 20, type } = options;
-    const searchPattern = `%${query}%`;
+    // Validate and sanitize query input
+    if (typeof query !== 'string' || query.length === 0) {
+      return [];
+    }
+    // Escape SQL LIKE special characters
+    const safeQuery = query.replace(/[%_]/g, '\\$&');
+    const searchPattern = `%${safeQuery}%`;
 
     let sql = `
       SELECT * FROM ${this.tableName}

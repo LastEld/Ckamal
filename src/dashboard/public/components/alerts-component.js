@@ -3,6 +3,8 @@
  * Alerts panel with real-time notifications
  */
 
+/* global Toast */
+
 const alertsWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class AlertsComponent {

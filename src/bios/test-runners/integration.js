@@ -125,7 +125,7 @@ export class IntegrationTestRunner extends EventEmitter {
    * @param {Object} options - Run options
    * @private
    */
-  async runScenario(scenario, results, options) {
+  async runScenario(scenario, results) {
     this.emit('scenario:start', { name: scenario.name });
     
     if (scenario.skip) {
@@ -331,7 +331,7 @@ export class IntegrationTestRunner extends EventEmitter {
    * @param {Object} options - Connection options
    * @returns {Promise<Object>} WebSocket client
    */
-  async wsConnect(url, options = {}) {
+  async wsConnect(_url, _options = {}) {
     // This would use an actual WebSocket client in production
     return {
       send: () => {},
@@ -346,7 +346,7 @@ export class IntegrationTestRunner extends EventEmitter {
    * @param {string} connectionString - Database connection
    * @returns {Promise<Object>} Database client
    */
-  async dbConnect(connectionString) {
+  async dbConnect(_connectionString) {
     // This would use an actual database client in production
     return {
       query: async () => [],

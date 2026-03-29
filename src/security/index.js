@@ -31,13 +31,19 @@ export const SECURITY_DEFAULTS = {
   CSRF_TOKEN_LENGTH: 32,
   CSRF_TOKEN_EXPIRY: 3600000, // 1 hour
   PASSWORD_MIN_LENGTH: 12,
-  SCRYPT_ITERATIONS: 131072, // Doubled from 65536
-  SCRYPT_MEMORY_COST: 131072,
-  SCRYPT_PARALLELISM: 4,
+  // OWASP recommended scrypt parameters (as of 2023)
+  SCRYPT_ITERATIONS: 131072, // N=2^17 - CPU/memory cost
+  SCRYPT_MEMORY_COST: 134217728, // 128MB max memory
+  SCRYPT_PARALLELISM: 4, // Parallelization parameter
+  SCRYPT_KEYLEN: 64, // Derived key length
   KEY_ROTATION_INTERVAL: 90 * 24 * 60 * 60 * 1000, // 90 days
   MAX_KEY_VERSIONS: 5,
   HMAC_ALGORITHM: 'sha384',
-  SECURE_TOKEN_LENGTH: 48
+  SECURE_TOKEN_LENGTH: 48,
+  // JWT Security defaults
+  JWT_ALGORITHM: 'RS256', // Asymmetric - preferred over HS256
+  JWT_ACCESS_TOKEN_LIFETIME: 900, // 15 minutes
+  JWT_REFRESH_TOKEN_LIFETIME: 604800 // 7 days
 };
 
 // ============================================================================
@@ -321,11 +327,12 @@ export class SecurityManager {
     this.csrfTokenExpiry = options.csrfTokenExpiry || SECURITY_DEFAULTS.CSRF_TOKEN_EXPIRY;
     this.activeTokens = new Map();
     
-    // Enhanced password hashing options
+    // Enhanced password hashing options (OWASP compliant)
     this.passwordMinLength = options.passwordMinLength || SECURITY_DEFAULTS.PASSWORD_MIN_LENGTH;
     this.scryptIterations = options.scryptIterations || SECURITY_DEFAULTS.SCRYPT_ITERATIONS;
     this.scryptMemoryCost = options.scryptMemoryCost || SECURITY_DEFAULTS.SCRYPT_MEMORY_COST;
     this.scryptParallelism = options.scryptParallelism || SECURITY_DEFAULTS.SCRYPT_PARALLELISM;
+    this.scryptKeylen = options.scryptKeylen || SECURITY_DEFAULTS.SCRYPT_KEYLEN;
     
     // Key rotation
     this.keyRotation = options.enableKeyRotation !== false ? 
@@ -491,11 +498,11 @@ export class SecurityManager {
     
     const pepperedPassword = this.pepper ? password + this.pepper : password;
     
-    const hash = await scrypt(pepperedPassword, salt, 64, {
+    const hash = await scrypt(pepperedPassword, salt, this.scryptKeylen, {
       N: iterations,
       r: 8,
       p: parallelism,
-      maxmem: memoryCost * 1024
+      maxmem: memoryCost
     });
     
     // Include version info in hash for future upgrades
@@ -528,11 +535,11 @@ export class SecurityManager {
       
       const pepperedPassword = this.pepper ? password + this.pepper : password;
       
-      const computedHash = await scrypt(pepperedPassword, salt, 64, {
+      const computedHash = await scrypt(pepperedPassword, salt, this.scryptKeylen, {
         N,
         r: 8,
         p,
-        maxmem: this.scryptMemoryCost * 1024
+        maxmem: this.scryptMemoryCost
       });
       
       return crypto.timingSafeEqual(
@@ -866,14 +873,22 @@ export class SecurityManager {
   }
 
   /**
-   * Constant-time comparison
-   * @param {string} a - First string
-   * @param {string} b - Second string
-   * @returns {boolean} Whether strings are equal
+   * Constant-time comparison to prevent timing attacks
+   * @param {string|Buffer} a - First value
+   * @param {string|Buffer} b - Second value
+   * @returns {boolean} Whether values are equal
    */
   timingSafeEqual(a, b) {
     try {
-      return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+      const bufA = Buffer.isBuffer(a) ? a : Buffer.from(a);
+      const bufB = Buffer.isBuffer(b) ? b : Buffer.from(b);
+      
+      // Early return if lengths differ (does not leak timing info about content)
+      if (bufA.length !== bufB.length) {
+        return false;
+      }
+      
+      return crypto.timingSafeEqual(bufA, bufB);
     } catch {
       return false;
     }

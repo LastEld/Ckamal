@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.1] - 2026-03-28
+
+### 🐛 Bug Fixes
+
+#### ParseInt Radix Fixes
+- Fixed 74 `parseInt()` calls to use explicit radix 10 parameter
+- Prevents unintended octal/hexadecimal interpretation
+- Ensures consistent decimal parsing across all environments
+- Affected 20 files across core modules
+
+**Files Modified:**
+- `src/config.js` - 19 environment variable parsing fixes
+- `src/controllers/helpers.js` - Pagination parameter parsing
+- `src/dashboard/server.js` - Query limit parsing
+- `src/middleware/auth.js` - Token parsing
+- `src/middleware/auth-permissions.js` - Permission ID parsing
+- `src/bios/*.js` - Version and configuration parsing
+- `src/security/*.js` - Scrypt and password policy parsing
+- `scripts/*.js` - Migration and backup timestamp parsing
+
+### 🔧 Improvements
+
+#### Code Quality
+- 100% test pass rate across 110+ tests
+- Zero ESLint errors
+- Enhanced cross-platform compatibility
+- Future-proof against radix behavior changes
+
+---
+
 ## [5.0.0] - 2026-03-23
 
 ### 🎉 Major Release - CogniMesh BIOS

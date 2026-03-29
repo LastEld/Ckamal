@@ -165,7 +165,7 @@ export class UnitTestRunner extends EventEmitter {
    * @param {Object} options - Run options
    * @private
    */
-  async runSerial(tests, results, options) {
+  async runSerial(tests, results) {
     for (const test of tests) {
       await this.runTest(test, results);
     }

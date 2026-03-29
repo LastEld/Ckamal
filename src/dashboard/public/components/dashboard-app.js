@@ -3,20 +3,31 @@
  * Main application component that coordinates all other components
  */
 
+/* global Toast */
+
 const dashboardWindow = typeof window !== 'undefined' ? window : globalThis;
 const ApiClientCtor = typeof dashboardWindow.ApiClient === 'function' ? dashboardWindow.ApiClient : null;
 const WebSocketClientCtor = typeof dashboardWindow.WebSocketClient === 'function' ? dashboardWindow.WebSocketClient : null;
+const ToastManagerCtor = typeof dashboardWindow.ToastManager === 'function' ? dashboardWindow.ToastManager : null;
 const TasksComponentCtor = typeof dashboardWindow.TasksComponent === 'function' ? dashboardWindow.TasksComponent : null;
 const RoadmapsComponentCtor = typeof dashboardWindow.RoadmapsComponent === 'function' ? dashboardWindow.RoadmapsComponent : null;
 const AnalyticsComponentCtor = typeof dashboardWindow.AnalyticsComponent === 'function' ? dashboardWindow.AnalyticsComponent : null;
 const AlertsComponentCtor = typeof dashboardWindow.AlertsComponent === 'function' ? dashboardWindow.AlertsComponent : null;
 const AgentsComponentCtor = typeof dashboardWindow.AgentsComponent === 'function' ? dashboardWindow.AgentsComponent : null;
+const ActiveAgentsPanelCtor = typeof dashboardWindow.ActiveAgentsPanel === 'function' ? dashboardWindow.ActiveAgentsPanel : null;
 const ToolsComponentCtor = typeof dashboardWindow.ToolsComponent === 'function' ? dashboardWindow.ToolsComponent : null;
 const ProvidersComponentCtor = typeof dashboardWindow.ProvidersComponent === 'function' ? dashboardWindow.ProvidersComponent : null;
 const WorkflowsComponentCtor = typeof dashboardWindow.WorkflowsComponent === 'function' ? dashboardWindow.WorkflowsComponent : null;
 const CVComponentCtor = typeof dashboardWindow.CVComponent === 'function' ? dashboardWindow.CVComponent : null;
 const ContextComponentCtor = typeof dashboardWindow.ContextComponent === 'function' ? dashboardWindow.ContextComponent : null;
+const OrgChartComponentCtor = typeof dashboardWindow.OrgChartComponent === 'function' ? dashboardWindow.OrgChartComponent : null;
 const PresenceComponentCtor = typeof dashboardWindow.PresenceComponent === 'function' ? dashboardWindow.PresenceComponent : null;
+const CommandPaletteCtor = typeof dashboardWindow.CommandPalette === 'function' ? dashboardWindow.CommandPalette : null;
+const CostWidgetCtor = typeof dashboardWindow.CostWidget === 'function' ? dashboardWindow.CostWidget : null;
+const BudgetIncidentsBannerCtor = typeof dashboardWindow.BudgetIncidentsBanner === 'function' ? dashboardWindow.BudgetIncidentsBanner : null;
+const ActivityFeedCtor = typeof dashboardWindow.ActivityFeed === 'function' ? dashboardWindow.ActivityFeed : null;
+const PerformanceChartCtor = typeof dashboardWindow.PerformanceChart === 'function' ? dashboardWindow.PerformanceChart : null;
+const SystemHealthCtor = typeof dashboardWindow.SystemHealth === 'function' ? dashboardWindow.SystemHealth : null;
 
 class DashboardApp {
   constructor(options = {}) {
@@ -35,7 +46,16 @@ class DashboardApp {
     this.workflowsComponent = null;
     this.cvComponent = null;
     this.contextComponent = null;
+    this.orgChartComponent = null;
     this.presenceComponent = null;
+    this.costWidget = null;
+    this.commandPalette = null;
+    
+    // Dashboard widgets
+    this.budgetIncidentsBanner = null;
+    this.activityFeed = null;
+    this.performanceChart = null;
+    this.systemHealth = null;
 
     // State
     this.currentView = 'dashboard';
@@ -43,6 +63,7 @@ class DashboardApp {
     this.darkMode = localStorage.getItem('darkMode') !== 'false';
     this.refreshInterval = null;
     this.notifications = [];
+    this.integrationSettingsLoaded = false;
     
     // DOM Elements
     this.elements = {};
@@ -55,6 +76,8 @@ class DashboardApp {
     this.handleWsDisconnected = this.handleWsDisconnected.bind(this);
     this.handleTaskUpdate = this.handleTaskUpdate.bind(this);
     this.handleAlert = this.handleAlert.bind(this);
+    this.loadIntegrationSettings = this.loadIntegrationSettings.bind(this);
+    this.saveIntegrationSettings = this.saveIntegrationSettings.bind(this);
   }
 
   hasApi() {
@@ -74,16 +97,16 @@ class DashboardApp {
     // Initialize theme
     this.applyTheme();
 
+    // Initialize ToastManager
+    this.initializeToastManager();
+
     // Initialize sidebar state
     if (this.sidebarCollapsed && this.elements.sidebar) {
       this.elements.sidebar.classList.add('collapsed');
     }
 
-    // Restore compact mode
-    if (localStorage.getItem('compactMode') === 'true') {
-      document.body.classList.add('compact-mode');
-      if (this.elements.compactMode) this.elements.compactMode.checked = true;
-    }
+    // Restore UI controls from persisted preferences
+    this.hydrateSettingsControls();
 
     // Check authentication — show login if needed
     const authed = await this.checkAuth();
@@ -216,6 +239,14 @@ class DashboardApp {
       enableNotifications: document.getElementById('enableNotifications'),
       soundAlerts: document.getElementById('soundAlerts'),
       refreshIntervalSelect: document.getElementById('refreshInterval'),
+      githubTokenInput: document.getElementById('githubTokenInput'),
+      jwtSecretInput: document.getElementById('jwtSecretInput'),
+      githubTokenStatus: document.getElementById('githubTokenStatus'),
+      jwtSecretStatus: document.getElementById('jwtSecretStatus'),
+      toggleGithubTokenBtn: document.getElementById('toggleGithubTokenBtn'),
+      toggleJwtSecretBtn: document.getElementById('toggleJwtSecretBtn'),
+      reloadIntegrationSettingsBtn: document.getElementById('reloadIntegrationSettingsBtn'),
+      saveIntegrationSettingsBtn: document.getElementById('saveIntegrationSettingsBtn'),
     };
   }
 
@@ -238,6 +269,11 @@ class DashboardApp {
     // Global search
     this.elements.globalSearch?.addEventListener('input', (e) => {
       this.handleGlobalSearch(e.target.value);
+    });
+
+    // Command Palette trigger
+    document.getElementById('commandPaletteTrigger')?.addEventListener('click', () => {
+      this.commandPalette?.open();
     });
     
     // Notification panel
@@ -285,7 +321,11 @@ class DashboardApp {
     // Listen for 401 unauthorized events from API client
     window.addEventListener('api:unauthorized', () => {
       this.showLogin();
-      Toast.warning('Session expired. Please sign in again.');
+      if (dashboardWindow.toastManager) {
+        dashboardWindow.toastManager.warning('Session expired. Please sign in again.', { duration: 6000 });
+      } else if (typeof Toast !== 'undefined') {
+        Toast.warning('Session expired. Please sign in again.');
+      }
     });
 
     // Close sidebar on mobile when clicking outside
@@ -345,6 +385,178 @@ class DashboardApp {
       }
       this.setupAutoRefresh();
     });
+
+    this.elements.toggleGithubTokenBtn?.addEventListener('click', () => {
+      this.toggleSecretFieldVisibility(this.elements.githubTokenInput, this.elements.toggleGithubTokenBtn);
+    });
+
+    this.elements.toggleJwtSecretBtn?.addEventListener('click', () => {
+      this.toggleSecretFieldVisibility(this.elements.jwtSecretInput, this.elements.toggleJwtSecretBtn);
+    });
+
+    this.elements.reloadIntegrationSettingsBtn?.addEventListener('click', () => {
+      this.loadIntegrationSettings(true);
+    });
+
+    this.elements.saveIntegrationSettingsBtn?.addEventListener('click', () => {
+      this.saveIntegrationSettings();
+    });
+  }
+
+  hydrateSettingsControls() {
+    const themePreference = localStorage.getItem('themePreference');
+    const compactMode = localStorage.getItem('compactMode') === 'true';
+    const notificationsEnabled = localStorage.getItem('notificationsEnabled');
+    const soundAlerts = localStorage.getItem('soundAlerts');
+    const refreshInterval = parseInt(localStorage.getItem('refreshInterval'), 10);
+
+    if (this.elements.themeSelect) {
+      this.elements.themeSelect.value = themePreference || (this.darkMode ? 'dark' : 'light');
+    }
+
+    if (this.elements.compactMode) {
+      this.elements.compactMode.checked = compactMode;
+    }
+    document.body.classList.toggle('compact-mode', compactMode);
+
+    if (this.elements.enableNotifications) {
+      this.elements.enableNotifications.checked = notificationsEnabled === null
+        ? true
+        : notificationsEnabled === 'true';
+    }
+
+    if (this.elements.soundAlerts) {
+      this.elements.soundAlerts.checked = soundAlerts === 'true';
+    }
+
+    if (this.elements.refreshIntervalSelect && Number.isFinite(refreshInterval) && refreshInterval >= 0) {
+      this.elements.refreshIntervalSelect.value = String(refreshInterval);
+    }
+  }
+
+  toggleSecretFieldVisibility(inputElement, buttonElement) {
+    if (!inputElement || !buttonElement) return;
+    const reveal = inputElement.type === 'password';
+    inputElement.type = reveal ? 'text' : 'password';
+    buttonElement.textContent = reveal ? 'Hide' : 'Show';
+  }
+
+  setIntegrationSettingsBusy(isBusy) {
+    if (this.elements.saveIntegrationSettingsBtn) {
+      this.elements.saveIntegrationSettingsBtn.disabled = isBusy;
+      this.elements.saveIntegrationSettingsBtn.classList.toggle('loading', isBusy);
+    }
+    if (this.elements.reloadIntegrationSettingsBtn) {
+      this.elements.reloadIntegrationSettingsBtn.disabled = isBusy;
+    }
+  }
+
+  applyIntegrationSettings(settings = {}) {
+    const githubConfigured = Boolean(settings?.github?.configured);
+    const jwtConfigured = Boolean(settings?.jwt?.configured);
+    const githubMasked = settings?.github?.masked || '';
+    const jwtMasked = settings?.jwt?.masked || '';
+
+    if (this.elements.githubTokenStatus) {
+      this.elements.githubTokenStatus.textContent = githubConfigured
+        ? `Configured (${githubMasked})`
+        : 'Not configured';
+    }
+
+    if (this.elements.jwtSecretStatus) {
+      this.elements.jwtSecretStatus.textContent = jwtConfigured
+        ? `Configured (${jwtMasked})`
+        : 'Not configured';
+    }
+
+    if (this.elements.githubTokenInput) {
+      this.elements.githubTokenInput.value = '';
+      this.elements.githubTokenInput.placeholder = githubConfigured
+        ? `Current: ${githubMasked}`
+        : 'ghp_...';
+      this.elements.githubTokenInput.type = 'password';
+    }
+
+    if (this.elements.jwtSecretInput) {
+      this.elements.jwtSecretInput.value = '';
+      this.elements.jwtSecretInput.placeholder = jwtConfigured
+        ? `Current: ${jwtMasked}`
+        : 'Enter new JWT secret (min 16 chars)';
+      this.elements.jwtSecretInput.type = 'password';
+    }
+
+    if (this.elements.toggleGithubTokenBtn) {
+      this.elements.toggleGithubTokenBtn.textContent = 'Show';
+    }
+    if (this.elements.toggleJwtSecretBtn) {
+      this.elements.toggleJwtSecretBtn.textContent = 'Show';
+    }
+  }
+
+  async loadIntegrationSettings(showToast = false) {
+    if (!this.api?.getIntegrationSettings) {
+      if (this.elements.githubTokenStatus) {
+        this.elements.githubTokenStatus.textContent = 'Settings API unavailable';
+      }
+      if (this.elements.jwtSecretStatus) {
+        this.elements.jwtSecretStatus.textContent = 'Settings API unavailable';
+      }
+      return;
+    }
+
+    this.setIntegrationSettingsBusy(true);
+    try {
+      const settings = await this.api.getIntegrationSettings();
+      this.applyIntegrationSettings(settings);
+      this.integrationSettingsLoaded = true;
+      if (showToast) {
+        this.showToast('Integration settings loaded', 'success', 2500);
+      }
+    } catch (error) {
+      const message = error?.message || 'Failed to load integration settings';
+      if (this.elements.githubTokenStatus) this.elements.githubTokenStatus.textContent = message;
+      if (this.elements.jwtSecretStatus) this.elements.jwtSecretStatus.textContent = message;
+      this.showToast(message, 'error', 5000);
+    } finally {
+      this.setIntegrationSettingsBusy(false);
+    }
+  }
+
+  async saveIntegrationSettings() {
+    if (!this.api?.updateIntegrationSettings) {
+      this.showToast('Settings API unavailable', 'error', 4000);
+      return;
+    }
+
+    const githubToken = this.elements.githubTokenInput?.value?.trim() || '';
+    const jwtSecret = this.elements.jwtSecretInput?.value?.trim() || '';
+    const payload = {};
+
+    if (githubToken.length > 0) {
+      payload.githubToken = githubToken;
+    }
+
+    if (jwtSecret.length > 0) {
+      payload.jwtSecret = jwtSecret;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      this.showToast('Enter a GitHub token or JWT secret before saving', 'warning', 4000);
+      return;
+    }
+
+    this.setIntegrationSettingsBusy(true);
+    try {
+      const result = await this.api.updateIntegrationSettings(payload);
+      this.applyIntegrationSettings(result);
+      this.integrationSettingsLoaded = true;
+      this.showToast(result?.message || 'Integration settings saved', 'success', 5000);
+    } catch (error) {
+      const message = error?.message || 'Failed to save integration settings';
+      this.showToast(message, 'error', 6000);
+    } finally {
+      this.setIntegrationSettingsBusy(false);
+    }
   }
 
   // Setup WebSocket event listeners
@@ -375,6 +587,23 @@ class DashboardApp {
     this.ws.addEventListener('message:system.status', (e) => {
       this.updateSystemStatus(e?.detail || {});
     });
+
+    // Agent updates - real-time agent status changes
+    this.ws.addEventListener('message:agent.status', (e) => {
+      this.handleAgentUpdate(e?.detail);
+    });
+    this.ws.addEventListener('message:agent.updated', (e) => {
+      this.handleAgentUpdate(e?.detail);
+    });
+    this.ws.addEventListener('message:agent.created', () => {
+      this.refreshDashboardStats();
+      if (this.currentView === 'agents') {
+        this.agentsComponent?.refreshAgents?.();
+      }
+    });
+    this.ws.addEventListener('message:agent.deleted', () => {
+      this.refreshDashboardStats();
+    });
     
     // Presence updates - real-time online user count
     this.ws.addEventListener('message:presence.update', (e) => {
@@ -385,6 +614,38 @@ class DashboardApp {
     this.ws.addEventListener('connected', () => {
       this.loadPresence();
     });
+  }
+
+  /**
+   * Handle agent update from WebSocket
+   */
+  handleAgentUpdate(data) {
+    if (!data) return;
+    
+    // Update agents component if on agents view
+    if (this.currentView === 'agents') {
+      this.agentsComponent?.updateAgentStatus?.(data.id || data.agentId, data);
+    }
+    
+    // Update dashboard stats
+    this.refreshDashboardStats();
+    
+    // Show notification for status changes
+    if (data.status) {
+      const agentName = data.name || 'An agent';
+      const statusMessages = {
+        online: `${agentName} is now online`,
+        offline: `${agentName} went offline`,
+        busy: `${agentName} is now busy`,
+        error: `${agentName} encountered an error`,
+        paused: `${agentName} has been paused`,
+      };
+      
+      const message = statusMessages[data.status];
+      if (message && data.previousStatus !== data.status) {
+        this.showNotification('Agent Update', message, 'info');
+      }
+    }
   }
 
   /**
@@ -465,9 +726,50 @@ class DashboardApp {
       api: this.api,
     }) : null;
 
+    this.orgChartComponent = OrgChartComponentCtor ? new OrgChartComponentCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
     this.presenceComponent = PresenceComponentCtor ? new PresenceComponentCtor({
       api: this.api,
       ws: this.ws,
+    }) : null;
+
+    this.costWidget = CostWidgetCtor ? new CostWidgetCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
+    // Initialize dashboard widgets
+    this.budgetIncidentsBanner = BudgetIncidentsBannerCtor ? new BudgetIncidentsBannerCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
+    this.activityFeed = ActivityFeedCtor ? new ActivityFeedCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
+    this.performanceChart = PerformanceChartCtor ? new PerformanceChartCtor({
+      api: this.api,
+      ws: this.ws,
+      period: '7d',
+      showTrend: true,
+      showGoals: true,
+    }) : null;
+
+    this.systemHealth = SystemHealthCtor ? new SystemHealthCtor({
+      api: this.api,
+      ws: this.ws,
+    }) : null;
+
+    // Initialize Command Palette
+    this.commandPalette = CommandPaletteCtor ? new CommandPaletteCtor({
+      onExecute: (command) => {
+        console.log('Command executed:', command.title);
+      },
     }) : null;
   }
 
@@ -525,13 +827,27 @@ class DashboardApp {
       providers: 'Providers',
       alerts: 'Alerts',
       context: 'Context Snapshots',
+      orgchart: 'Org Chart',
       settings: 'Settings',
+      billing: 'Billing',
     };
     if (this.elements.pageTitle) {
       this.elements.pageTitle.textContent = titles[view] || 'Dashboard';
     }
     
     this.currentView = view;
+
+    // Sync mobile nav active state
+    const mobileMap = {
+      dashboard: 'dashboard',
+      tasks: 'tasks',
+      agents: 'agents',
+      alerts: 'alerts'
+    };
+    const mobileId = mobileMap[view];
+    if (mobileId && dashboardWindow.MobileNav?.setActive) {
+      dashboardWindow.MobileNav.setActive(mobileId);
+    }
     
     // Close mobile sidebar
     this.elements.sidebar?.classList.remove('mobile-open');
@@ -553,7 +869,7 @@ class DashboardApp {
         this.analyticsComponent?.initialize();
         break;
       case 'agents':
-        this.agentsComponent?.loadAgents();
+        this.agentsComponent?.loadAgents?.();
         break;
       case 'tools':
         this.toolsComponent?.loadTools();
@@ -573,6 +889,36 @@ class DashboardApp {
       case 'context':
         this.contextComponent?.initialize();
         break;
+      case 'orgchart':
+        this.orgChartComponent?.initialize();
+        break;
+      case 'settings':
+        this.loadIntegrationSettings();
+        break;
+      case 'billing':
+        this.costWidget?.renderBillingView('billingContainer');
+        this.costWidget?.startAutoRefresh();
+        break;
+    }
+    
+    // Handle dashboard widgets visibility
+    if (view === 'dashboard') {
+      this.costWidget?.renderCompactWidget('costWidgetContainer');
+      this.budgetIncidentsBanner?.render('budgetIncidentsContainer');
+      this.activityFeed?.render('activityFeedContainer', { maxItems: 10 });
+      this.performanceChart?.render('performanceChartContainer');
+      this.systemHealth?.render('systemHealthContainer');
+      this.activityFeed?.startAutoRefresh();
+      this.systemHealth?.startAutoRefresh();
+    } else {
+      this.costWidget?.stopAutoRefresh();
+      this.activityFeed?.stopAutoRefresh();
+      this.systemHealth?.stopAutoRefresh();
+      
+      // Cleanup charts when leaving dashboard
+      if (view !== 'analytics') {
+        this.performanceChart?.destroy();
+      }
     }
   }
 
@@ -586,6 +932,26 @@ class DashboardApp {
   // Apply current theme
   applyTheme() {
     document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
+  }
+
+  // Initialize ToastManager with global access
+  initializeToastManager() {
+    if (ToastManagerCtor) {
+      // Make toastManager globally accessible
+      dashboardWindow.toastManager = dashboardWindow.toastManager || new ToastManagerCtor();
+      
+      // Configure default settings
+      dashboardWindow.toastManager.configure({
+        maxToasts: 5,
+        defaultDuration: 4000,
+        defaultPosition: 'top-right',
+        showProgress: true,
+        pauseOnHover: true,
+        dismissible: true,
+      });
+
+      console.log('[Dashboard] ToastManager initialized');
+    }
   }
 
   // Handle sidebar toggle
@@ -629,6 +995,19 @@ class DashboardApp {
       if (systemStatus) {
         this.updateSystemStatus(systemStatus);
       }
+
+      // Load dashboard widgets
+      if (this.currentView === 'dashboard') {
+        this.costWidget?.renderCompactWidget('costWidgetContainer');
+        this.budgetIncidentsBanner?.render('budgetIncidentsContainer');
+        this.activityFeed?.render('activityFeedContainer', { maxItems: 10 });
+        this.performanceChart?.render('performanceChartContainer');
+        this.systemHealth?.render('systemHealthContainer');
+        
+        // Start auto-refresh for widgets
+        this.activityFeed?.startAutoRefresh();
+        this.systemHealth?.startAutoRefresh();
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     }
@@ -654,6 +1033,10 @@ class DashboardApp {
     if (this.elements.taskBadge) {
       this.elements.taskBadge.textContent = totalTasks;
     }
+
+    document.dispatchEvent(new CustomEvent('badge:updated', {
+      detail: { type: 'tasks', count: totalTasks }
+    }));
   }
 
   // Update alert badge
@@ -668,6 +1051,10 @@ class DashboardApp {
     if (dot) {
       dot.classList.toggle('active', count > 0);
     }
+
+    document.dispatchEvent(new CustomEvent('badge:updated', {
+      detail: { type: 'alerts', count }
+    }));
   }
 
   // Update recent alerts panel
@@ -867,10 +1254,148 @@ class DashboardApp {
   // Handle logout
   async handleLogout() {
     try {
+      if (dashboardWindow.toastManager) {
+        dashboardWindow.toastManager.info('Logging out...', { duration: 2000 });
+      }
       await this.api?.logout?.();
     } finally {
       window.location.reload();
     }
+  }
+
+  // ==========================================
+  // Toast Examples & Utilities
+  // ==========================================
+
+  /**
+   * Show a toast notification (wrapper for backward compatibility)
+   * @param {string} message - Toast message
+   * @param {string} type - Toast type: info, success, warning, error
+   * @param {number} duration - Duration in milliseconds
+   */
+  showToast(message, type = 'info', duration = 4000) {
+    if (dashboardWindow.toastManager) {
+      return dashboardWindow.toastManager.show({ message, type, duration });
+    } else if (typeof Toast !== 'undefined') {
+      return Toast.show(message, type, duration);
+    }
+  }
+
+  /**
+   * Show connection status toast
+   */
+  showConnectionToast(status) {
+    const messages = {
+      connected: { message: 'Connected to server', type: 'success' },
+      disconnected: { message: 'Disconnected from server', type: 'error' },
+      connecting: { message: 'Connecting...', type: 'info' },
+    };
+    
+    const config = messages[status];
+    if (config && dashboardWindow.toastManager) {
+      dashboardWindow.toastManager.show({
+        ...config,
+        duration: status === 'connected' ? 3000 : 5000,
+        showProgress: true,
+      });
+    }
+  }
+
+  /**
+   * Show task completion toast with action
+   */
+  showTaskCompletedToast(task) {
+    if (!dashboardWindow.toastManager) return;
+    
+    dashboardWindow.toastManager.success(`Task "${task.title}" completed!`, {
+      duration: 5000,
+      action: {
+        label: 'View',
+        onClick: () => {
+          this.navigateTo('tasks');
+        }
+      }
+    });
+  }
+
+  /**
+   * Show bulk operation result toast
+   */
+  showBulkOperationToast(success, failed, operation) {
+    if (!dashboardWindow.toastManager) return;
+    
+    if (failed === 0) {
+      dashboardWindow.toastManager.success(`${operation} completed: ${success} items`, {
+        duration: 3000,
+      });
+    } else if (success === 0) {
+      dashboardWindow.toastManager.error(`${operation} failed: ${failed} items`, {
+        duration: 6000,
+      });
+    } else {
+      dashboardWindow.toastManager.warning(
+        `${operation}: ${success} succeeded, ${failed} failed`,
+        { duration: 5000 }
+      );
+    }
+  }
+
+  /**
+   * Show confirmation toast with actions
+   */
+  showConfirmationToast(message, onConfirm, onCancel) {
+    if (!dashboardWindow.toastManager) {
+      // Fallback to native confirm
+      if (confirm(message)) {
+        onConfirm?.();
+      } else {
+        onCancel?.();
+      }
+      return;
+    }
+    
+    return dashboardWindow.toastManager.confirm(message, {
+      title: 'Confirm Action',
+      onConfirm,
+      onCancel,
+      confirmLabel: 'Confirm',
+      cancelLabel: 'Cancel',
+    });
+  }
+
+  /**
+   * Example: Show toast at different positions
+   */
+  showPositionedToast(message, position) {
+    if (!dashboardWindow.toastManager) return;
+    
+    const positions = [
+      'top-left', 'top-right', 'top-center',
+      'bottom-left', 'bottom-right', 'bottom-center'
+    ];
+    
+    const selectedPosition = positions.includes(position) ? position : 'top-right';
+    
+    dashboardWindow.toastManager.info(message, {
+      position: selectedPosition,
+      duration: 3000,
+    });
+  }
+
+  /**
+   * Example: Promise-based toast
+   */
+  async showAsyncToast(promise, messages) {
+    if (!dashboardWindow.toastManager) {
+      return promise;
+    }
+    
+    return dashboardWindow.toastManager.promise(promise, {
+      loading: messages.loading || 'Loading...',
+      success: messages.success || 'Success!',
+      error: messages.error || 'Error occurred',
+      duration: 3000,
+    });
   }
 
   // Handle page visibility changes
@@ -928,6 +1453,11 @@ class DashboardApp {
   // Dispose application
   dispose() {
     clearInterval(this.refreshInterval);
+    this.costWidget?.destroy();
+    this.commandPalette?.dispose();
+    this.performanceChart?.destroy();
+    this.activityFeed?.stopAutoRefresh();
+    this.systemHealth?.stopAutoRefresh();
     this.ws?.disconnect?.();
   }
 }

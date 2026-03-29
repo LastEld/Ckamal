@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Offline - CogniMesh</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .icon {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 2rem;
+      opacity: 0.8;
+    }
+    
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    
+    p {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 0.875rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    button.secondary {
+      background: transparent;
+      border: 1px solid #334155;
+    }
+    
+    .status {
+      margin-top: 2rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .status.visible {
+      display: flex;
+    }
+    
+    .status.online {
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #3b82f6;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .cached-content {
+      margin-top: 3rem;
+      padding: 1.5rem;
+      background: #1e293b;
+      border-radius: 0.75rem;
+      border: 1px solid #334155;
+      max-width: 400px;
+      width: 100%;
+    }
+    
+    .cached-content h3 {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+    
+    .cached-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: #0f172a;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      text-decoration: none;
+      color: #f8fafc;
+      transition: background 0.2s;
+    }
+    
+    .cached-item:hover {
+      background: #334155;
+    }
+    
+    .cached-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .cached-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <svg class="icon" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="512" height="512" rx="128" fill="url(#paint0_linear)"/>
+    <path d="M256 120L360 180V300L256 360L152 300V180L256 120Z" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M256 180L308 210V270L256 300L204 270V210L256 180Z" fill="white" fill-opacity="0.3"/>
+    <circle cx="256" cy="255" r="20" fill="white"/>
+    <path d="M120 392L392 120" stroke="#ef4444" stroke-width="32" stroke-linecap="round"/>
+    <defs>
+      <linearGradient id="paint0_linear" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#3b82f6"/>
+        <stop offset="1" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  
+  <h1>You're Offline</h1>
+  <p>It looks like you've lost your internet connection. Some features may be unavailable until you're back online.</p>
+  
+  <div class="actions">
+    <button onclick="checkConnection()">
+      <span id="retryText">Try Again</span>
+    </button>
+    <button class="secondary" onclick="goHome()">Go to Dashboard</button>
+  </div>
+  
+  <div id="status" class="status">
+    <span class="spinner"></span>
+    <span id="statusText">Checking connection...</span>
+  </div>
+  
+  <div class="cached-content">
+    <h3>Available Offline</h3>
+    <a href="/" class="cached-item">
+      <div class="cached-icon">📊</div>
+      <span>Dashboard</span>
+    </a>
+    <a href="/#tasks" class="cached-item">
+      <div class="cached-icon">✓</div>
+      <span>Tasks</span>
+    </a>
+    <a href="/#agents" class="cached-item">
+      <div class="cached-icon">🤖</div>
+      <span>Agents</span>
+    </a>
+  </div>
+  
+  <script>
+    function checkConnection() {
+      const status = document.getElementById('status');
+      const statusText = document.getElementById('statusText');
+      
+      status.className = 'status visible';
+      statusText.textContent = 'Checking connection...';
+      
+      // Try to fetch a small resource
+      fetch('/manifest.json', { method: 'HEAD', cache: 'no-store' })
+        .then(() => {
+          status.className = 'status visible online';
+          status.innerHTML = '✅ Connection restored! Redirecting...';
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        })
+        .catch(() => {
+          status.className = 'status visible';
+          statusText.textContent = 'Still offline. Please check your connection.';
+        });
+    }
+    
+    function goHome() {
+      window.location.href = '/';
+    }
+    
+    // Listen for online event
+    window.addEventListener('online', () => {
+      const status = document.getElementById('status');
+      status.className = 'status visible online';
+      status.innerHTML = '📡 Connection restored! Redirecting...';
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

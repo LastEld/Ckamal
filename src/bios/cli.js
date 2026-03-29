@@ -13,6 +13,12 @@ import { fileURLToPath, pathToFileURL } from 'url';
 // Import commands
 import * as commands from './commands/index.js';
 import * as f from './commands/utils/formatters.js';
+import { 
+  configureOutput, 
+  formatAgentList,
+  formatAgentStatus,
+  formatTaskOutput
+} from './commands/utils/output-manager.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -24,7 +30,7 @@ try {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
     version = pkg.version || version;
   }
-} catch (e) {}
+} catch (e) { /* intentionally empty - fallback to default version */ }
 
 /**
  * CogniMesh CLI Application
@@ -33,31 +39,68 @@ class CogniMeshCLI {
   constructor() {
     this.program = new Command();
     this.isInteractive = false;
+    this.outputManager = null;
+    this.setupGlobalOptions();
     this.setupCommands();
   }
 
   /**
-   * Setup all CLI commands
+   * Setup global CLI options
    */
-  setupCommands() {
+  setupGlobalOptions() {
     this.program
       .name('cognimesh')
       .description('CogniMesh - Multi-Agent Orchestration CLI')
       .version(version, '-v, --version', 'Display version')
       .option('-i, --interactive', 'Start interactive REPL mode')
       .option('--no-color', 'Disable colored output')
+      .option('--format <type>', 'Output format (table|json|yaml|csv|tree|plain)', 'auto')
+      .option('--json', 'Output as JSON (shortcut for --format json)')
+      .option('--yaml', 'Output as YAML (shortcut for --format yaml)')
+      .option('--csv', 'Output as CSV (shortcut for --format csv)')
+      .option('--no-pager', 'Disable pager for long output')
+      .option('--quiet, -q', 'Suppress non-error output')
       .option('--verbose', 'Enable verbose output')
+      .option('--stream', 'Enable streaming output mode')
       .configureOutput({
         writeErr: (str) => process.stderr.write(str),
         outputError: (str, write) => write(f.colorize(`Error: ${str}`, 'red'))
       });
+  }
 
+  /**
+   * Initialize output manager based on CLI options
+   */
+  initOutputManager() {
+    const opts = this.program.opts();
+    
+    // Resolve format priority: explicit flags > --format > auto
+    let format = opts.format;
+    if (opts.json) format = 'json';
+    if (opts.yaml) format = 'yaml';
+    if (opts.csv) format = 'csv';
+    
+    this.outputManager = configureOutput({
+      format,
+      color: opts.color,
+      pager: opts.pager,
+      quiet: opts.quiet,
+      verbose: opts.verbose,
+      stream: opts.stream
+    });
+  }
+
+  /**
+   * Setup all CLI commands
+   */
+  setupCommands() {
     // ==================== STATUS COMMAND ====================
     this.program
       .command('status')
       .alias('s')
       .description('Show system status')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.status();
         this.print(result);
       });
@@ -68,6 +111,7 @@ class CogniMeshCLI {
       .alias('pr')
       .description('Inspect subscription-backed provider runtimes')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.providers.status();
         this.print(result);
       });
@@ -77,6 +121,7 @@ class CogniMeshCLI {
       .alias('ls')
       .description('List provider surfaces')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.providers.list();
         this.print(result);
       });
@@ -86,6 +131,7 @@ class CogniMeshCLI {
       .alias('s')
       .description('Show provider runtime status')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.providers.status();
         this.print(result);
       });
@@ -96,6 +142,7 @@ class CogniMeshCLI {
       .description('Inspect a provider runtime')
       .argument('<modelId>', 'Runtime model identifier')
       .action(async (modelId) => {
+        this.initOutputManager();
         const result = await commands.providers.inspect(modelId);
         this.print(result);
       });
@@ -106,17 +153,21 @@ class CogniMeshCLI {
       .alias('ag')
       .description('Inspect and manage BIOS agents')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.agents.list();
-        this.print(result);
+        this.printFormattedAgents(result);
       });
 
     agentsCmd
       .command('list')
       .alias('ls')
       .description('List control-plane agents')
-      .action(async () => {
-        const result = await commands.agents.list();
-        this.print(result);
+      .option('-c, --client <client>', 'Filter by client')
+      .option('-s, --status <status>', 'Filter by status')
+      .action(async (options) => {
+        this.initOutputManager();
+        const result = await commands.agents.list(options);
+        this.printFormattedAgents(result);
       });
 
     agentsCmd
@@ -125,8 +176,9 @@ class CogniMeshCLI {
       .description('Inspect an agent')
       .argument('<agentId>', 'Agent identifier')
       .action(async (agentId) => {
+        this.initOutputManager();
         const result = await commands.agents.inspect(agentId);
-        this.print(result);
+        this.printFormattedAgent(result);
       });
 
     // ==================== CLIENTS COMMANDS ====================
@@ -140,6 +192,7 @@ class CogniMeshCLI {
       .alias('ls')
       .description('List all available clients')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.clients.list();
         this.print(result);
       });
@@ -149,6 +202,7 @@ class CogniMeshCLI {
       .alias('t')
       .description('Test all client connections')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.clients.test();
         this.print(result);
       });
@@ -159,6 +213,7 @@ class CogniMeshCLI {
         .command(clientId)
         .description(`Show ${clientId} client details`)
         .action(async () => {
+          this.initOutputManager();
           const result = await commands.clients.details(clientId);
           this.print(result);
         });
@@ -180,8 +235,9 @@ class CogniMeshCLI {
       .option('--tags <tags>', 'Comma-separated tags')
       .option('--due <date>', 'Due date')
       .action(async (description, options) => {
+        this.initOutputManager();
         const result = await commands.tasks.create(description, options);
-        this.print(result);
+        this.printFormattedTask(result);
       });
 
     tasksCmd
@@ -191,8 +247,9 @@ class CogniMeshCLI {
       .option('-f, --filter <status>', 'Filter by status')
       .option('-s, --status <status>', 'Filter by status (alias)')
       .action(async (options) => {
+        this.initOutputManager();
         const result = await commands.tasks.list(options);
-        this.print(result);
+        this.printFormattedTasks(result);
       });
 
     tasksCmd
@@ -201,8 +258,9 @@ class CogniMeshCLI {
       .description('Get task details')
       .argument('<id>', 'Task ID')
       .action(async (id) => {
+        this.initOutputManager();
         const result = await commands.tasks.get(id);
-        this.print(result);
+        this.printFormattedTask(result);
       });
 
     tasksCmd
@@ -212,6 +270,7 @@ class CogniMeshCLI {
       .argument('<id>', 'Task ID')
       .argument('<status>', 'New status (pending|in-progress|completed|cancelled)')
       .action(async (id, status) => {
+        this.initOutputManager();
         const result = await commands.tasks.update(id, status);
         this.print(result);
       });
@@ -222,6 +281,7 @@ class CogniMeshCLI {
       .description('Delete a task')
       .argument('<id>', 'Task ID')
       .action(async (id) => {
+        this.initOutputManager();
         const result = await commands.tasks.delete(id);
         this.print(result);
       });
@@ -242,6 +302,7 @@ class CogniMeshCLI {
       .option('--target <date>', 'Target completion date')
       .option('-o, --output <file>', 'Save to file')
       .action(async (name, options) => {
+        this.initOutputManager();
         const result = await commands.roadmaps.create(name, options);
         this.print(result);
       });
@@ -251,6 +312,7 @@ class CogniMeshCLI {
       .alias('ls')
       .description('List all roadmaps')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.roadmaps.list();
         this.print(result);
       });
@@ -261,6 +323,7 @@ class CogniMeshCLI {
       .description('Get roadmap details')
       .argument('<id>', 'Roadmap ID')
       .action(async (id) => {
+        this.initOutputManager();
         const result = await commands.roadmaps.get(id);
         this.print(result);
       });
@@ -274,6 +337,7 @@ class CogniMeshCLI {
       .option('-d, --description <text>', 'New description')
       .option('-s, --status <status>', 'New status')
       .action(async (id, options) => {
+        this.initOutputManager();
         const result = await commands.roadmaps.update(id, options);
         this.print(result);
       });
@@ -284,6 +348,7 @@ class CogniMeshCLI {
       .description('Delete a roadmap')
       .argument('<id>', 'Roadmap ID')
       .action(async (id) => {
+        this.initOutputManager();
         const result = await commands.roadmaps.delete(id);
         this.print(result);
       });
@@ -300,6 +365,7 @@ class CogniMeshCLI {
       .description('Create a new backup')
       .option('-n, --name <name>', 'Backup name')
       .action(async (options) => {
+        this.initOutputManager();
         const result = await commands.backup.create(options);
         this.print(result);
       });
@@ -309,6 +375,7 @@ class CogniMeshCLI {
       .alias('ls')
       .description('List all backups')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.backup.list();
         this.print(result);
       });
@@ -320,6 +387,7 @@ class CogniMeshCLI {
       .argument('<id>', 'Backup ID')
       .option('--skip-restart', 'Skip service restart after restore')
       .action(async (id, options) => {
+        this.initOutputManager();
         const result = await commands.backup.restore(id, options);
         this.print(result);
       });
@@ -330,6 +398,7 @@ class CogniMeshCLI {
       .description('Delete a backup')
       .argument('<id>', 'Backup ID')
       .action(async (id) => {
+        this.initOutputManager();
         const result = await commands.backup.delete(id);
         this.print(result);
       });
@@ -347,6 +416,7 @@ class CogniMeshCLI {
       .option('--force', 'Force re-migration')
       .option('--verbose', 'Show verbose output')
       .action(async (options) => {
+        this.initOutputManager();
         const result = await commands.vault.migrate(options);
         this.print(result);
       });
@@ -356,6 +426,7 @@ class CogniMeshCLI {
       .alias('ls')
       .description('List vault secrets')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.vault.list();
         this.print(result);
       });
@@ -367,6 +438,7 @@ class CogniMeshCLI {
       .argument('<key>', 'Secret key')
       .argument('<value>', 'Secret value')
       .action(async (key, value) => {
+        this.initOutputManager();
         const result = await commands.vault.add(key, value);
         this.print(result);
       });
@@ -377,6 +449,7 @@ class CogniMeshCLI {
       .description('Remove a secret from vault')
       .argument('<key>', 'Secret key')
       .action(async (key) => {
+        this.initOutputManager();
         const result = await commands.vault.remove(key);
         this.print(result);
       });
@@ -386,7 +459,115 @@ class CogniMeshCLI {
       .alias('s')
       .description('Show vault status')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.vault.status();
+        this.print(result);
+      });
+
+    // ==================== SKILLS COMMANDS ====================
+    const skillsCmd = this.program
+      .command('skills')
+      .alias('sk')
+      .description('Manage and sync AI skills');
+
+    skillsCmd
+      .command('list')
+      .alias('ls')
+      .description('List all skills')
+      .option('-s, --status <status>', 'Filter by status')
+      .option('-c, --category <category>', 'Filter by category')
+      .option('-t, --tag <tag>', 'Filter by tag')
+      .action(async (options) => {
+        this.initOutputManager();
+        const result = await commands.skills.list(options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('create')
+      .alias('c')
+      .description('Create a new skill')
+      .argument('<name>', 'Skill name (kebab-case)')
+      .option('-d, --description <text>', 'Skill description')
+      .option('--tags <tags>', 'Comma-separated tags')
+      .option('--categories <categories>', 'Comma-separated categories')
+      .option('-f, --file <path>', 'Save to file path')
+      .option('--company <id>', 'Company scope')
+      .action(async (name, options) => {
+        this.initOutputManager();
+        const result = await commands.skills.create(name, options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('show')
+      .alias('s')
+      .description('Show skill details')
+      .argument('<name>', 'Skill name or ID')
+      .option('--company <id>', 'Company scope')
+      .option('--no-content', 'Hide content preview')
+      .action(async (name, options) => {
+        this.initOutputManager();
+        const result = await commands.skills.show(name, options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('update')
+      .alias('u')
+      .description('Update a skill')
+      .argument('<name>', 'Skill name or ID')
+      .option('-f, --file <path>', 'Load content from file')
+      .option('-c, --content <text>', 'New content')
+      .option('--display-name <name>', 'New display name')
+      .option('--status <status>', 'New status')
+      .option('--tags <tags>', 'Comma-separated tags')
+      .option('--categories <categories>', 'Comma-separated categories')
+      .option('--change-notes <notes>', 'Version change notes')
+      .option('--no-version', 'Do not create new version')
+      .action(async (name, options) => {
+        this.initOutputManager();
+        const result = await commands.skills.update(name, options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('delete')
+      .alias('d')
+      .description('Delete a skill')
+      .argument('<name>', 'Skill name or ID')
+      .option('--force', 'Confirm deletion')
+      .option('--clean', 'Remove from client directories')
+      .action(async (name, options) => {
+        this.initOutputManager();
+        const result = await commands.skills.delete(name, options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('sync')
+      .alias('sy')
+      .description('Sync skills to AI clients')
+      .option('--client <name>', 'Target client (claude|codex|kimi|all)', 'all')
+      .option('--skills <list>', 'Comma-separated skill IDs/names')
+      .option('--mode <mode>', 'Sync mode (copy|symlink)')
+      .option('--clean', 'Remove orphaned skills')
+      .option('--dry-run', 'Preview changes without applying')
+      .option('-v, --verbose', 'Show detailed output')
+      .action(async (options) => {
+        this.initOutputManager();
+        const result = await commands.skills.sync(options);
+        this.print(result);
+      });
+
+    skillsCmd
+      .command('scan')
+      .description('Scan project for skills')
+      .option('-p, --project <path>', 'Project path to scan')
+      .option('--company <id>', 'Company scope for imported skills')
+      .action(async (options) => {
+        this.initOutputManager();
+        const result = await commands.skills.scan(options);
         this.print(result);
       });
 
@@ -401,6 +582,7 @@ class CogniMeshCLI {
       .alias('c')
       .description('Check for available updates')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.update.check();
         this.print(result);
       });
@@ -411,6 +593,7 @@ class CogniMeshCLI {
       .description('Apply available updates')
       .option('--force', 'Skip confirmation')
       .action(async (options) => {
+        this.initOutputManager();
         const result = await commands.update.apply(options);
         this.print(result);
       });
@@ -421,6 +604,7 @@ class CogniMeshCLI {
       .description('Rollback to previous version')
       .argument('<version>', 'Version to rollback to')
       .action(async (version) => {
+        this.initOutputManager();
         const result = await commands.update.rollback(version);
         this.print(result);
       });
@@ -430,8 +614,45 @@ class CogniMeshCLI {
       .alias('h')
       .description('Show update history')
       .action(async () => {
+        this.initOutputManager();
         const result = await commands.update.history();
         this.print(result);
+      });
+
+    // ==================== DOCTOR COMMAND ====================
+    this.program
+      .command('doctor')
+      .alias('dr')
+      .alias('diagnose')
+      .description('Run system diagnostics')
+      .option('-r, --repair', 'Auto-repair fixable issues')
+      .option('-y, --yes', 'Skip confirmation prompts for repairs')
+      .action(async (options) => {
+        this.initOutputManager();
+        const result = await commands.doctor(options);
+        this.print(result);
+      });
+
+    // ==================== OUTPUT INFO COMMAND ====================
+    this.program
+      .command('output:info')
+      .description('Show output format information and capabilities')
+      .action(() => {
+        this.initOutputManager();
+        const caps = this.outputManager.getCapabilities();
+        console.log(f.header('OUTPUT CAPABILITIES', 'box'));
+        console.log();
+        console.log(f.keyValue({
+          'TTY': caps.isTTY ? 'Yes' : 'No',
+          'Color Support': caps.supportsColor ? 'Yes' : 'No',
+          'Unicode Support': caps.supportsUnicode ? 'Yes' : 'No',
+          'Terminal Width': `${caps.width} columns`,
+          'Terminal Height': `${caps.height} rows`,
+          'Pager': caps.hasPager || 'None'
+        }, { indent: 2 }));
+        console.log();
+        console.log(f.colorize('Available Formats:', 'bright'));
+        console.log(f.list(['table', 'json', 'yaml', 'csv', 'tree', 'plain'], { indent: 2 }));
       });
 
     // ==================== INTERACTIVE COMMAND ====================
@@ -468,6 +689,143 @@ class CogniMeshCLI {
   }
 
   /**
+   * Print formatted agent list
+   */
+  printFormattedAgents(result) {
+    if (!result || !this.outputManager) {
+      this.print(result);
+      return;
+    }
+    
+    const agents = result.data?.agents || result.data || [];
+    const format = this.program.opts().json ? 'json' : 
+                   this.program.opts().yaml ? 'yaml' : 
+                   this.program.opts().csv ? 'csv' :
+                   this.program.opts().format || 'table';
+    
+    if (format !== 'table') {
+      // Use output manager for structured formats
+      this.outputManager.render(agents, format);
+    } else {
+      // Use enhanced formatter for table display
+      const formatted = formatAgentList(agents, { format: 'table' });
+      console.log(formatted);
+      
+      // Add summary
+      if (result.data?.source) {
+        console.log();
+        console.log(f.keyValue({
+          Source: result.data.source,
+          Total: agents.length,
+          Active: agents.filter(a => ['active', 'running', 'ready'].includes(a.status)).length
+        }, { indent: 2 }));
+      }
+    }
+    
+    if (result.success === false) {
+      process.exitCode = 1;
+    }
+  }
+
+  /**
+   * Print formatted agent details
+   */
+  printFormattedAgent(result) {
+    if (!result || !this.outputManager) {
+      this.print(result);
+      return;
+    }
+    
+    const agent = result.data;
+    if (!agent) {
+      this.print(result);
+      return;
+    }
+    
+    const format = this.program.opts().json ? 'json' : 
+                   this.program.opts().yaml ? 'yaml' : 
+                   this.program.opts().format || 'table';
+    
+    if (format !== 'table') {
+      this.outputManager.render(agent, format);
+    } else {
+      const formatted = formatAgentStatus(agent, { format: 'table', detailed: true });
+      console.log(formatted);
+    }
+    
+    if (result.success === false) {
+      process.exitCode = 1;
+    }
+  }
+
+  /**
+   * Print formatted tasks
+   */
+  printFormattedTasks(result) {
+    if (!result || !this.outputManager) {
+      this.print(result);
+      return;
+    }
+    
+    const tasks = result.data || [];
+    const format = this.program.opts().json ? 'json' : 
+                   this.program.opts().yaml ? 'yaml' : 
+                   this.program.opts().csv ? 'csv' :
+                   this.program.opts().format || 'table';
+    
+    if (format !== 'table') {
+      this.outputManager.render(tasks, format);
+    } else {
+      const formatted = formatTaskOutput(tasks, { format: 'table', list: true });
+      console.log(formatted);
+      
+      // Add summary
+      if (tasks.length > 0) {
+        const byStatus = {};
+        tasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] || 0) + 1; });
+        console.log();
+        console.log(f.colorize('Summary:', 'bright'), 
+          Object.entries(byStatus).map(([s, c]) => `${s}: ${c}`).join(' | '));
+      }
+    }
+    
+    if (result.success === false) {
+      process.exitCode = 1;
+    }
+  }
+
+  /**
+   * Print formatted task
+   */
+  printFormattedTask(result) {
+    if (!result || !this.outputManager) {
+      this.print(result);
+      return;
+    }
+    
+    const task = result.data;
+    if (!task) {
+      this.print(result);
+      return;
+    }
+    
+    const format = this.program.opts().json ? 'json' : 
+                   this.program.opts().yaml ? 'yaml' : 
+                   this.program.opts().format || 'table';
+    
+    if (format !== 'table') {
+      this.outputManager.render(task, format);
+    } else {
+      const formatted = formatTaskOutput(task, { format: 'table' });
+      console.log(formatted);
+    }
+    
+    if (result.success === false) {
+      process.exitCode = 1;
+    }
+  }
+
+  /**
    * Show banner
    */
   showBanner() {
@@ -487,10 +845,16 @@ class CogniMeshCLI {
   }
 
   /**
-   * Print command result
+   * Print command result (legacy method)
    */
   print(result) {
     if (!result) return;
+    
+    // If output manager is initialized and we have structured data, use it
+    if (this.outputManager && result.data) {
+      this.outputManager.render(result.data);
+      return;
+    }
     
     if (result.output) {
       console.log(result.output);
@@ -502,7 +866,7 @@ class CogniMeshCLI {
     }
     
     // Print data in verbose mode
-    if (this.program.opts().verbose && result.data) {
+    if (this.program.opts()?.verbose && result.data) {
       console.log();
       console.log(f.colorize('Data:', 'dim'));
       console.log(f.json(result.data));

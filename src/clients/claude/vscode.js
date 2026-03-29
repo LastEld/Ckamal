@@ -77,10 +77,10 @@ const MessageType = {
 /**
  * Insert text format for completions
  */
-const InsertTextFormat = {
-  PLAIN_TEXT: 1,
-  SNIPPET: 2
-};
+// const InsertTextFormat = {
+//   PLAIN_TEXT: 1,
+//   SNIPPET: 2
+// };
 
 /**
  * Completion item kinds
@@ -1406,7 +1406,7 @@ export class ClaudeVSCodeClient extends BaseClient {
   /**
    * Find related tasks for a file/position
    */
-  async _findRelatedTasks(uri, position) {
+  async _findRelatedTasks(_uri, _position) {
     // This would integrate with CogniMesh task manager
     // For now, return placeholder
     return [];
@@ -1415,7 +1415,7 @@ export class ClaudeVSCodeClient extends BaseClient {
   /**
    * Find related roadmap nodes for a file
    */
-  async _findRelatedRoadmapNodes(uri) {
+  async _findRelatedRoadmapNodes(_uri) {
     // This would integrate with CogniMesh roadmap system
     // For now, return placeholder
     return [];

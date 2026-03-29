@@ -485,7 +485,13 @@ export class RoadmapRepository extends BaseRepository {
    */
   async search(query, options = {}) {
     const { limit = 20 } = options;
-    const searchPattern = `%${query}%`;
+    // Validate and sanitize query input
+    if (typeof query !== 'string' || query.length === 0) {
+      return [];
+    }
+    // Escape SQL LIKE special characters
+    const safeQuery = query.replace(/[%_]/g, '\\$&');
+    const searchPattern = `%${safeQuery}%`;
 
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -496,11 +502,10 @@ export class RoadmapRepository extends BaseRepository {
       LIMIT ?
     `;
 
-    const exactPattern = `%${query}%`;
     const roadmaps = await this.pool.all(sql, [
       searchPattern, 
       searchPattern,
-      exactPattern,
+      searchPattern,
       limit
     ]);
     return roadmaps.map(hydrateRoadmap);

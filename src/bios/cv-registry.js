@@ -3,7 +3,7 @@
  * Manages agent Curriculum Vitae for CogniMesh v5.0
  */
 
-import { CVSchema, validateCV, createDefaultCV } from './cv-schema.js';
+import { CVSchema, validateCV } from './cv-schema.js';
 
 /**
  * Registry for managing agent CVs

@@ -8,7 +8,7 @@
 import { BaseClient } from '../base-client.js';
 import net from 'net';
 import http from 'http';
-import crypto from 'crypto';
+
 
 /**
  * KimiVSCodeClient - Advanced IDE integration for Kimi 2.5
@@ -770,7 +770,7 @@ export class KimiVSCodeClient extends BaseClient {
     }
     
     // Clear all pending requests
-    for (const [id, { reject, timeout }] of this.responseHandlers) {
+    for (const [, { reject, timeout }] of this.responseHandlers) {
       clearTimeout(timeout);
       reject(new Error('Client disconnected'));
     }

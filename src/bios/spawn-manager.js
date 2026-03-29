@@ -1,11 +1,13 @@
 /**
  * @fileoverview Agent Spawn Manager - Lifecycle and resource management for BIOS orchestrator
  * @module bios/spawn-manager
+ * 
+ * UPDATED: Integrated with Heartbeat Runtime for run tracking and session persistence
  */
 
 import { EventEmitter } from 'events';
-import { Agent, AgentStatus } from '../engine/agent.js';
-import { resolveModelRuntime } from '../clients/catalog.js';
+import { Agent } from '../engine/agent.js';
+import { getModelRuntimeCandidates, resolveModelRuntime } from '../clients/catalog.js';
 
 /**
  * Agent lifecycle states (extended from base AgentStatus)
@@ -22,6 +24,7 @@ export const LifecycleState = {
   ACTIVE: 'active',
   PAUSED: 'paused',
   DEGRADED: 'degraded',
+  RUNNING: 'running',  // Added for heartbeat integration
   
   // Termination states
   SHUTTING_DOWN: 'shutting_down',
@@ -82,6 +85,7 @@ export const DEFAULT_RESOURCE_LIMITS = {
  * @property {Object} resources - Resource usage
  * @property {Error} lastError - Last error encountered
  * @property {number} restartCount - Number of restarts
+ * @property {string} [currentRunId] - Current heartbeat run ID (if any)
  */
 
 /**
@@ -94,6 +98,8 @@ export class SpawnManager extends EventEmitter {
    * @param {Object} options - Configuration options
    * @param {ResourceLimits} options.resourceLimits - Resource limits
    * @param {Array<ClientConfig>} options.clients - Available clients
+   * @param {import('../runtime/heartbeat-service.js').HeartbeatService} [options.heartbeatService] - Heartbeat service
+   * @param {import('../runtime/session-manager.js').SessionManager} [options.sessionManager] - Session manager
    */
   constructor(options = {}) {
     super();
@@ -115,6 +121,10 @@ export class SpawnManager extends EventEmitter {
     this.clientFallbackChain = ['claude', 'kimi', 'codex'];
     this.runtimeManager = options.runtimeManager || null;
     this.initializeClients(options.clients);
+    
+    // Heartbeat runtime integration
+    this.heartbeatService = options.heartbeatService || null;
+    this.sessionManager = options.sessionManager || null;
     
     // Spawn queue for when limits are reached
     this.spawnQueue = [];
@@ -208,6 +218,7 @@ export class SpawnManager extends EventEmitter {
    * @param {Object} options - Spawn options
    * @param {string} options.client - Preferred client
    * @param {Object} options.context - Initial context
+   * @param {string} [options.heartbeatRunId] - Existing heartbeat run ID to associate
    * @returns {Promise<Agent>} Spawned agent
    */
   async spawnAgent(cv, options = {}) {
@@ -279,7 +290,8 @@ export class SpawnManager extends EventEmitter {
       },
       lastError: null,
       restartCount: 0,
-      context: options.context || {}
+      context: options.context || {},
+      currentRunId: options.heartbeatRunId || null
     };
     
     this.spawnRecords.set(agentId, record);
@@ -301,13 +313,38 @@ export class SpawnManager extends EventEmitter {
       // Update state
       record.lifecycleState = LifecycleState.INITIALIZING;
       
+      // Resolve session if heartbeat runtime is available
+      let sessionParams = null;
+      let sessionDisplayId = null;
+      
+      if (this.sessionManager && options.task?.taskKey) {
+        const sessionResolution = await this.sessionManager.resolveSessionForRun({
+          agentId,
+          taskKey: options.task.taskKey,
+          provider: client.name,
+          context: options.context,
+          forceFresh: options.forceFreshSession
+        });
+        
+        sessionParams = sessionResolution.sessionParams;
+        sessionDisplayId = sessionResolution.sessionDisplayId;
+        
+        // Store session info in record
+        record.sessionParams = sessionParams;
+        record.sessionDisplayId = sessionDisplayId;
+        record.sessionRotation = sessionResolution.rotationReason;
+        record.sessionHandoff = sessionResolution.handoffMarkdown;
+      }
+      
       // Create agent instance
       const agent = new Agent(agentId, cv.type || 'generic', {
         config: {
           ...cv.capabilities,
           assignedClient: client.name,
           assignedModel,
-          executor: async (task) => this._executeWithRuntime(task, assignedModel)
+          sessionParams,
+          sessionDisplayId,
+          executor: async (task) => this._executeWithRuntime(task, assignedModel, agentId)
         },
         maxErrors: cv.execution?.retryPolicy?.maxAttempts || 3
       });
@@ -331,7 +368,13 @@ export class SpawnManager extends EventEmitter {
       // Transition to active
       record.lifecycleState = LifecycleState.ACTIVE;
       
-      this.emit('spawnCompleted', { agentId, client: client.name });
+      // If there's a heartbeat run associated, start it
+      if (options.heartbeatRunId && this.heartbeatService) {
+        await this.heartbeatService.startRun(options.heartbeatRunId);
+        record.currentRunId = options.heartbeatRunId;
+      }
+      
+      this.emit('spawnCompleted', { agentId, client: client.name, sessionId: sessionDisplayId });
       
       return agent;
     } catch (error) {
@@ -354,11 +397,25 @@ export class SpawnManager extends EventEmitter {
    * @param {SpawnRecord} record - Spawn record
    */
   _attachAgentHandlers(agent, record) {
-    agent.on('taskStarted', (event) => {
+    agent.on('taskStarted', async (event) => {
       this.emit('agentTaskStarted', { agentId: agent.id, ...event });
+      
+      // Update record state
+      record.lifecycleState = LifecycleState.RUNNING;
+      
+      // Log to heartbeat if available
+      if (this.heartbeatService && record.currentRunId) {
+        await this.heartbeatService.appendRunEvent(record.currentRunId, {
+          eventType: 'task',
+          stream: 'system',
+          level: 'info',
+          message: `Task started: ${event.taskType || event.taskId}`,
+          payload: { taskId: event.taskId, taskType: event.taskType }
+        });
+      }
     });
     
-    agent.on('taskCompleted', (event) => {
+    agent.on('taskCompleted', async (event) => {
       this.emit('agentTaskCompleted', { agentId: agent.id, ...event });
       
       // Update client stats
@@ -369,9 +426,12 @@ export class SpawnManager extends EventEmitter {
           client.stats.lastUsed = new Date();
         }
       }
+      
+      // Update session and complete heartbeat run
+      await this._finalizeRun(agent.id, record, 'succeeded', event);
     });
     
-    agent.on('taskFailed', (event) => {
+    agent.on('taskFailed', async (event) => {
       this.emit('agentTaskFailed', { agentId: agent.id, ...event });
       
       // Update client stats
@@ -381,6 +441,9 @@ export class SpawnManager extends EventEmitter {
           client.stats.failures++;
         }
       }
+      
+      // Fail heartbeat run
+      await this._finalizeRun(agent.id, record, 'failed', event);
     });
     
     agent.on('terminated', (event) => {
@@ -395,6 +458,125 @@ export class SpawnManager extends EventEmitter {
         this._attemptAgentRestart(agent.id, record);
       }
     });
+  }
+  
+  /**
+   * Finalize a heartbeat run
+   * @private
+   * @param {string} agentId - Agent ID
+   * @param {SpawnRecord} record - Spawn record
+   * @param {string} status - Run status
+   * @param {Object} event - Completion event
+   */
+  async _finalizeRun(agentId, record, status, event) {
+    if (!this.heartbeatService || !record.currentRunId) return;
+    
+    try {
+      if (status === 'succeeded') {
+        // Extract usage from event if available
+        const usage = event.usage || {};
+        
+        await this.heartbeatService.completeRun(record.currentRunId, {
+          resultJson: event.result,
+          exitCode: 0,
+          sessionIdAfter: record.sessionDisplayId,
+          usage
+        });
+        
+        // Update session with successful completion
+        if (this.sessionManager && record.sessionParams) {
+          await this.sessionManager.setSession({
+            agentId,
+            taskKey: record.context?.taskKey,
+            provider: record.assignedClient?.name,
+            sessionParams: record.sessionParams,
+            sessionDisplayId: record.sessionDisplayId,
+            lastRunId: record.currentRunId,
+            lastError: null,
+            usage
+          });
+        }
+      } else {
+        await this.heartbeatService.failRun(
+          record.currentRunId,
+          event.error || 'Task failed',
+          'adapter_failed'
+        );
+        
+        // Update session with error
+        if (this.sessionManager && record.sessionParams) {
+          await this.sessionManager.setSession({
+            agentId,
+            taskKey: record.context?.taskKey,
+            provider: record.assignedClient?.name,
+            sessionParams: record.sessionParams,
+            sessionDisplayId: record.sessionDisplayId,
+            lastRunId: record.currentRunId,
+            lastError: event.error
+          });
+        }
+      }
+      
+      // Clear current run
+      record.currentRunId = null;
+      record.lifecycleState = LifecycleState.ACTIVE;
+      
+    } catch (error) {
+      this.emit('heartbeatError', { agentId, error: error.message, runId: record.currentRunId });
+    }
+  }
+  
+  /**
+   * Start a heartbeat run for an agent
+   * @param {string} agentId - Agent ID
+   * @param {Object} options - Run options
+   * @param {string} options.taskKey - Task identifier
+   * @param {Object} [options.context] - Execution context
+   * @returns {Promise<Object|null>} Created run or null
+   */
+  async startHeartbeatRun(agentId, options) {
+    if (!this.heartbeatService) return null;
+    
+    const agent = this.agents.get(agentId);
+    const record = this.spawnRecords.get(agentId);
+    if (!agent || !record) return null;
+    
+    const run = await this.heartbeatService.createRun({
+      agentId,
+      invocationSource: options.invocationSource || 'on_demand',
+      triggerDetail: options.triggerDetail || 'manual',
+      contextSnapshot: {
+        ...options.context,
+        taskKey: options.taskKey,
+        agentType: record.cvId
+      },
+      sessionIdBefore: record.sessionDisplayId
+    });
+    
+    record.currentRunId = run.id;
+    
+    return run;
+  }
+  
+  /**
+   * Cancel the current heartbeat run for an agent
+   * @param {string} agentId - Agent ID
+   * @param {string} [reason] - Cancellation reason
+   * @returns {Promise<boolean>} True if cancelled
+   */
+  async cancelHeartbeatRun(agentId, reason) {
+    if (!this.heartbeatService) return false;
+    
+    const record = this.spawnRecords.get(agentId);
+    if (!record || !record.currentRunId) return false;
+    
+    const cancelled = await this.heartbeatService.cancelRun(record.currentRunId, reason);
+    if (cancelled) {
+      record.currentRunId = null;
+      record.lifecycleState = LifecycleState.ACTIVE;
+    }
+    
+    return !!cancelled;
   }
   
   /**
@@ -526,30 +708,65 @@ export class SpawnManager extends EventEmitter {
    * @private
    * @param {Object} task - Task to execute
    * @param {string} modelId - Canonical model id
+   * @param {string} agentId - Agent ID for heartbeat tracking
    * @returns {Promise<any>} Execution result
    */
-  async _executeWithRuntime(task, modelId) {
+  async _executeWithRuntime(task, modelId, _agentId) {
     if (!this.runtimeManager || !modelId) {
       throw new Error(
         `No subscription runtime available for task ${task.id || 'unknown'} (model: ${modelId || 'unassigned'})`
       );
     }
 
-    const binding = resolveModelRuntime(modelId);
-    if (!binding) {
+    const preferredBinding = this.runtimeManager.getBinding?.(modelId) || resolveModelRuntime(modelId);
+    const fallbackBindings = getModelRuntimeCandidates(modelId);
+    const candidates = [];
+
+    if (preferredBinding) {
+      candidates.push(preferredBinding);
+    }
+    for (const binding of fallbackBindings) {
+      const key = `${binding.provider}:${binding.mode}:${binding.clientModel}`;
+      const seen = candidates.some((entry) => `${entry.provider}:${entry.mode}:${entry.clientModel}` === key);
+      if (!seen) {
+        candidates.push(binding);
+      }
+    }
+
+    if (candidates.length === 0) {
       throw new Error(`No runtime binding defined for model ${modelId}`);
     }
 
-    const client = await this.runtimeManager.getClient(binding);
     const runtimeTask = this._normalizeRuntimeTask(task);
+    let lastError = null;
 
-    return client.execute(runtimeTask, {
-      context: task.context || task.payload?.context,
-      cwd: task.cwd,
-      files: runtimeTask.files,
-      model: binding.clientModel,
-      timeout: task.timeout
-    });
+    for (const binding of candidates) {
+      try {
+        const client = await this.runtimeManager.getClient(binding);
+        const result = await client.execute(runtimeTask, {
+          context: task.context || task.payload?.context,
+          cwd: task.cwd,
+          files: runtimeTask.files,
+          model: binding.clientModel,
+          timeout: task.timeout
+        });
+
+        return {
+          ...result,
+          usage: result.usage || {
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+            costUsd: result.costUsd
+          }
+        };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw new Error(
+      `Failed to initialize runtime client for model ${modelId}: ${lastError?.message || 'unknown error'}`
+    );
   }
 
   /**
@@ -598,7 +815,8 @@ export class SpawnManager extends EventEmitter {
       throw new Error(`Agent ${agentId} not found`);
     }
     
-    if (record.lifecycleState !== LifecycleState.ACTIVE) {
+    if (record.lifecycleState !== LifecycleState.ACTIVE && 
+        record.lifecycleState !== LifecycleState.RUNNING) {
       throw new Error(`Cannot pause agent in ${record.lifecycleState} state`);
     }
     
@@ -650,6 +868,11 @@ export class SpawnManager extends EventEmitter {
     
     if (record.lifecycleState === LifecycleState.DESTROYED) {
       return true;
+    }
+    
+    // Cancel any active heartbeat run
+    if (record.currentRunId && this.heartbeatService) {
+      await this.heartbeatService.cancelRun(record.currentRunId, 'Agent terminated');
     }
     
     record.lifecycleState = LifecycleState.SHUTTING_DOWN;
@@ -704,6 +927,11 @@ export class SpawnManager extends EventEmitter {
       return false;
     }
     
+    // Cancel any active heartbeat run
+    if (record.currentRunId && this.heartbeatService) {
+      this.heartbeatService.cancelRun(record.currentRunId, 'Agent force terminated').catch(() => {});
+    }
+    
     agent.forceTerminate();
     
     record.lifecycleState = LifecycleState.DESTROYED;
@@ -729,6 +957,7 @@ export class SpawnManager extends EventEmitter {
     const record = this.spawnRecords.get(agentId);
     if (record) {
       record.lifecycleState = LifecycleState.DESTROYED;
+      record.currentRunId = null;
     }
   }
   
@@ -869,7 +1098,8 @@ export class SpawnManager extends EventEmitter {
       
       const isHealthy = agent.isHealthy();
       
-      if (!isHealthy && record.lifecycleState === LifecycleState.ACTIVE) {
+      if (!isHealthy && (record.lifecycleState === LifecycleState.ACTIVE || 
+                         record.lifecycleState === LifecycleState.RUNNING)) {
         record.lifecycleState = LifecycleState.DEGRADED;
         this.emit('agentDegraded', { agentId });
         
@@ -908,7 +1138,9 @@ export class SpawnManager extends EventEmitter {
       assignedClient: record.assignedClient?.name,
       assignedModel: record.assignedModel,
       restartCount: record.restartCount,
-      uptime: record.startedAt ? Date.now() - record.startedAt : 0
+      uptime: record.startedAt ? Date.now() - record.startedAt : 0,
+      currentRunId: record.currentRunId,
+      sessionId: record.sessionDisplayId
     };
   }
   
@@ -951,7 +1183,9 @@ export class SpawnManager extends EventEmitter {
         healthy: client.healthy,
         requests: client.stats.requests,
         failures: client.stats.failures
-      }))
+      })),
+      heartbeatEnabled: !!this.heartbeatService,
+      sessionManagerEnabled: !!this.sessionManager
     };
   }
   

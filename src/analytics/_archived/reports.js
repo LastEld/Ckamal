@@ -383,7 +383,7 @@ export class ReportGenerator {
    * Collects audit report data
    * @private
    */
-  async _collectAuditData(dateRange, options) {
+  async _collectAuditData(dateRange, _options) {
     if (!this.budgetManager) {
       throw new Error('BudgetManager required for audit reports');
     }
@@ -474,7 +474,7 @@ export class ReportGenerator {
    * Formats data as HTML
    * @private
    */
-  _formatHtml(data, type) {
+  _formatHtml(data, _type) {
     const periodStr = `${this._formatDate(data.period.start)} to ${this._formatDate(data.period.end)}`;
     
     let detailsHtml = '';

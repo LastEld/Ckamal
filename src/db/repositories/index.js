@@ -9,6 +9,7 @@ import { RoadmapRepository } from './roadmaps.js';
 import { MerkleRepository } from './merkle.js';
 import { ContextRepository } from './contexts.js';
 import { RuntimeRepository } from './runtime.js';
+import { CompanyRepository, CompanyMembershipRepository } from './companies.js';
 
 /**
  * @typedef {Object} RepositorySet
@@ -17,6 +18,8 @@ import { RuntimeRepository } from './runtime.js';
  * @property {MerkleRepository} merkle - Merkle repository
  * @property {ContextRepository} contexts - Context repository
  * @property {RuntimeRepository} runtime - Runtime persistence repository
+ * @property {CompanyRepository} companies - Company repository
+ * @property {CompanyMembershipRepository} companyMemberships - Company membership repository
  */
 
 /**
@@ -80,6 +83,8 @@ export class RepositoryFactory {
     this.#repositories.set('merkle', new MerkleRepository(this.#pool));
     this.#repositories.set('contexts', new ContextRepository(this.#pool));
     this.#repositories.set('runtime', new RuntimeRepository(this.#pool));
+    this.#repositories.set('companies', new CompanyRepository(this.#pool));
+    this.#repositories.set('companyMemberships', new CompanyMembershipRepository(this.#pool));
 
     this.#initialized = true;
   }
@@ -146,6 +151,24 @@ export class RepositoryFactory {
   }
 
   /**
+   * Get company repository
+   * @returns {CompanyRepository}
+   */
+  get companies() {
+    this.#ensureInitialized();
+    return this.#repositories.get('companies');
+  }
+
+  /**
+   * Get company membership repository
+   * @returns {CompanyMembershipRepository}
+   */
+  get companyMemberships() {
+    this.#ensureInitialized();
+    return this.#repositories.get('companyMemberships');
+  }
+
+  /**
    * Get all repositories
    * @returns {RepositorySet}
    */
@@ -156,7 +179,9 @@ export class RepositoryFactory {
       roadmaps: this.#repositories.get('roadmaps'),
       merkle: this.#repositories.get('merkle'),
       contexts: this.#repositories.get('contexts'),
-      runtime: this.#repositories.get('runtime')
+      runtime: this.#repositories.get('runtime'),
+      companies: this.#repositories.get('companies'),
+      companyMemberships: this.#repositories.get('companyMemberships')
     };
   }
 
@@ -276,6 +301,13 @@ export { RoadmapRepository } from './roadmaps.js';
 export { MerkleRepository } from './merkle.js';
 export { ContextRepository } from './contexts.js';
 export { RuntimeRepository } from './runtime.js';
+export { CompanyRepository, CompanyMembershipRepository } from './companies.js';
 export { BaseRepository } from './base-repository.js';
+
+// Optimized repositories
+export { OptimizedBaseRepository } from './base-repository-optimized.js';
+
+// Query cache
+export { QueryCache, globalQueryCache, withQueryCache } from '../query-cache.js';
 
 export default RepositoryFactory;

@@ -7,6 +7,7 @@
 
 import { createHash, randomUUID } from 'crypto';
 import { AuditMiddleware } from './audit.js';
+import { getActivityService, AUTH_ACTIVITIES, SECURITY_ACTIVITIES } from '../domains/activity/activity-service.js';
 
 // ============================================================================
 // Audit Event Types
@@ -109,6 +110,7 @@ export class SecurityAuditLogger {
   #alertThresholds;
   #suspiciousIps;
   #userActivity;
+  #activityService;
 
   /**
    * @param {Object} [config={}] - Configuration options
@@ -128,8 +130,11 @@ export class SecurityAuditLogger {
     this.#config = {
       enableAlerts: config.enableAlerts !== false,
       onAlert: config.onAlert || this.#defaultAlertHandler,
+      enableActivityLog: config.enableActivityLog || false,
       ...config
     };
+    
+    this.#activityService = config.activityService || null;
 
     this.#alertThresholds = {
       failedLogins: config.alertThresholds?.failedLogins || 5,
@@ -147,7 +152,26 @@ export class SecurityAuditLogger {
    * @returns {Promise<SecurityAuditLogger>}
    */
   async initialize() {
+    if (this.#config.enableActivityLog && this.#activityService) {
+      await this.#activityService.initialize();
+    }
     return this;
+  }
+
+  /**
+   * Log to activity service if enabled
+   * @private
+   * @param {Object} params - Activity parameters
+   */
+  async #logToActivity(params) {
+    if (this.#config.enableActivityLog && this.#activityService) {
+      try {
+        await this.#activityService.logActivity(params);
+      } catch (error) {
+        // Don't let activity logging break audit logging
+        console.error('Activity service logging error:', error);
+      }
+    }
   }
 
   /**
@@ -203,6 +227,7 @@ export class SecurityAuditLogger {
    */
   async logAuthAttempt(context) {
     const event = context.success ? AUTH_EVENTS.LOGIN_SUCCESS : AUTH_EVENTS.LOGIN_FAILURE;
+    const activityEvent = context.success ? AUTH_ACTIVITIES.LOGIN_SUCCESS : AUTH_ACTIVITIES.LOGIN_FAILURE;
     
     await this.#audit.log(event, {
       actor: context.actor || 'anonymous',
@@ -214,6 +239,28 @@ export class SecurityAuditLogger {
         method: context.method || 'unknown',
         ...(context.success ? {} : { reason: context.reason }),
         ...context.metadata
+      }
+    });
+
+    // Also log to new activity system
+    await this.#logToActivity({
+      action: activityEvent,
+      actorType: 'user',
+      actorId: context.actor || 'anonymous',
+      entityType: 'auth',
+      entityId: context.actor || 'anonymous',
+      category: 'auth',
+      severity: context.success ? 'info' : 'warning',
+      status: context.success ? 'success' : 'failure',
+      summary: `Login ${context.success ? 'successful' : 'failed'}${context.reason ? `: ${context.reason}` : ''}`,
+      details: {
+        method: context.method || 'unknown',
+        ...(context.success ? {} : { reason: context.reason }),
+        ...context.metadata
+      },
+      context: {
+        ip: context.ip,
+        userAgent: context.userAgent
       }
     });
 
@@ -495,6 +542,38 @@ export class SecurityAuditLogger {
       }
     });
 
+    // Map to activity system security events
+    const securityActivityMap = {
+      [SECURITY_EVENTS.RATE_LIMIT_EXCEEDED]: SECURITY_ACTIVITIES.RATE_LIMIT_EXCEEDED,
+      [SECURITY_EVENTS.BRUTE_FORCE_DETECTED]: SECURITY_ACTIVITIES.BRUTE_FORCE_DETECTED,
+      [SECURITY_EVENTS.UNAUTHORIZED_ACCESS]: SECURITY_ACTIVITIES.UNAUTHORIZED_ACCESS,
+      [SECURITY_EVENTS.PRIVILEGE_ESCALATION]: SECURITY_ACTIVITIES.PRIVILEGE_ESCALATION,
+      [SECURITY_EVENTS.IP_BLOCKED]: SECURITY_ACTIVITIES.IP_BLOCKED
+    };
+
+    const activityEvent = securityActivityMap[event] || SECURITY_ACTIVITIES.SUSPICIOUS_ACTIVITY;
+
+    // Also log to new activity system
+    await this.#logToActivity({
+      action: activityEvent,
+      actorType: context.actorType || 'system',
+      actorId: context.actor || 'system',
+      entityType: 'security',
+      entityId: event,
+      category: 'security',
+      severity: context.severity || 'warning',
+      status: 'failure',
+      summary: context.description || `Security event: ${event}`,
+      details: {
+        evidence: context.evidence,
+        recommendation: context.recommendation
+      },
+      context: {
+        ip: context.ip,
+        userAgent: context.userAgent
+      }
+    });
+
     // Check if alert should be triggered
     if (this.#config.enableAlerts && this.#shouldAlert(event, context)) {
       this.#config.onAlert({
@@ -559,6 +638,58 @@ export class SecurityAuditLogger {
   // ========================================================================
   // Express Middleware
   // ========================================================================
+
+  /**
+   * Security headers middleware
+   * @param {Object} [options={}] - Header options
+   * @returns {Function} Express middleware
+   */
+  securityHeaders(options = {}) {
+    const {
+      hstsMaxAge = 31536000, // 1 year
+      hstsIncludeSubDomains = true,
+      hstsPreload = true,
+      contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+      referrerPolicy = 'strict-origin-when-cross-origin'
+    } = options;
+
+    return (req, res, next) => {
+      // Strict Transport Security (HSTS)
+      if (process.env.NODE_ENV === 'production') {
+        let hstsHeader = `max-age=${hstsMaxAge}`;
+        if (hstsIncludeSubDomains) hstsHeader += '; includeSubDomains';
+        if (hstsPreload) hstsHeader += '; preload';
+        res.setHeader('Strict-Transport-Security', hstsHeader);
+      }
+
+      // Prevent MIME type sniffing
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      // Prevent clickjacking
+      res.setHeader('X-Frame-Options', 'DENY');
+
+      // XSS Protection (legacy browsers)
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+
+      // Content Security Policy
+      res.setHeader('Content-Security-Policy', contentSecurityPolicy);
+
+      // Referrer Policy
+      res.setHeader('Referrer-Policy', referrerPolicy);
+
+      // Permissions Policy (formerly Feature Policy)
+      res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+
+      // Cache control for sensitive routes
+      if (req.path.startsWith('/api/auth') || req.path.startsWith('/admin')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+
+      next();
+    };
+  }
 
   /**
    * Create Express middleware for automatic request auditing

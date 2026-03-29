@@ -4,6 +4,12 @@
  *
  * Uses SQLite repository for persistence when available,
  * falls back to in-memory Map when no repository is provided.
+ * 
+ * Relationship with Issues (src/domains/issues):
+ * - Tasks: Simple todo items, Eisenhower matrix prioritization, agent execution
+ * - Issues: Full ticket/project management with comments, labels, assignments
+ * - Tasks can be linked to Issues via the issueId field
+ * - Use tasks for quick todos; use issues for collaborative project work
  */
 
 /**
@@ -81,6 +87,7 @@ export class TaskDomain {
       important: (row.quadrant || '').includes('important') && !(row.quadrant || '').includes('not-important'),
       quadrant: row.quadrant || 'not-urgent-not-important',
       roadmapNodeId: row.roadmap_id ? String(row.roadmap_id) : null,
+      issueId: row.issue_id || null,
       parentTaskId: null,
       subtasks: [],
       tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
@@ -105,6 +112,7 @@ export class TaskDomain {
       priority: task.priority,
       due_date: task.dueDate,
       roadmap_id: task.roadmapNodeId ? Number(task.roadmapNodeId) || null : null,
+      issue_id: task.issueId,
       tags: JSON.stringify(task.tags || []),
       estimated_minutes: task.estimatedMinutes,
       actual_minutes: task.actualMinutes
@@ -136,6 +144,7 @@ export class TaskDomain {
       quadrant: this.#calculateQuadrant(urgent, important),
       roadmapNodeId: data.roadmapNodeId ?? null,
       parentTaskId: data.parentTaskId ?? null,
+      issueId: data.issueId ?? null,
       subtasks: [],
       tags: data.tags ?? [],
       dueDate: data.dueDate ?? null,
@@ -273,6 +282,54 @@ export class TaskDomain {
     return this.updateTask(taskId, { roadmapNodeId: null });
   }
 
+  /**
+   * Link a task to an issue
+   * @param {string} taskId - Task ID
+   * @param {string} issueId - Issue ID
+   * @returns {Object} Updated task
+   */
+  linkToIssue(taskId, issueId) {
+    const task = this.#tasks.get(taskId);
+    if (!task) throw new Error(`Task not found: ${taskId}`);
+    task.issueId = issueId;
+    task.updatedAt = this.#nextTimestamp(task.updatedAt);
+    this.#tasks.set(taskId, task);
+    
+    // Persist to repository if available
+    if (this.#repo) {
+      const numericId = Number(taskId.replace(/\D/g, '')) || taskId;
+      this.#repo.update(numericId, { 
+        issue_id: issueId,
+        updated_at: task.updatedAt 
+      }).catch(() => {});
+    }
+    
+    return task;
+  }
+
+  /**
+   * Unlink task from issue
+   * @param {string} taskId - Task ID
+   * @returns {Object} Updated task
+   */
+  unlinkFromIssue(taskId) {
+    const task = this.#tasks.get(taskId);
+    if (!task) throw new Error(`Task not found: ${taskId}`);
+    task.issueId = null;
+    task.updatedAt = this.#nextTimestamp(task.updatedAt);
+    this.#tasks.set(taskId, task);
+    
+    if (this.#repo) {
+      const numericId = Number(taskId.replace(/\D/g, '')) || taskId;
+      this.#repo.update(numericId, { 
+        issue_id: null,
+        updated_at: task.updatedAt 
+      }).catch(() => {});
+    }
+    
+    return task;
+  }
+
   addAttachment(taskId, fileId) {
     const task = this.#tasks.get(taskId);
     if (!task) throw new Error(`Task not found: ${taskId}`);
@@ -301,6 +358,7 @@ export class TaskDomain {
     if (filters.quadrant) tasks = tasks.filter(t => t.quadrant === filters.quadrant);
     if (filters.assignee) tasks = tasks.filter(t => t.assignees.includes(filters.assignee));
     if (filters.roadmapNodeId) tasks = tasks.filter(t => t.roadmapNodeId === filters.roadmapNodeId);
+    if (filters.issueId) tasks = tasks.filter(t => t.issueId === filters.issueId);
     if (filters.tags?.length > 0) {
       tasks = tasks.filter(t => filters.tags.every(tag => t.tags.includes(tag)));
     }

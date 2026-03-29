@@ -96,7 +96,7 @@ export class SecurityTestRunner extends EventEmitter {
    * @param {Object} options - Scan options
    * @returns {Promise<Object>} Scan results
    */
-  async scan(code, options = {}) {
+  async scan(code, _options = {}) {
     const results = {
       vulnerabilities: [],
       secrets: [],
@@ -169,7 +169,7 @@ export class SecurityTestRunner extends EventEmitter {
    * Scan a single file against a rule
    * @private
    */
-  async scanFile(file, rule) {
+  async scanFile(_file, _rule) {
     const matches = [];
     
     try {
@@ -235,7 +235,7 @@ export class SecurityTestRunner extends EventEmitter {
    * Scan file for secrets
    * @private
    */
-  async scanFileForSecrets(file) {
+  async scanFileForSecrets(_file) {
     const secrets = [];
     
     // In production, this would read and scan the actual file
@@ -299,7 +299,7 @@ export class SecurityTestRunner extends EventEmitter {
    * Check a dependency for vulnerabilities
    * @private
    */
-  async checkDependencyVulnerabilities(dependency) {
+  async checkDependencyVulnerabilities(_dependency) {
     // This would check against vulnerability databases
     // Returns array of vulnerabilities found
     return [];

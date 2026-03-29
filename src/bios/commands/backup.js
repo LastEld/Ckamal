@@ -5,7 +5,7 @@
 
 import * as f from './utils/formatters.js';
 import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
-import { join, basename } from 'path';
+import { join } from 'path';
 
 const BACKUP_DIR = join(process.cwd(), 'backups');
 
@@ -85,7 +85,7 @@ export async function createBackup(options = {}) {
 /**
  * List backups
  */
-export async function listBackups(options = {}) {
+export async function listBackups(_options = {}) {
   const spinner = f.createSpinner('Listing backups');
   spinner.start();
 
@@ -157,7 +157,6 @@ export async function restoreBackup(backupId, options = {}) {
   try {
     // Find backup file
     const files = readdirSync(BACKUP_DIR).filter(f => f.endsWith('.json'));
-    let backupFile = null;
     let backupData = null;
 
     for (const file of files) {
@@ -223,7 +222,7 @@ export async function restoreBackup(backupId, options = {}) {
 /**
  * Delete a backup
  */
-export async function deleteBackup(backupId, options = {}) {
+export async function deleteBackup(backupId, _options = {}) {
   // Similar to restore, find and delete
   return {
     success: true,
@@ -239,7 +238,7 @@ function getVersion() {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       return pkg.version || '5.0.0';
     }
-  } catch (e) {}
+  } catch (e) { /* intentionally empty - fallback to default version */ }
   return '5.0.0';
 }
 

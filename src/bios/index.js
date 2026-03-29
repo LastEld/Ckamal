@@ -12,6 +12,7 @@ import { OperationalMode } from './modes/operational.js';
 import { MaintenanceMode } from './modes/maintenance.js';
 import { SafeMode } from './modes/safe-mode.js';
 import { DiagnoseMode } from './modes/diagnose.js';
+import { RoutineScheduler } from '../domains/routines/routine-scheduler.js';
 
 /**
  * System state enumeration
@@ -153,6 +154,20 @@ export class CogniMeshBIOS extends EventEmitter {
      * @private
      */
     this._maxErrorLogSize = 100;
+
+    /**
+     * Routine scheduler instance
+     * @type {RoutineScheduler|null}
+     * @private
+     */
+    this._routineScheduler = null;
+
+    /**
+     * Database instance
+     * @type {import('better-sqlite3').Database|null}
+     * @private
+     */
+    this._db = null;
 
     this._initializeModes();
     this._setupEventHandlers();
@@ -312,7 +327,7 @@ export class CogniMeshBIOS extends EventEmitter {
    * @async
    * @param {string} [configPath] - Configuration file path
    */
-  async _loadConfiguration(configPath) {
+  async _loadConfiguration(_configPath) {
     // Load from environment variables and optional config file
     this._config = {
       githubToken: process.env.GITHUB_TOKEN,
@@ -364,6 +379,10 @@ export class CogniMeshBIOS extends EventEmitter {
     const mode = this._modes.get(SystemState.OPERATIONAL);
     if (mode) {
       await mode.enter();
+      
+      // Initialize and start routine scheduler
+      await this._initializeRoutineScheduler();
+      
       this._previousState = this._state;
       this._state = SystemState.OPERATIONAL;
       this.emit('bios:state:changed', { 
@@ -371,6 +390,277 @@ export class CogniMeshBIOS extends EventEmitter {
         to: SystemState.OPERATIONAL 
       });
     }
+  }
+
+  /**
+   * Initialize the routine scheduler
+   * @private
+   * @async
+   */
+  async _initializeRoutineScheduler() {
+    try {
+      // Get database instance (assuming it's registered as a component or passed via config)
+      const db = this._getDatabase();
+      
+      if (!db) {
+        this._logger?.warn('[BIOS] No database available, routine scheduler disabled');
+        return;
+      }
+
+      this._routineScheduler = new RoutineScheduler({
+        db,
+        logger: this._logger,
+        heartbeatService: this._monitor,
+        config: {
+          pollIntervalMs: 30000,
+          lockTimeoutMs: 300000,
+          maxConcurrentRuns: 10,
+          instanceId: `bios-${process.env.HOSTNAME || 'local'}-${Date.now()}`
+        }
+      });
+
+      // Forward scheduler events
+      this._routineScheduler.on('started', () => {
+        this.emit('bios:scheduler:started');
+      });
+
+      this._routineScheduler.on('stopped', () => {
+        this.emit('bios:scheduler:stopped');
+      });
+
+      this._routineScheduler.on('run:started', (data) => {
+        this.emit('bios:routine:started', data);
+      });
+
+      this._routineScheduler.on('run:completed', (data) => {
+        this.emit('bios:routine:completed', data);
+      });
+
+      this._routineScheduler.on('run:failed', (data) => {
+        this.emit('bios:routine:failed', data);
+      });
+
+      // Start the scheduler
+      await this._routineScheduler.start();
+      
+      // Register as component
+      this.registerComponent('routine-scheduler', {
+        type: 'scheduler',
+        scheduler: this._routineScheduler,
+        healthCheck: () => ({
+          healthy: this._routineScheduler.isRunning,
+          ...this._routineScheduler.getStatus()
+        }),
+        shutdown: async () => {
+          if (this._routineScheduler) {
+            await this._routineScheduler.stop();
+          }
+        }
+      });
+
+      this._logger?.info('[BIOS] Routine scheduler initialized');
+    } catch (error) {
+      this._logger?.error('[BIOS] Failed to initialize routine scheduler:', error);
+      // Don't fail boot - scheduler is not critical
+    }
+  }
+
+  /**
+   * Register plugin system as BIOS component
+   * @param {Object} pluginSystem - Plugin system instance
+   * @param {import('../plugins/plugin-registry.js').PluginRegistry} pluginSystem.registry - Plugin registry
+   * @param {import('../plugins/plugin-loader.js').PluginLoader} pluginSystem.loader - Plugin loader
+   */
+  registerPluginSystem(pluginSystem) {
+    if (!pluginSystem || !pluginSystem.registry) {
+      throw new Error('Invalid plugin system provided');
+    }
+
+    this.registerComponent('pluginSystem', {
+      type: 'plugin_system',
+      registry: pluginSystem.registry,
+      loader: pluginSystem.loader,
+      initialize: async () => pluginSystem.registry.isInitialized,
+      healthCheck: async () => this._checkPluginHealth(pluginSystem),
+      shutdown: async () => {
+        if (pluginSystem.loader) {
+          await pluginSystem.loader.dispose();
+        }
+        if (pluginSystem.registry) {
+          await pluginSystem.registry.dispose();
+        }
+      }
+    });
+
+    // Listen to plugin registry events and forward to BIOS
+    pluginSystem.registry.on('activated', ({ pluginId }) => {
+      this.emit('plugin:activated', { pluginId, timestamp: Date.now() });
+    });
+
+    pluginSystem.registry.on('failed', ({ pluginId, error }) => {
+      this.emit('plugin:failed', { pluginId, error, timestamp: Date.now() });
+    });
+
+    pluginSystem.registry.on('workerError', ({ pluginId, error }) => {
+      this.emit('plugin:worker:error', { pluginId, error, timestamp: Date.now() });
+    });
+
+    pluginSystem.registry.on('configChanged', ({ pluginId, config }) => {
+      this.emit('plugin:config:changed', { pluginId, config, timestamp: Date.now() });
+    });
+
+    this.emit('bios:plugin:registered', {
+      pluginCount: pluginSystem.registry.plugins.size
+    });
+  }
+
+  /**
+   * Check plugin system health
+   * @private
+   */
+  async _checkPluginHealth(pluginSystem) {
+    const registry = pluginSystem.registry;
+    const plugins = registry.getAllPlugins();
+    
+    const health = {
+      healthy: true,
+      message: `Plugin system healthy with ${plugins.length} plugins`,
+      plugins: {
+        total: plugins.length,
+        active: 0,
+        failed: 0,
+        installed: 0
+      },
+      workers: {
+        running: 0
+      }
+    };
+
+    for (const plugin of plugins) {
+      if (plugin.status === 'active') health.plugins.active++;
+      else if (plugin.status === 'failed') health.plugins.failed++;
+      else health.plugins.installed++;
+    }
+
+    // Count running workers
+    if (pluginSystem.loader && pluginSystem.loader.workers) {
+      health.workers.running = pluginSystem.loader.workers.size;
+    }
+
+    // Mark unhealthy if any plugins failed
+    if (health.plugins.failed > 0) {
+      health.healthy = health.plugins.failed < health.plugins.total / 2; // Degraded if < 50% failed
+      health.message = `${health.plugins.failed} plugins in failed state`;
+    }
+
+    return health;
+  }
+
+  /**
+   * Get plugin system status
+   * @returns {Object|null}
+   */
+  getPluginSystemStatus() {
+    const pluginSystem = this.getComponent('pluginSystem');
+    if (!pluginSystem || !pluginSystem.registry) {
+      return null;
+    }
+
+    const registry = pluginSystem.registry;
+    const plugins = registry.getAllPlugins();
+
+    return {
+      initialized: registry.isInitialized,
+      totalPlugins: plugins.length,
+      byStatus: plugins.reduce((acc, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      }, {}),
+      plugins: plugins.map(p => ({
+        id: p.id,
+        name: p.name,
+        version: p.version,
+        status: p.status,
+        capabilities: p.capabilities
+      }))
+    };
+  }
+
+  /**
+   * Trigger plugin lifecycle action
+   * @param {string} action - Action to perform (enable, disable, restart)
+   * @param {string} pluginId - Plugin ID
+   */
+  async triggerPluginAction(action, pluginId) {
+    const pluginSystem = this.getComponent('pluginSystem');
+    if (!pluginSystem || !pluginSystem.registry) {
+      throw new Error('Plugin system not registered');
+    }
+
+    const registry = pluginSystem.registry;
+    const plugin = registry.getPlugin(pluginId);
+    
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${pluginId}`);
+    }
+
+    this.emit('plugin:action:start', { action, pluginId });
+
+    try {
+      switch (action) {
+        case 'enable':
+        case 'start':
+          await registry.startPlugin(pluginId);
+          break;
+        case 'disable':
+        case 'stop':
+          await registry.stopPlugin(pluginId);
+          break;
+        case 'restart':
+          await registry.stopPlugin(pluginId);
+          await registry.startPlugin(pluginId);
+          break;
+        default:
+          throw new Error(`Unknown plugin action: ${action}`);
+      }
+
+      this.emit('plugin:action:complete', { action, pluginId, success: true });
+    } catch (error) {
+      this.emit('plugin:action:error', { action, pluginId, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get database instance
+   * @private
+   * @returns {import('better-sqlite3').Database|null}
+   */
+  _getDatabase() {
+    // First check if database is registered as a component
+    const dbComponent = this.getComponent('database');
+    if (dbComponent?.db) {
+      return dbComponent.db;
+    }
+    
+    // Check for global db reference (set during boot)
+    return this._db;
+  }
+
+  /**
+   * Set database instance
+   * @param {import('better-sqlite3').Database} db - Database instance
+   */
+  setDatabase(db) {
+    this._db = db;
+  }
+
+  /**
+   * Get the routine scheduler
+   * @returns {RoutineScheduler|null}
+   */
+  getRoutineScheduler() {
+    return this._routineScheduler;
   }
 
   /**

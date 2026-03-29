@@ -1,0 +1,75 @@
+{
+  "server": {
+    "env": "production",
+    "port": 3000,
+    "host": "0.0.0.0",
+    "name": "cognimesh-server-staging"
+  },
+  "database": {
+    "path": "/app/data/cognimesh.db",
+    "maxConnections": 10,
+    "busyTimeout": 5000,
+    "maxRetries": 3,
+    "retryDelay": 200
+  },
+  "security": {
+    "mode": "enforced",
+    "requireAuth": true,
+    "rateLimitEnabled": true,
+    "rateLimitWindowMs": 900000,
+    "rateLimitMax": 200,
+    "httpsOnly": false,
+    "securityHeadersConfigured": true
+  },
+  "session": {
+    "secure": false,
+    "httpOnly": true,
+    "sameSite": "lax"
+  },
+  "websocket": {
+    "enabled": true,
+    "port": 8080,
+    "host": "0.0.0.0",
+    "path": "/ws",
+    "heartbeatInterval": 30000,
+    "maxPayloadMb": 50,
+    "requireAuth": false,
+    "corsOrigin": "*"
+  },
+  "dashboard": {
+    "enabled": true,
+    "port": 3001,
+    "host": "0.0.0.0",
+    "authEnabled": true
+  },
+  "features": {
+    "tasks": true,
+    "roadmaps": true,
+    "claude": true,
+    "websocket": true,
+    "batch": true,
+    "streaming": true,
+    "dashboard": true,
+    "analytics": true
+  },
+  "bios": {
+    "mode": "OPERATIONAL",
+    "autoUpdate": false,
+    "regressionThreshold": 10.0,
+    "maxAgents": 20
+  },
+  "logging": {
+    "level": "debug",
+    "format": "json"
+  },
+  "cache": {
+    "enabled": true,
+    "maxSize": 500,
+    "ttlMs": 30000
+  },
+  "monitoring": {
+    "enabled": true,
+    "metricsPath": "/metrics",
+    "healthCheckInterval": 30000
+  }
+}

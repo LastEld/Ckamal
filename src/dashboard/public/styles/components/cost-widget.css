@@ -1,0 +1,665 @@
+/**
+ * CogniMesh v5.0 - Cost Widget Styles
+ * Cost tracking and budget management component styles
+ */
+
+/* ========================================
+   CSS Variables for Cost Widgets
+   ======================================== */
+
+:root {
+  /* Budget Status Colors - Light Mode */
+  --cost-good: #22c55e;
+  --cost-good-bg: #dcfce7;
+  --cost-caution: #eab308;
+  --cost-caution-bg: #fef9c3;
+  --cost-warning: #f97316;
+  --cost-warning-bg: #ffedd5;
+  --cost-critical: #ef4444;
+  --cost-critical-bg: #fee2e2;
+
+  /* Cost Widget Specific */
+  --cost-card-bg: var(--color-bg-secondary);
+  --cost-card-border: var(--color-border);
+  --cost-text-primary: var(--color-text-primary);
+  --cost-text-secondary: var(--color-text-secondary);
+  --cost-text-muted: var(--color-text-muted);
+}
+
+[data-theme="dark"] {
+  /* Budget Status Colors - Dark Mode */
+  --cost-good: #4ade80;
+  --cost-good-bg: #14532d;
+  --cost-caution: #facc15;
+  --cost-caution-bg: #713f12;
+  --cost-warning: #fb923c;
+  --cost-warning-bg: #7c2d12;
+  --cost-critical: #f87171;
+  --cost-critical-bg: #7f1d1d;
+}
+
+/* ========================================
+   Cost Summary Card
+   ======================================== */
+
+.cost-summary-card {
+  background-color: var(--cost-card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--cost-card-border);
+}
+
+.cost-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.cost-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--cost-text-primary);
+  margin: 0;
+}
+
+.cost-card-title i {
+  width: 20px;
+  height: 20px;
+  color: var(--color-brand-primary);
+}
+
+.cost-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cost-badge.good {
+  background-color: var(--cost-good-bg);
+  color: var(--cost-good);
+}
+
+.cost-badge.caution {
+  background-color: var(--cost-caution-bg);
+  color: var(--cost-caution);
+}
+
+.cost-badge.warning {
+  background-color: var(--cost-warning-bg);
+  color: var(--cost-warning);
+}
+
+.cost-badge.critical {
+  background-color: var(--cost-critical-bg);
+  color: var(--cost-critical);
+}
+
+.cost-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.cost-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.cost-metric-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--cost-text-primary);
+}
+
+.cost-metric-label {
+  font-size: var(--font-size-sm);
+  color: var(--cost-text-secondary);
+}
+
+.cost-metric.projected .cost-metric-value {
+  color: var(--color-brand-primary);
+}
+
+/* ========================================
+   Budget Progress Bar
+   ======================================== */
+
+.budget-progress-card {
+  background-color: var(--cost-card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--cost-card-border);
+}
+
+.budget-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.budget-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.budget-status.good {
+  background-color: var(--cost-good-bg);
+  color: var(--cost-good);
+}
+
+.budget-status.caution {
+  background-color: var(--cost-caution-bg);
+  color: var(--cost-caution);
+}
+
+.budget-status.warning {
+  background-color: var(--cost-warning-bg);
+  color: var(--cost-warning);
+}
+
+.budget-status.critical {
+  background-color: var(--cost-critical-bg);
+  color: var(--cost-critical);
+}
+
+.budget-progress-container {
+  margin-bottom: var(--spacing-md);
+}
+
+.budget-progress-bar {
+  position: relative;
+  height: 12px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: visible;
+  margin-bottom: var(--spacing-sm);
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease, background-color 0.3s ease;
+}
+
+.budget-progress-fill.good {
+  background-color: var(--cost-good);
+}
+
+.budget-progress-fill.caution {
+  background-color: var(--cost-caution);
+}
+
+.budget-progress-fill.warning {
+  background-color: var(--cost-warning);
+}
+
+.budget-progress-fill.critical {
+  background-color: var(--cost-critical);
+}
+
+.budget-progress-marker {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 20px;
+  background-color: var(--cost-caution);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+.budget-progress-marker.critical {
+  background-color: var(--cost-critical);
+}
+
+.budget-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--cost-text-muted);
+}
+
+.budget-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--cost-card-border);
+}
+
+.budget-progress-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--cost-text-secondary);
+}
+
+.budget-progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.budget-progress-dot.good {
+  background-color: var(--cost-good);
+}
+
+.budget-progress-dot.caution {
+  background-color: var(--cost-caution);
+}
+
+.budget-progress-dot.warning {
+  background-color: var(--cost-warning);
+}
+
+.budget-progress-dot.critical {
+  background-color: var(--cost-critical);
+}
+
+.budget-progress-thresholds {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.budget-progress-thresholds .threshold {
+  font-size: var(--font-size-xs);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.budget-progress-thresholds .threshold.warning {
+  background-color: var(--cost-caution-bg);
+  color: var(--cost-caution);
+}
+
+.budget-progress-thresholds .threshold.critical {
+  background-color: var(--cost-critical-bg);
+  color: var(--cost-critical);
+}
+
+/* ========================================
+   Cost Alert Banner
+   ======================================== */
+
+.cost-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.cost-alert-banner i {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.cost-alert-banner.success {
+  background-color: var(--cost-good-bg);
+  color: var(--cost-good);
+  border: 1px solid var(--cost-good);
+}
+
+.cost-alert-banner.success i {
+  color: var(--cost-good);
+}
+
+.cost-alert-banner.caution {
+  background-color: var(--cost-caution-bg);
+  color: var(--cost-caution);
+  border: 1px solid var(--cost-caution);
+}
+
+.cost-alert-banner.warning {
+  background-color: var(--cost-warning-bg);
+  color: var(--cost-warning);
+  border: 1px solid var(--cost-warning);
+}
+
+.cost-alert-banner.critical {
+  background-color: var(--cost-critical-bg);
+  color: var(--cost-critical);
+  border: 1px solid var(--cost-critical);
+}
+
+.cost-alert-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--spacing-xs);
+}
+
+.cost-alert-content strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.cost-alert-time {
+  font-size: var(--font-size-xs);
+  color: var(--cost-text-muted);
+  white-space: nowrap;
+}
+
+/* ========================================
+   Compact Widget (Dashboard)
+   ======================================== */
+
+.cost-widget-compact {
+  background-color: var(--cost-card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--cost-card-border);
+  overflow: hidden;
+}
+
+.cost-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--cost-card-border);
+}
+
+.cost-widget-header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--cost-text-primary);
+  margin: 0;
+}
+
+.cost-widget-header h3 i {
+  width: 16px;
+  height: 16px;
+  color: var(--color-brand-primary);
+}
+
+.cost-widget-compact .cost-summary-card,
+.cost-widget-compact .budget-progress-card {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--cost-card-border);
+}
+
+.cost-widget-compact .cost-summary-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cost-widget-compact .cost-metric-value {
+  font-size: var(--font-size-xl);
+}
+
+.cost-widget-compact .budget-progress-info {
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+}
+
+/* ========================================
+   Billing View
+   ======================================== */
+
+.billing-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.billing-period-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.billing-card {
+  background-color: var(--cost-card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--cost-card-border);
+  padding: var(--spacing-lg);
+}
+
+.billing-card.wide {
+  grid-column: 1 / -1;
+}
+
+.billing-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.billing-chart-header h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--cost-text-primary);
+  margin: 0;
+}
+
+.chart-legend {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--cost-text-secondary);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.billing-chart-container {
+  height: 250px;
+  position: relative;
+}
+
+.billing-chart-container.doughnut {
+  height: 300px;
+}
+
+/* ========================================
+   Responsive Layout
+   ======================================== */
+
+@media (max-width: 1200px) {
+  .cost-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .billing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .billing-card.wide {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .cost-summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .cost-metric {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .budget-progress-info {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+  }
+
+  .billing-chart-container {
+    height: 200px;
+  }
+
+  .billing-chart-container.doughnut {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cost-summary-card,
+  .budget-progress-card,
+  .billing-card {
+    padding: var(--spacing-md);
+  }
+
+  .cost-metric-value {
+    font-size: var(--font-size-xl);
+  }
+
+  .budget-progress-labels {
+    font-size: 10px;
+  }
+
+  .chart-legend {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+
+@keyframes budgetPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.budget-progress-fill.warning,
+.budget-progress-fill.critical {
+  animation: budgetPulse 2s infinite;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cost-alert-banner {
+  animation: slideIn 0.3s ease;
+}
+
+/* ========================================
+   Chart Container Overrides
+   ======================================== */
+
+.cost-widget-compact canvas {
+  max-height: 150px !important;
+}
+
+/* ========================================
+   Loading States
+   ======================================== */
+
+.cost-widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  color: var(--cost-text-muted);
+}
+
+.cost-widget-loading::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: var(--spacing-sm);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   Empty States
+   ======================================== */
+
+.cost-widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  color: var(--cost-text-muted);
+  text-align: center;
+}
+
+.cost-widget-empty i {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+/* ========================================
+   Dark Mode Specific Adjustments
+   ======================================== */
+
+[data-theme="dark"] .cost-alert-banner.success {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+[data-theme="dark"] .cost-alert-banner.caution {
+  border-color: rgba(250, 204, 21, 0.3);
+}
+
+[data-theme="dark"] .cost-alert-banner.warning {
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+[data-theme="dark"] .cost-alert-banner.critical {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+[data-theme="dark"] .budget-progress-bar {
+  background-color: rgba(255, 255, 255, 0.1);
+}

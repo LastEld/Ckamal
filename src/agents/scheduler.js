@@ -269,7 +269,7 @@ export class AgentScheduler extends EventEmitter {
     }
 
     // Check queues
-    for (const [priority, queue] of this.queues) {
+    for (const [, queue] of this.queues) {
       const index = queue.findIndex(t => t.id === taskId);
       if (index !== -1) {
         const task = queue.splice(index, 1)[0];
@@ -429,7 +429,7 @@ export class AgentScheduler extends EventEmitter {
    */
   getStats() {
     const queueDepths = {};
-    for (const [priority, queue] of this.queues) {
+    for (const [, queue] of this.queues) {
       queueDepths[TaskPriority[priority] || priority] = queue.length;
     }
 
@@ -752,7 +752,7 @@ export class AgentScheduler extends EventEmitter {
     this.stop();
 
     // Cancel all pending tasks
-    for (const [priority, queue] of this.queues) {
+    for (const [, queue] of this.queues) {
       while (queue.length > 0) {
         const task = queue.shift();
         task.state = TaskState.CANCELLED;

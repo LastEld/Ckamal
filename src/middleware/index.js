@@ -183,6 +183,50 @@ export {
 } from './security-audit.js';
 
 // ============================================================================
+// Cost Tracking
+// ============================================================================
+
+export {
+  createCostTracker,
+  createBudgetEnforcer,
+  createCostRecorder,
+  createCostHeaders,
+  createCostTrackingStack
+} from './cost-tracker.js';
+
+// ============================================================================
+// Enhanced Rate Limiting
+// ============================================================================
+
+export {
+  enhancedRateLimitMiddleware,
+  EnhancedRateLimitError,
+  enhancedRateLimitConfig,
+  defaultRateLimit as enhancedDefaultRateLimit,
+  authRateLimit as enhancedAuthRateLimit,
+  apiRateLimit,
+  claudeRateLimit as enhancedClaudeRateLimit,
+  batchRateLimit,
+  adminRateLimit,
+  websocketRateLimit,
+  setDistributedStorage,
+  getDistributedStorage,
+  getRateLimitStats,
+  resetRateLimit as resetEnhancedRateLimit
+} from './rate-limit-enhanced.js';
+
+// ============================================================================
+// Compression
+// ============================================================================
+
+export {
+  compressionMiddleware,
+  precompressedMiddleware,
+  getCompressionStats,
+  resetCompressionStats
+} from './compression.js';
+
+// ============================================================================
 // Default Export
 // ============================================================================
 

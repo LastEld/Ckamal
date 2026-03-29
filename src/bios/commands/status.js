@@ -113,7 +113,7 @@ function getVersion() {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       return pkg.version || '5.0.0';
     }
-  } catch (error) {}
+  } catch (error) { /* intentionally empty - fallback to default version */ }
 
   return '5.0.0';
 }

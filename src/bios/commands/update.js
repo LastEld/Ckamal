@@ -4,7 +4,7 @@
  */
 
 import * as f from './utils/formatters.js';
-import { readFileSync, existsSync, writeFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 const CURRENT_VERSION = getVersion();
@@ -55,7 +55,7 @@ const AVAILABLE_UPDATES = [
 /**
  * Check for updates
  */
-export async function checkUpdates(options = {}) {
+export async function checkUpdates(_options = {}) {
   const spinner = f.createSpinner('Checking for updates');
   spinner.start();
 
@@ -220,7 +220,7 @@ export async function applyUpdates(options = {}) {
 /**
  * Rollback to previous version
  */
-export async function rollbackUpdate(version, options = {}) {
+export async function rollbackUpdate(version, _options = {}) {
   if (!version) {
     return {
       success: false,
@@ -246,7 +246,7 @@ export async function rollbackUpdate(version, options = {}) {
 /**
  * Show update history
  */
-export async function updateHistory(options = {}) {
+export async function updateHistory(_options = {}) {
   let output = '\n';
   output += f.header('UPDATE HISTORY', 'line');
   output += '\n\n';
@@ -280,7 +280,7 @@ function getVersion() {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       return pkg.version || '5.0.0';
     }
-  } catch (e) {}
+  } catch (e) { /* intentionally empty - fallback to default version */ }
   return '5.0.0';
 }
 

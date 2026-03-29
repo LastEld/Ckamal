@@ -3,6 +3,8 @@
  * Roadmaps view with progress tracking
  */
 
+/* global Toast */
+
 const roadmapsWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class RoadmapsComponent {

@@ -594,7 +594,7 @@ export class SubstrateAPI extends EventEmitter {
    * @returns {boolean}
    */
   unsubscribe(subscriptionId) {
-    for (const [event, handlers] of this._subscribers) {
+    for (const [, handlers] of this._subscribers) {
       for (const handler of handlers) {
         if (handler.id === subscriptionId) {
           handlers.delete(handler);
@@ -786,7 +786,7 @@ export class SubstrateAPI extends EventEmitter {
     
     const currentAllocation = this._allocations.get(agentId) || { memory: 0 };
     const additionalMemory = resources.memory || 0;
-    const totalRequired = currentAllocation.memory + additionalMemory;
+    // const totalRequired = currentAllocation.memory + additionalMemory;
     
     const available = this._resources.memory.max - this._resources.memory.used;
     

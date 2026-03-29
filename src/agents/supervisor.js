@@ -280,7 +280,7 @@ export class AgentSupervisor extends EventEmitter {
    */
   _handleHealthyAgent(agentId) {
     const currentStatus = this.healthStatus.get(agentId);
-    const failures = this.healthCheckFailures.get(agentId);
+    // const failures = this.healthCheckFailures.get(agentId);
 
     // Reset failure count
     this.healthCheckFailures.set(agentId, 0);

@@ -3,6 +3,8 @@
  * AI Provider cards and model matrix with capabilities, status, and subscription info
  */
 
+/* global Toast */
+
 const providersWindow = typeof window !== 'undefined' ? window : globalThis;
 
 class ProvidersComponent {
@@ -133,6 +135,7 @@ class ProvidersComponent {
   renderProviders() {
     this.renderProviderCards();
     this.renderModelMatrix();
+    this.attachSurfaceActions();
 
     // Re-initialize Lucide icons
     if (typeof providersWindow.lucide?.createIcons === 'function') {
@@ -162,6 +165,39 @@ class ProvidersComponent {
       const vendor = this.escapeHtml(provider.vendor);
       const subscription = this.escapeHtml(provider.subscription);
       const modes = (provider.modes || []).map(m => this.escapeHtml(m));
+      const surfaceStatus = provider.surfaceStatus || {};
+      const connectedModes = Array.isArray(provider.connectedModes) ? provider.connectedModes : [];
+      const disconnectedModes = Array.isArray(provider.disconnectedModes) ? provider.disconnectedModes : [];
+      const statusLabel = provider.fullyConnected
+        ? 'All surfaces online'
+        : connectedModes.length > 0
+          ? `Partial connectivity (${connectedModes.length}/${(provider.supportedModes || []).length || 0})`
+          : 'Offline';
+      const statusColor = provider.fullyConnected
+        ? '#22c55e'
+        : connectedModes.length > 0
+          ? '#f59e0b'
+          : '#ef4444';
+      const modeStatusBadges = (provider.supportedModes || []).map((mode) => {
+        const online = Boolean(surfaceStatus[mode]);
+        const borderColor = online ? '#22c55e' : '#ef4444';
+        const textColor = online ? '#22c55e' : '#ef4444';
+        const bgColor = online ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+        const label = this.escapeHtml(this.formatModeLabel(mode));
+        return `<span class="provider-mode-badge" style="border:1px solid ${borderColor}; color:${textColor}; background:${bgColor};">${label} ${online ? 'online' : 'offline'}</span>`;
+      }).join('');
+      const surfaceControls = (provider.supportedModes || []).map((mode) => {
+        const online = Boolean(surfaceStatus[mode]);
+        if (online) return '';
+        const providerId = this.escapeHtml(provider.id);
+        const surfaceId = this.escapeHtml(mode);
+        const label = this.escapeHtml(this.formatModeLabel(mode));
+        return `
+          <button class="btn btn-secondary provider-open-surface-btn" data-provider="${providerId}" data-surface="${surfaceId}">
+            Open ${label}
+          </button>
+        `;
+      }).join('');
 
       return `
         <div class="provider-card" style="--provider-accent: ${color}">
@@ -176,9 +212,27 @@ class ProvidersComponent {
             <i data-lucide="shield-check"></i>
             <span>${subscription}</span>
           </div>
+          <div class="provider-subscription">
+            <i data-lucide="activity"></i>
+            <span style="color:${statusColor};">${this.escapeHtml(statusLabel)}</span>
+          </div>
           <div class="provider-modes">
             ${modes.map(mode => `<span class="provider-mode-badge">${mode}</span>`).join('')}
           </div>
+          <div class="provider-modes">
+            ${modeStatusBadges}
+          </div>
+          ${surfaceControls ? `
+            <div class="provider-surface-controls">
+              ${surfaceControls}
+            </div>
+          ` : ''}
+          ${disconnectedModes.length > 0 ? `
+            <div class="provider-subscription">
+              <i data-lucide="alert-triangle"></i>
+              <span>${this.escapeHtml(`Need to start: ${disconnectedModes.map((mode) => this.formatModeLabel(mode)).join(', ')}`)}</span>
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('');
@@ -207,6 +261,9 @@ class ProvidersComponent {
       const color = this.providerColors[providerId] || '#64748b';
       const qualityPct = Math.round((model.qualityScore || 0) * 100);
       const maxTokens = this.formatTokenCount(model.maxTokens);
+      const surfaces = (model.surfaces || [])
+        .map((surface) => this.escapeHtml(this.formatModeLabel(surface)))
+        .join(', ') || 'N/A';
       const features = (model.features || []).map(f => {
         const chipColor = this.featureColors[f] || '#64748b';
         const label = this.escapeHtml(f.replace(/_/g, ' '));
@@ -230,6 +287,9 @@ class ProvidersComponent {
           <td>
             <span class="token-count">${maxTokens}</span>
           </td>
+          <td>
+            <span class="model-surfaces">${surfaces}</span>
+          </td>
           <td class="features-cell">
             ${features}
           </td>
@@ -250,6 +310,7 @@ class ProvidersComponent {
               <th>Provider</th>
               <th>Quality</th>
               <th>Max Tokens</th>
+              <th>Surfaces</th>
               <th>Features</th>
             </tr>
           </thead>
@@ -259,6 +320,38 @@ class ProvidersComponent {
         </table>
       </div>
     `;
+  }
+
+  attachSurfaceActions() {
+    const buttons = document.querySelectorAll('.provider-open-surface-btn');
+    buttons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const provider = button.dataset.provider;
+        const surface = button.dataset.surface;
+        if (!provider || !surface || !this.api?.openProviderSurface) {
+          Toast?.error?.('Provider surface action is unavailable');
+          return;
+        }
+
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Opening...';
+        try {
+          const result = await this.api.openProviderSurface(provider, surface, {});
+          if (result?.connected) {
+            Toast?.success?.(`${this.formatModeLabel(surface)} is connected for ${provider}`);
+          } else {
+            Toast?.success?.(`${this.formatModeLabel(surface)} launch requested for ${provider}`);
+          }
+          await this.loadProviders();
+        } catch (error) {
+          Toast?.error?.(error?.message || `Failed to open ${surface} for ${provider}`);
+        } finally {
+          button.disabled = false;
+          button.textContent = original;
+        }
+      });
+    });
   }
 
   // Format token count (e.g., 200000 -> "200K")
@@ -271,6 +364,15 @@ class ProvidersComponent {
       return `${(tokens / 1000).toFixed(tokens % 1000 === 0 ? 0 : 1)}K`;
     }
     return String(tokens);
+  }
+
+  formatModeLabel(mode) {
+    const normalized = String(mode || '').toLowerCase();
+    if (normalized === 'vscode') return 'VS Code';
+    if (normalized === 'cli') return 'CLI';
+    if (normalized === 'app') return 'App';
+    if (normalized === 'desktop') return 'Desktop';
+    return normalized;
   }
 
   // XSS protection

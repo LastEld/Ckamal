@@ -38,7 +38,7 @@ export class BaseClient extends EventEmitter {
    * @param {string} message - Message to send
    * @param {Object} options - Send options
    */
-  async send(message, options = {}) {
+  async send(_message, _options = {}) {
     throw new Error('send() must be implemented by subclass');
   }
 
@@ -48,7 +48,7 @@ export class BaseClient extends EventEmitter {
    * @param {Object} task - Task definition
    * @param {Object} options - Execution options
    */
-  async execute(task, options = {}) {
+  async execute(_task, _options = {}) {
     throw new Error('execute() must be implemented by subclass');
   }
 

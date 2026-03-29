@@ -59,6 +59,16 @@ export {
   createTaskController
 } from './tasks.js';
 
+// Auth Controller
+export {
+  AuthController
+} from './auth-controller.js';
+
+// Company Controller
+export {
+  CompanyController
+} from './company-controller.js';
+
 // Roadmap Controller
 export {
   RoadmapController,
@@ -66,6 +76,48 @@ export {
   LearningPace,
   createRoadmapController
 } from './roadmaps.js';
+
+// Issues Controller
+export {
+  IssuesController,
+  createIssuesController
+} from './issues-controller.js';
+
+// Documents Controller
+export {
+  DocumentsController,
+  createDocumentsController
+} from './documents-controller.js';
+
+// Billing Controller
+export {
+  BillingController,
+  createBillingController
+} from './billing-controller.js';
+
+// Finance Controller
+export {
+  FinanceController,
+  createFinanceController
+} from './finance-controller.js';
+
+// Budget Policy Controller
+export {
+  BudgetPolicyController,
+  createBudgetPolicyController
+} from './budget-policy-controller.js';
+
+// Workspaces Controller
+export {
+  WorkspacesController,
+  createWorkspacesController
+} from './workspaces-controller.js';
+
+// Work Products Controller
+export {
+  WorkProductsController,
+  createWorkProductsController
+} from './work-products-controller.js';
 
 // Claude Controllers
 export {
@@ -123,6 +175,22 @@ export {
   SUPPORTED_MODELS,
   createClaudeExtendedThinkingController
 } from './claude-extended-thinking.js';
+
+// Heartbeat Controller
+export {
+  HeartbeatController
+} from './heartbeat-controller.js';
+
+// Activity Controller
+export {
+  ActivityController
+} from './activity-controller.js';
+
+// GitHub Controller
+export {
+  GitHubController,
+  createGitHubController
+} from './github-controller.js';
 
 // Helpers
 export {

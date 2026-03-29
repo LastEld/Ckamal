@@ -1,0 +1,126 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v5.0.0)'
+        required: true
+        default: 'v5.0.0'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  verify-release:
+    name: Verify Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run full verification
+        run: npm run verify:release
+
+      - name: Check image exists
+        run: |
+          VERSION=${{ github.event.inputs.version || github.ref_name }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
+
+  deploy-production:
+    name: Deploy to Production
+    needs: verify-release
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.cognimesh.example.com
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Set up Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+      - name: Backup current deployment
+        run: |
+          kubectl get deployment cognimesh-server -n cognimesh -o yaml > backup-$(date +%Y%m%d-%H%M%S).yaml
+
+      - name: Deploy to production
+        run: |
+          cd k8s
+          
+          VERSION=${{ github.event.inputs.version || github.ref_name }}
+          
+          # Update image tag
+          kustomize edit set image cognimesh/cognimesh-server=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
+          
+          # Apply manifests
+          kustomize build . | kubectl apply -f -
+          
+          # Wait for rollout
+          kubectl rollout status deployment/cognimesh-server -n cognimesh --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cognimesh -n cognimesh --timeout=120s
+          
+          # Port forward and health check
+          kubectl port-forward svc/cognimesh-server 3000:3000 -n cognimesh &
+          sleep 5
+          
+          # Comprehensive health check
+          curl -f http://localhost:3000/health/live || exit 1
+          curl -f http://localhost:3000/health/ready || exit 1
+          curl -f http://localhost:3000/health || exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, rolling back..."
+          kubectl rollout undo deployment/cognimesh-server -n cognimesh
+          kubectl rollout status deployment/cognimesh-server -n cognimesh --timeout=300s
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

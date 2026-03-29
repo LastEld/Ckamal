@@ -57,7 +57,7 @@ export class BaseRule extends EventEmitter {
    * @param {EvaluationContext} context - Evaluation context
    * @returns {RuleResult} Evaluation result
    */
-  evaluate(context) {
+  evaluate(_context) {
     throw new Error('evaluate() must be implemented by subclass');
   }
 

@@ -123,7 +123,7 @@ export async function listTasks(options = {}) {
 /**
  * Get task details
  */
-export async function getTask(taskId, options = {}) {
+export async function getTask(taskId, _options = {}) {
   const task = tasksStore.get(taskId);
   
   if (!task) {
@@ -154,7 +154,7 @@ export async function getTask(taskId, options = {}) {
 /**
  * Update task status
  */
-export async function updateTask(taskId, status, options = {}) {
+export async function updateTask(taskId, status, _options = {}) {
   const task = tasksStore.get(taskId);
   
   if (!task) {
@@ -187,7 +187,7 @@ export async function updateTask(taskId, status, options = {}) {
 /**
  * Delete a task
  */
-export async function deleteTask(taskId, options = {}) {
+export async function deleteTask(taskId, _options = {}) {
   if (!tasksStore.has(taskId)) {
     return {
       success: false,

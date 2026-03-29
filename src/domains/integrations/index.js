@@ -144,5 +144,15 @@ class IntegrationsDomain {
   }
 }
 
-export { IntegrationsDomain };
-export default IntegrationsDomain;
+export { IntegrationsDomain } from './integrations-domain.js';
+export {
+  GitHubService,
+  GitHubSyncRepository,
+  createGitHubService,
+  createGitHubSyncRepository,
+  DEFAULT_LABEL_MAPPINGS,
+  VALID_WEBHOOK_EVENTS
+} from './github-service.js';
+
+export { IntegrationsDomain as default };
+

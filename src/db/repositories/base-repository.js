@@ -247,8 +247,30 @@ export class BaseRepository {
    */
   #buildOrderClause(orderBy, direction = 'ASC') {
     if (!orderBy) return '';
+    // Sanitize column name to prevent SQL injection - only allow alphanumeric, underscore, dot
+    const safeColumn = this.#sanitizeIdentifier(orderBy);
+    if (!safeColumn) return '';
     const safeDirection = direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-    return ` ORDER BY ${orderBy} ${safeDirection}`;
+    return ` ORDER BY ${safeColumn} ${safeDirection}`;
+  }
+
+  /**
+   * Sanitize SQL identifier (column/table name)
+   * @private
+   * @param {string} identifier
+   * @returns {string|null}
+   */
+  #sanitizeIdentifier(identifier) {
+    if (typeof identifier !== 'string') return null;
+    // Allow: alphanumeric, underscore, dot (for table.column), double quotes
+    // Reject anything that looks like SQL injection
+    const sanitized = identifier.replace(/[^a-zA-Z0-9_".]/g, '');
+    // Must not be empty and reasonable length
+    if (!sanitized || sanitized.length > 128) return null;
+    // Reject SQL keywords that could be dangerous
+    const dangerous = /^(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|FROM|WHERE)$/i;
+    if (dangerous.test(sanitized)) return null;
+    return sanitized;
   }
 
   /**
@@ -304,14 +326,22 @@ class TransactionRepository extends BaseRepository {
    * @param {string[]} columns
    */
   constructor(db, tableName, primaryKey, columns) {
-    // Pass a mock pool that delegates to the transaction db
-    super({
+    // Initialize db first before calling super (which may use it)
+    super({}, tableName, primaryKey, columns);
+    this.#db = db;
+  }
+
+  /**
+   * Override pool getter to use transaction db
+   * @protected
+   * @returns {Object}
+   */
+  get pool() {
+    return {
       get: (sql, params) => this.#promisifyGet(sql, params),
       all: (sql, params) => this.#promisifyAll(sql, params),
       run: (sql, params) => this.#promisifyRun(sql, params)
-    }, tableName, primaryKey, columns);
-    
-    this.#db = db;
+    };
   }
 
   /**

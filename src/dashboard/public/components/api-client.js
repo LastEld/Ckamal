@@ -243,6 +243,16 @@ class ApiClient {
     return this.get('/analytics/agents');
   }
 
+  // ==================== Activity API ====================
+
+  async getRecentActivity(filters = {}) {
+    return this.get('/activity/recent', filters);
+  }
+
+  async getActivityDashboard(filters = {}) {
+    return this.get('/activity/dashboard', filters);
+  }
+
   // ==================== Alerts API ====================
 
   async getAlerts(filters = {}) {
@@ -282,6 +292,20 @@ class ApiClient {
     return this.get('/providers');
   }
 
+  async openProviderSurface(providerId, surface, payload = {}) {
+    return this.post(`/providers/${encodeURIComponent(providerId)}/surfaces/${encodeURIComponent(surface)}/open`, payload);
+  }
+
+  // ==================== Settings API ====================
+
+  async getIntegrationSettings() {
+    return this.get('/settings/integrations');
+  }
+
+  async updateIntegrationSettings(payload) {
+    return this.put('/settings/integrations', payload);
+  }
+
   // ==================== Tools API ====================
 
   async getTools() {
@@ -304,6 +328,26 @@ class ApiClient {
 
   async getAgentStatus(agentId) {
     return this.get(`/agents/${agentId}/status`);
+  }
+
+  async createAgent(payload) {
+    return this.post('/agents', payload);
+  }
+
+  async wakeAgent(agentId, payload = {}) {
+    return this.post(`/agents/${agentId}/wake`, payload);
+  }
+
+  async pauseAgent(agentId, payload = {}) {
+    return this.post(`/agents/${agentId}/pause`, payload);
+  }
+
+  async stopAgent(agentId, payload = {}) {
+    return this.post(`/agents/${agentId}/stop`, payload);
+  }
+
+  async updateAgentConfig(agentId, config) {
+    return this.put(`/agents/${agentId}/config`, config);
   }
 
   async executeAgentTask(agentId, task) {
@@ -474,6 +518,40 @@ class ApiClient {
     return this.post(`/dlq/tasks/${id}/retry`);
   }
 
+  // ==================== Billing API ====================
+
+  async getBillingSummary() {
+    return this.get('/billing/summary');
+  }
+
+  async getCosts(params = {}) {
+    return this.get('/billing/costs', params);
+  }
+
+  async getCostsByModel(params = {}) {
+    return this.get('/billing/costs/by-model', params);
+  }
+
+  async getCostsByProvider(params = {}) {
+    return this.get('/billing/costs/by-provider', params);
+  }
+
+  async getCostsByAgent(params = {}) {
+    return this.get('/billing/costs/by-agent', params);
+  }
+
+  async getBillingAlerts() {
+    return this.get('/billing/alerts');
+  }
+
+  async acknowledgeBillingAlert(id, payload = {}) {
+    return this.put(`/billing/alerts/${id}/acknowledge`, payload);
+  }
+
+  async updateBudgetLimit(limit) {
+    return this.put('/billing/budget', { limit });
+  }
+
   // ==================== Health API ====================
 
   async getHealthComponents() {
@@ -490,6 +568,156 @@ class ApiClient {
 
   async getHealthLive() {
     return this.get('/health/live');
+  }
+
+  // ==================== Org Chart API ====================
+
+  async getOrgChartTree(params = {}) {
+    return this.get('/orgchart/tree', params);
+  }
+
+  async getOrgChartChildren(agentId) {
+    return this.get(`/orgchart/agents/${agentId}/children`);
+  }
+
+  async getOrgChartManagers(agentId) {
+    return this.get(`/orgchart/agents/${agentId}/managers`);
+  }
+
+  async getOrgChartStats(agentId) {
+    return this.get(`/orgchart/agents/${agentId}/stats`);
+  }
+
+  async updateReporting(agentId, reportsTo) {
+    return this.put('/orgchart/reporting', { agentId, reportsTo });
+  }
+
+  async searchOrgChart(query) {
+    return this.get(`/orgchart/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // ==================== Workspaces API ====================
+
+  async listWorkspaces(filters = {}) {
+    return this.get('/workspaces', filters);
+  }
+
+  async createWorkspace(payload) {
+    return this.post('/workspaces', payload);
+  }
+
+  async updateWorkspace(id, payload) {
+    return this.put(`/workspaces/${id}`, payload);
+  }
+
+  async deleteWorkspace(id) {
+    return this.delete(`/workspaces/${id}`);
+  }
+
+  async listWorkspaceOperations(workspaceId, filters = {}) {
+    return this.get(`/workspaces/${workspaceId}/operations`, filters);
+  }
+
+  async createWorkspaceOperation(workspaceId, payload) {
+    return this.post(`/workspaces/${workspaceId}/operations`, payload);
+  }
+
+  async updateWorkspaceOperation(operationId, payload) {
+    return this.patch(`/workspaces/operations/${operationId}`, payload);
+  }
+
+  // ==================== Work Products API ====================
+
+  async listWorkProducts(filters = {}) {
+    return this.get('/work-products', filters);
+  }
+
+  async createWorkProduct(payload) {
+    return this.post('/work-products', payload);
+  }
+
+  async updateWorkProduct(id, payload) {
+    return this.put(`/work-products/${id}`, payload);
+  }
+
+  async deleteWorkProduct(id) {
+    return this.delete(`/work-products/${id}`);
+  }
+
+  async listIssueWorkProducts(issueId, filters = {}) {
+    return this.get(`/work-products/issue/${issueId}`, filters);
+  }
+
+  // ==================== CEO Chat API ====================
+
+  async getChatThreads(filters = {}) {
+    const query = this.buildQueryString(filters);
+    return this.get(`/chat/threads${query}`);
+  }
+
+  async getChatThread(id) {
+    return this.get(`/chat/threads/${id}`);
+  }
+
+  async createChatThread(data) {
+    return this.post('/chat/threads', data);
+  }
+
+  async updateChatThread(id, updates) {
+    return this.put(`/chat/threads/${id}`, updates);
+  }
+
+  async resolveChatThread(id, data = {}) {
+    return this.post(`/chat/threads/${id}/resolve`, data);
+  }
+
+  async closeChatThread(id) {
+    return this.post(`/chat/threads/${id}/close`);
+  }
+
+  async deleteChatThread(id) {
+    return this.delete(`/chat/threads/${id}`);
+  }
+
+  async getChatMessages(threadId, options = {}) {
+    const query = this.buildQueryString(options);
+    return this.get(`/chat/threads/${threadId}/messages${query}`);
+  }
+
+  async getThreadedMessages(threadId) {
+    return this.get(`/chat/threads/${threadId}/messages/threaded`);
+  }
+
+  async addChatMessage(threadId, data) {
+    return this.post(`/chat/threads/${threadId}/messages`, data);
+  }
+
+  async updateChatMessage(threadId, messageId, updates) {
+    return this.put(`/chat/messages/${messageId}`, { threadId, ...updates });
+  }
+
+  async deleteChatMessage(threadId, messageId) {
+    return this.delete(`/chat/messages/${messageId}?threadId=${threadId}`);
+  }
+
+  async markChatThreadAsRead(threadId, data) {
+    return this.post(`/chat/threads/${threadId}/read`, data);
+  }
+
+  async getChatUnreadCount(userId, companyId) {
+    return this.get('/chat/unread', { userId, companyId });
+  }
+
+  async addChatReaction(messageId, data) {
+    return this.post(`/chat/messages/${messageId}/reactions`, data);
+  }
+
+  async removeChatReaction(messageId, data) {
+    return this.delete(`/chat/messages/${messageId}/reactions`, data);
+  }
+
+  async requestCeoResponse(threadId) {
+    return this.post(`/chat/threads/${threadId}/ceo-response`);
   }
 }
 
